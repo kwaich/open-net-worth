@@ -12,14 +12,14 @@
   <a href="https://opennetworth.ai/download">Download</a> ·
   <a href="https://docs.opennetworth.ai">Docs</a> ·
   <a href="https://demo.opennetworth.ai">Live demo</a> ·
-  <a href="https://discord.gg/kPKpSCw56h">Discord</a>
+  <a href="https://discord.gg/gRRsQRgwE8">Discord</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/open-net-worth-ai/open-net-worth-releases/releases/latest"><img src="https://img.shields.io/github/v/release/open-net-worth-ai/open-net-worth-releases?label=release" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License: AGPL-3.0"></a>
   <a href="https://docs.opennetworth.ai"><img src="https://img.shields.io/badge/docs-docs.opennetworth.ai-informational" alt="Documentation"></a>
-  <a href="https://discord.gg/kPKpSCw56h"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://discord.gg/gRRsQRgwE8"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
 **An open-source agent harness for personal finance.** A real multi-currency ledger, budgets, and
