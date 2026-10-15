@@ -1,0 +1,12 @@
+# Overlay: build the image from THIS checkout instead of pulling the published one.
+#
+#   AUTH_PASSWORD=... docker compose -f docker-compose.yml -f compose.build.yml up --build -d
+#
+# Everything else (port, volume, restart policy, the required password) comes from
+# docker-compose.yml unchanged.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: open-net-worth:local

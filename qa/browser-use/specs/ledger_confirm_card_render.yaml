@@ -1,0 +1,92 @@
+# Spec: LCG-01 — the ledger confirm card renders with RESOLVED values
+# Covers: add_transactions gated on the web surface -> services/ledger_preview.preview_create
+#         -> SSE proposed_change (type txn_create) -> ChangePreview card.
+# Requires ANTHROPIC_API_KEY; SKIP otherwise.
+#
+# NOTE: this supersedes the old assumption (recorded in chat_proposed_change_card.yaml)
+# that add_transactions writes directly with no card. Since the ledger confirm gate
+# (ADR 2026-07-19-ledger-confirm-gate-one-tool-stored-args) an INTERACTIVE web turn
+# previews first. This spec does NOT tap the confirm, so no data is mutated.
+id: LCG-01
+# The task itself budgets 90s + 45s of waiting for a real Lucius turn, before any
+# navigation — more than the runner's 120s default allows, so this spec could only ever
+# time out. A confirm-gate spec drives a live LLM round trip; it needs a real budget.
+timeout_seconds: 420
+acceptance_ids:
+  - LCG-CARD-RENDERS-ON-TURN
+  - LCG-CARD-SHOWS-RESOLVED-CATEGORY
+  - LCG-CARD-SHOWS-ACCOUNT-NAMES
+title: "Booking a transaction shows a confirm card with resolved category and account names"
+description: >
+  Asking Lucius to log a single expense must PREVIEW rather than write. The card has to
+  show what the row will actually BECOME — the resolved category label plus the tier that
+  decided it, and the account by NAME — because category precedence and the spend-rules
+  engine resolve silently inside create_transaction. A card that merely echoes the model's
+  input back does not satisfy this spec.
+
+acceptance_criteria:
+  - AC1: The chat can be opened and a message sent
+  - AC2: A confirm card appears (confirm + dismiss affordances), not a bare "done" reply
+  - AC3: The card shows a category label with its provenance (e.g. "set by rule <name>",
+         "<payee>'s default", "as specified", or "Uncategorized") — never an empty category cell
+  - AC4: The card shows the account by NAME, not a raw acc_ id
+  - AC5: Confirm is NOT tapped — no data is mutated
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Learn a real account name.
+  Open the "Cash" or "Accounts" tab and note the exact NAME of one asset account
+  (for example "DBS Savings"). Remember it. Then return to the main view.
+
+  Step 2 — Open chat.
+  Click the chat button (speech bubble, "Ask Lucius", or the floating dock pill at the
+  bottom-right). Wait for the chat panel to open.
+
+  Step 3 — Check for API key.
+  If the chat shows a message about an "API key", "not configured", or a setup notice
+  pointing at Settings, return
+  "SKIP: AI not configured — cannot test the ledger confirm card".
+
+  Step 4 — Ask Lucius to book one expense.
+  Click the message input and type exactly, substituting the account name you noted:
+    log a 13.80 expense for a Grab ride home from <ACCOUNT NAME>
+  Press Enter.
+
+  Step 5 — Wait for the card.
+  Wait up to 90 seconds. Lucius should call add_transactions, which previews instead of
+  writing. Expect a bordered card inside the chat.
+  If Lucius asks a clarifying question, answer it briefly and wait another 45 seconds.
+
+  Step 6 — Read the card carefully and record EXACTLY what it shows.
+  Report, verbatim where possible:
+    - the card's heading
+    - the category shown, and any provenance text next to it (a rule name, a payee
+      default, "as specified", or "Uncategorized")
+    - the account text shown on the leg
+    - the amount(s) shown
+    - the labels of the two action buttons
+
+  Do NOT click the confirm/✓/Apply button. Do not click dismiss either — just observe.
+
+  Decision — return ONE line starting with PASS, FAIL or SKIP:
+  - PASS if ALL of these hold: a card with a confirm AND a dismiss affordance is visible;
+    a category label is shown (any value, including "Uncategorized") and is NOT blank; and the
+    account is shown as a human name rather than a string that looks like "acc_1a2b3c".
+    Format: "PASS: <heading> | category=<label> provenance=<text> | account=<text> |
+    amount=<text> | buttons=<labels>"
+  - FAIL if a card appears but the category cell is empty, or the account renders as a raw
+    acc_ id. Format: "FAIL: <what was wrong> — card showed: <what you saw>"
+  - FAIL if Lucius replied that the transaction was booked/created with NO card at all
+    (that means the gate did not fire). Format: "FAIL: no confirm card — reply was <text>"
+  - FAIL if an error appeared. Format: "FAIL: error — <error text>"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "LCG-01-confirm-card-resolved.png"
+  note: >
+    SKIP is acceptable when ANTHROPIC_API_KEY is not set — the runner reports SKIP for every
+    LLM-dependent spec in that case. The card is rendered by ChangePreview from the
+    proposed_change on the SSE stream; the resolved values come from
+    services/ledger_preview.preview_create, which runs ledger.resolve_transaction_row with
+    mint_payee=False and writes nothing.

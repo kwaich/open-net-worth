@@ -1,0 +1,54 @@
+# A hosted public demo on one small VM. Copied to /srv/onw-demo-stack/ by
+# `demo-aws.sh ship`; secrets come from the .env beside it (mode 600, never in this repo).
+#
+# Mirrors scripts/run_demo.sh's environment: DEMO_MODE and DEMO_OPEN_ACCESS on (visitors need no
+# login), an unpublished password so the book stays configured, every connector credential absent,
+# and the same visitor quotas. One container serves the API and the built frontend; it is
+# published on 127.0.0.1:5175 only, for the tunnel connector below, so the VM has no public HTTP
+# surface at all.
+services:
+  app:
+    image: onw-demo:${ONW_DEMO_TAG:?run demo-aws.sh ship first}
+    container_name: onw-demo
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5175:8080"
+    environment:
+      DATA_DIR: /demo/data
+      CACHE_DIR: /demo/cache
+      LOGS_DIR: /demo/logs
+      DEMO_MODE: "1"
+      DEMO_OPEN_ACCESS: "1"
+      DEMO_TURNS_PER_WINDOW: ${DEMO_TURNS_PER_WINDOW:-30}
+      DEMO_TURN_WINDOW_S: ${DEMO_TURN_WINDOW_S:-300}
+      DEMO_TOKENS_PER_IP_DAILY: ${DEMO_TOKENS_PER_IP_DAILY:-3000000}
+      DEMO_TOKENS_TOTAL_DAILY: ${DEMO_TOKENS_TOTAL_DAILY:-30000000}
+      # One proxy (the Cloudflare edge) appends the visitor's address to X-Forwarded-For; the
+      # quotas and conversation ownership key on that rightmost entry, never the client-written left.
+      DEMO_TRUSTED_PROXY_HOPS: ${DEMO_TRUSTED_PROXY_HOPS:-1}
+      AUTH_DISABLED: "false"
+      AUTH_TRUST_LOOPBACK: "false"
+      # Minted on the VM, never shown or published: nobody signs in with it. It only keeps the
+      # instance "configured" (see run_demo.sh).
+      AUTH_PASSWORD: ${DEMO_UNPUBLISHED_PASSWORD:?missing from .env}
+      AUTH_SESSION_KEY: ${AUTH_SESSION_KEY:?missing from .env}
+      ONW_DISABLE_TELEGRAM: "1"
+    volumes:
+      - /srv/onw-demo:/demo
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "3" }
+
+  # Started by `demo-aws.sh tunnel`, for a tunnel that serves ONLY the demo. `--url` is the
+  # origin for a tunnel created with the cloudflared CLI (no ingress config of its own); a
+  # dashboard-managed tunnel uses its public-hostname setting instead. Host networking so
+  # localhost:5175 resolves to the app's published port.
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: onw-demo-tunnel
+    restart: unless-stopped
+    network_mode: host
+    command: tunnel --no-autoupdate --url http://localhost:5175 run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    profiles: ["tunnel"]

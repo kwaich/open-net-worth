@@ -1,0 +1,115 @@
+# Spec: ACT-MOBILE-BULK — mobile bulk bar with "Ask Lucius" and bottom sheet
+# Covers: Accounts tab bulk selection bar on mobile viewport (≤390px)
+# - "Ask Lucius" button instead of "Categorize"
+# - "More" menu as bottom sheet instead of floating dropdown
+# - Desktop regression: "Categorize" and floating dropdown still present
+
+id: ACT-MOBILE-BULK
+timeout_seconds: 120
+acceptance_ids:
+  - ACT-MOBILE-BULK-ASK-LUCIUS-A1-A2
+  - ACT-MOBILE-BULK-MORE-SHEET-B1-B2
+  - ACT-MOBILE-BULK-SUBSTATE-C1-C4
+  - ACT-DESKTOP-REGRESS-E1-E2
+title: "Mobile bulk bar: 'Ask Lucius' button and bottom sheet 'More' menu"
+description: >
+  On mobile viewport (390px), the bulk bar shows "Ask Lucius" (not "Categorize") and uses a
+  bottom sheet for "More" actions instead of a floating dropdown. On desktop, regression check:
+  "Categorize" and floating dropdown remain unchanged.
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Navigate to Accounts tab and find the register
+  Click on the Accounts tab. Wait for the register to load (you'll see transaction rows).
+  Record: the URL and page title to confirm we're in Accounts.
+
+  Step 2 — Mobile viewport test: Set viewport to 390x844 (iPhone size)
+  Using browser devtools or the playwright interface, resize the viewport to exactly 390x844.
+  Wait 1 second for layout to reflow.
+
+  Step 3 — Select 2+ transactions
+  In the register, find at least 2 transaction rows. Click the checkbox at the left of the
+  first row to select it. Click the checkbox of a second row. After 2 are selected, you should
+  see a bulk action bar appear at the bottom of the screen (or inside the register area) showing
+  the count "2 Transactions" and a total amount.
+  Record: the exact text shown in the count + total.
+
+  Step 4A — Mobile: Verify "Ask Lucius" button (not "Categorize")
+  Look at the bulk bar buttons. On mobile (390px), there should be an "Ask Lucius" button
+  (with a ✦ icon). There should NOT be a "Categorize" button visible on this mobile viewport.
+  Record: the exact button text and icon visible on the bulk bar.
+  If you see "Categorize" instead of "Ask Lucius", return FAIL immediately with the text you see.
+
+  Step 4B — Mobile: Tap "Ask Lucius"
+  Tap (click) the "Ask Lucius" button. The chat panel or dock should open with one mention chip
+  per selected transaction staged in the composer — NOT prefilled plain text. The composer's
+  text input itself should be empty. The bulk bar should close or remain (check if it's still
+  visible).
+  Record: whether chat opened, how many chips are staged, and whether the text field is empty.
+
+  Step 5 — Close chat and re-select to test "More" menu
+  Close the chat panel (click the X or click outside if it's a dock). The transactions may be
+  deselected; if so, select 2 again using checkboxes.
+
+  Step 6A — Mobile: Verify "More" button (⋯) opens bottom sheet (not floating dropdown)
+  Look at the bulk bar. You should see a "More" button (⋯ icon). Tap it.
+  A bottom sheet should slide up from the BOTTOM of the screen with:
+  - A scrim (dark overlay) behind it
+  - A drag handle at the top
+  - A title "More actions"
+  - An X button to close
+  - A list of actions (Mark as Cleared, Duplicate, Description…, Move to Account, Export, Delete)
+  Record: the exact chrome (title, buttons, layout) you see. Is it a bottom sheet (from bottom)
+  or a floating box (position absolute, above the bar)?
+
+  Step 6B — Mobile: Tap "Move to Account" in the bottom sheet
+  In the open "More actions" sheet, find and tap "Move to Account". The sheet should transition
+  (title changes to "Move to account", the action list is replaced with account names and a
+  "Back" button appears).
+  Record: whether the sheet transitioned and what the new title/content is.
+
+  Step 6C — Mobile: Tap "Back" to return to "More actions"
+  Tap the "Back" button. The sheet should return to the "More actions" state.
+  Record: whether it returned.
+
+  Step 6D — Mobile: Close the sheet
+  Tap the scrim (dark overlay behind the sheet). The sheet should close.
+  Alternatively, press Escape key. The sheet should close.
+  Record: the method used to close (scrim click / Escape / X button).
+
+  Step 7 — Desktop regression: Verify "Categorize" and floating dropdown
+  Resize the viewport to 1280x800 (desktop). Wait 1 second for layout.
+  Select 2 transactions again using checkboxes. Look at the bulk bar.
+  On desktop, you should see a "Categorize" button (with ▦ icon), NOT "Ask Lucius".
+  Tap "Categorize". A floating dropdown should appear ABOVE the bulk bar (not a bottom sheet)
+  showing a category list.
+  Record: the button text ("Categorize" or "Ask Lucius") and the menu type (floating dropdown or sheet).
+
+  Step 8 — Desktop: Verify "More" floating dropdown
+  Close the Categorize menu (click elsewhere). With 2 transactions still selected, tap the "More" (⋯) button.
+  A floating dropdown should appear above the bar (not a bottom sheet) with the action list.
+  Record: the menu type (floating or sheet).
+
+  Decision — return ONE line starting with PASS or FAIL:
+  - PASS if:
+    * Mobile (390px): "Ask Lucius" button visible (not "Categorize"), tapping it opens chat with
+      one mention chip staged per selected transaction and no prefilled text
+    * Mobile (390px): "More" button opens a bottom sheet (not floating) with scrim, drag handle, title, X button
+    * Mobile (390px): "Move to Account" transitions sheet to account list with "Back" button
+    * Mobile (390px): Closing (scrim/Escape/X) dismisses the sheet
+    * Desktop (1280x800): "Categorize" button visible (not "Ask Lucius"), opens floating dropdown
+    * Desktop (1280x800): "More" opens floating dropdown (not sheet)
+  Format: "PASS: mobile_button=Ask_Lucius mobile_more_sheet=yes desktop_categorize=yes desktop_floating=yes"
+
+  - FAIL if any of the above checks fail:
+  Format: "FAIL: <specific check failed and what was observed instead>"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "ACT-MOBILE-BULK-bar-ask-lucius-sheet.png"
+  note: >
+    This spec tests the mobile layout of the bulk bar introduced in the accounts-mobile-bulk-bar
+    acceptance file. Viewport must be set to 390x844 (mobile) first, then 1280x800 (desktop) for
+    regression check. The bottom sheet should use the shared BottomSheet component with proper
+    scrim, drag handle, and accessibility.

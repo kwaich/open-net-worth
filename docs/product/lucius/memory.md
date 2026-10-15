@@ -1,0 +1,85 @@
+---
+title: Memory
+description: What Lucius remembers about you between conversations, how to tell him to remember or forget something, and how to review, switch off or clear it.
+category: lucius
+order: 50
+audience: [user]
+status: stable
+related: [lucius/overview, lucius/models-and-cost, operations/security-and-privacy]
+keywords: [memory, remember, forget, facts, privacy, stored memories]
+---
+
+# Memory
+
+Lucius keeps a short list of facts about you from one conversation to the next — how you like to
+budget, a goal you mentioned, that your rent goes up every March — so you don't have to repeat
+yourself.
+
+This is separate from your financial data. Lucius always reads your accounts, transactions and
+budget directly, memory or not; memory is for the things that aren't a number in your book.
+
+Memory is **on** by default.
+
+## Tell him what to remember — or forget
+
+Just say it:
+
+- *"Remember that I get paid on the 25th."*
+- *"Remember I'm saving for a house deposit by 2028."*
+- *"Forget what I said about the car loan."*
+
+He also picks up facts on his own as you talk. Saving or forgetting a fact counts as a change, so
+it follows the conversation's [approval mode](permissions.md) like any other.
+
+## Review what he knows
+
+1. Open **Settings → Chat & Memory**.
+2. Under **Memory**, **Stored memories** shows how many facts there are. Click **Review…**.
+3. The list shows each fact, when it changed, and where it came from — **You told Lucius** or
+   **Learned in chat**. Use the search box to find one.
+4. Click **Forget** next to anything wrong or out of date.
+
+Forgetting a fact takes effect from Lucius's next reply. It doesn't change your ledger or
+profile.
+
+## Switch it off
+
+In **Settings → Chat & Memory**, turn off **Memory extraction & injection**. Lucius then stops
+learning new facts and stops using stored ones in his replies.
+
+Switching it off does **not** delete anything — the facts stay until you forget them. To
+remove them, see below.
+
+## Clear everything
+
+In the **Review…** list, click **Forget everything**, then **Confirm — forget all N**. This
+works whether memory is on or off.
+
+## How it works
+
+- After a conversation, Lucius may save a few new facts from it.
+- When the list grows long, he tidies it — merging duplicates and dropping stale ones.
+- Both steps are small AI calls, billed like any other use. To use a cheaper model for them, set
+  **Memory** under **Settings → AI → Task models** — see [Models and cost](models-and-cost.md).
+- Each reply carries up to 30 facts: the ten most recent things you asked him to remember, then
+  the newest of everything else. When you mention something he may have been told before that
+  isn't among them — *"my apartment"*, a nickname — he searches everything he remembers for it.
+  The search is a plain keyword lookup and never changes a fact.
+
+Facts are stored in your own database on this machine. They're sent only to the AI provider you
+configured, as part of a normal request — the same as anything you type in chat.
+
+## Troubleshooting
+
+**Lucius doesn't remember something I told him.** Check **Memory extraction & injection** is on,
+and look for the fact under **Review…**. If it isn't there, tell him directly: *"remember that
+…"*.
+
+**He keeps bringing up something that's no longer true.** Find it under **Review…** and click
+**Forget**, or tell him *"forget that …"*.
+
+## Related pages
+
+- [What Lucius can do](overview.md) — the full capability map
+- [Models and cost](models-and-cost.md) — the Memory task model
+- [Security and privacy](../operations/security-and-privacy.md) — what data exists, and where

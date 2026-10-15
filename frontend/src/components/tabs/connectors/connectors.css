@@ -1,0 +1,1553 @@
+/* connectors.css — Connectors tab redesign.
+   Ported VERBATIM from design_handoffs/connectors_handoff/prototype/redesign/shell.css.
+   Prefixes: rd- (shared shell primitives) and cn- (connector-specific).
+
+   Deliberately UNLAYERED so it wins over the app's `@layer base` element styles
+   (button/select/a), exactly as the prototype's flat stylesheet did.
+
+   Three deliberate transforms, all cascade-only (DOM and class names are unchanged):
+
+   1. EVERY selector is scoped under .cn-page, the class this port puts on the page root
+      (the `@keyframes` list excepted — keyframe selectors are percentages, not elements).
+      The prototype sheet is a shared "rd-" foundation, and tabs/automations.css already
+      ships its OWN unlayered, unscoped rd-masthead, rd-input, rd-kebab, rd-kebab-btn,
+      rd-kebab-item and rd-kebab-pop. Both sheets are unlayered, so without scoping the
+      winner is whichever tab React lazy-loaded last: the Connectors masthead measured
+      174px on a fresh /connectors, 215px arriving from Automations, and 201px after
+      Connectors → Automations → Connectors, losing spec §9's "search left, primary action
+      right" toolbar each time. It leaked the other way too — this sheet's
+      `flex-direction: column` is the one that sets it, so it was restyling the Automations
+      masthead as soon as Connectors had been visited once. Same transform, same reason, as
+      tabs/settings/settings.css. Enforced by connectors.css.test.ts.
+
+   2. Scoping decides every property BOTH sheets declare. It does NOT stop a property only
+      the OTHER sheet declares from landing here — its rule still matches, and an undeclared
+      property has nothing to beat. Those are neutralised explicitly, in the two rules marked
+      "collision neutraliser" below. The same test recomputes that leak set from both sheets
+      and fails if it ever grows.
+
+   3. Standalone-shell scaffolding is stripped, per the port-design-handoff skill:
+   - html/body, the `*` box-sizing reset (the app's @layer reset already sets it), the onw-
+     nav rail, and the rd-main column (RouterShell owns the page column) — class names are
+     written WITHOUT a leading dot here on purpose: check-css-classes.mjs scans comments too,
+     and a dotted name it cannot find in the TSX is reported as a dead rule
+   - the duplicate `:root` token def — the app's generated tokens already define every custom
+     property this file reads, so NO new token is introduced here
+   - the Lucius side tab/panel and Lucius home screens — the real LuciusDock hosts this tab
+   - every rule for a sibling redesign tab that shares this stylesheet (Settings dialog,
+     provider list, radio cards, rule tables, master-detail, stat strips, digest bar)
+   - `.cn-` rules the Connectors prototype never renders (cn-sub, cn-badges, cn-acts,
+     cn-colhead-r, cn-attnitem, cn-prompt, cn-verified, cn-permhead, cn-mcpback)
+
+   Deviations from the source, beyond the scoping above:
+   - `padding: 0` added to .rd-kebab-btn / .rd-modal-x / .cn-permbtn — fixed-size icon
+     buttons that inherited the app's `@layer base` rule for the button element
+   - .rd-modal carries `scrollbar-width` / `scrollbar-color`; the prototype declares them on
+     .rd-modal-body only. Inert — .rd-modal is `overflow: hidden` and never scrolls — so it
+     is recorded rather than removed, matching the body's thin scrollbar if that ever changes
+   - the prototype's own max-width/centering on .rd-masthead's rows and .rd-content is
+     dropped too (2026-08-20) — `.app-layout` already owns that band for every ordinary tab
+     (see tabs/automations.css), and the prototype's own value disagreed with it (1160px vs
+     --content-max's 1400px) while ALSO nesting a second padded, centred box inside it
+   Also in the handoff's PARITY_AND_GAPS.md (D21).
+
+   Post-port fix (2026-08-14): .rd-modal.xl is a genuinely FIXED height (`height`, not
+   `max-height`) — the MCP add/edit flow's tall form step vs. its short connecting step made
+   the dialog visibly grow and shrink as you moved between them. Scoped to `.xl` ONLY: it is
+   the one size used exclusively by multi-step flows (Browse & add, the MCP edit flow) where a
+   step swap is a real, recurring jump. The base size and `.lg` stay shrink-to-fit on purpose —
+   `.lg` alone hosts "Remove connector?" (two lines) *and* a connector's full config form
+   (can run long), and pinning either to `.xl`'s ~800px would either float a two-line confirm
+   in a mostly-empty box or clip a tall form — every `.lg`/base call site is a single static
+   view, never a multi-step flow, so it never has the jump `.xl` had. `.cn-connecting*` (in
+   McpAddFlow.tsx) is the matching content-side fix: the connecting step's baseline state, now
+   sitting in a taller fixed box, is centered and given an always-visible reassurance line
+   instead of reading as a spinner floating over a void.
+
+   Post-port fix (2026-08-18), REVERTED (2026-08-21): `.rd-modal.fixed` briefly extended the
+   SAME idea to a `.lg` call site that turned out not to be single-static-view after all —
+   ConnectorDetail's edit-connection view. Its own content starts as a one-line "Loading…" stub
+   while the config form's GET resolves, then swaps to the full multi-field form, so the dialog
+   visibly grew every time you opened Edit connection. `Modal`'s `fixedHeight` prop pinned it to
+   the `.lg` size cap (~720px) to stop that jump — but a provider with a short form (one API
+   key field, no extras) then sat in that same ~720px box permanently, most of it empty, which
+   read worse than the jump it was fixing. Owner call: shrink-to-fit-then-scroll (the `.lg`
+   base behavior, unchanged) beats a fixed box for every real call site here, loading jump
+   included — reverted, `fixedHeight` removed from `Modal` and its one call site.
+
+   Same-day follow-up (2026-08-21): shrink-to-fit alone still SNAPPED — Email's provider chips
+   swap in/out the host/port fields (a real content change, not a loading state), and reverting
+   `fixedHeight` reintroduced the loading→loaded snap that fix was papering over. `height: auto`
+   cannot be a CSS `transition` endpoint, so `.rd-modal-body` (below) carries `transition:
+   height` and `Modal` (primitives.tsx) measures its content via ResizeObserver and sets an
+   explicit pixel height on it, so a genuine content-size change glides instead of jumping.
+   Shipped once already this same day with a real bug: the target height was set to the
+   measured content's OWN natural height, omitting `.rd-modal-body`'s `padding: 18px 20px`
+   (36px vertical) that the content sits inside — every form rendered ~36px short, clipping
+   real content and forcing a scrollbar even when nothing exceeded the size cap (caught live,
+   reverted same-day, refixed with the body's own padding added back onto the measured height
+   before it becomes the target). Skipped for `.xl`: that size's own `height` was never
+   shrink-to-fit to begin with. */
+
+/* ── page scaffold ────────────────────────────────────────────────────────── */
+.cn-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.cn-page .rd-masthead {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 2px 0 14px;
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(10px);
+  z-index: 30;
+}
+.cn-page .rd-masthead-head {
+  padding-bottom: 14px;
+  min-width: 0;
+}
+.cn-page .rd-masthead-title {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cn-page .rd-masthead-sub {
+  font-size: var(--text-base);
+  color: var(--muted);
+  font-weight: 400;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cn-page .rd-masthead-pinned {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cn-page .rd-masthead-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cn-page .rd-masthead-subrow {
+  margin-top: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.cn-page .rd-content {
+  width: 100%;
+  padding: 16px 0 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+/* collision neutraliser — tabs/automations.css ships an unlayered, unscoped .rd-masthead of
+   its own. Scoping settles the properties both sheets declare; these are the ones only THAT
+   sheet declares, so without stating them here they land on this masthead the moment the
+   Automations chunk is in the document. Each is the value the prototype computes:
+   align-items — a one-row masthead centres its children; this one is a column of three
+     full-width rows, and `center` collapsed all of them to a narrow centred stack
+   border-bottom — the divider belongs to .rd-masthead-head above, not to the whole band
+   min-height/height — its @media(max-width:600px) block pins the Automations masthead to a
+     34px single line, which would amputate two of these three rows on a phone
+   box-sizing — same value as the app's @layer reset, restated only because an unlayered
+     declaration outranks a layered one */
+.cn-page .rd-masthead {
+  align-items: stretch;
+  border-bottom: none;
+  min-height: 0;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* the prototype's flat stylesheet styled every anchor; scoped so it stays on this page */
+.cn-page a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+@media (hover: hover) {
+  .cn-page a:hover {
+    color: color-mix(in srgb, var(--accent) 80%, #fff);
+    border-bottom-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+}
+
+/* ── segment tabs (underline) ─────────────────────────────────────────────── */
+.cn-page .rd-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+}
+.cn-page .rd-tab {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 13px;
+  cursor: pointer;
+  position: relative;
+  border-radius: 6px 6px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+@media (hover: hover) {
+  .cn-page .rd-tab:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+.cn-page .rd-tab.on {
+  color: var(--ink);
+}
+.cn-page .rd-tab.on::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+}
+.cn-page .rd-tab-count {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--faint);
+  background: var(--surface2);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+.cn-page .rd-tab.on .rd-tab-count {
+  color: var(--ink);
+}
+
+/* ── buttons ──────────────────────────────────────────────────────────────── */
+.cn-page .rd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 30px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  white-space: nowrap;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+.cn-page .rd-btn.primary {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+@media (hover: hover) {
+  .cn-page .rd-btn.primary:hover {
+    background: color-mix(in srgb, var(--accent) 88%, #fff);
+  }
+}
+.cn-page .rd-btn.secondary {
+  background: var(--surface2);
+  border-color: var(--line);
+}
+@media (hover: hover) {
+  .cn-page .rd-btn.secondary:hover {
+    border-color: var(--line-strong);
+    background: color-mix(in srgb, var(--surface2) 80%, var(--line));
+  }
+}
+.cn-page .rd-btn.ghost {
+  color: var(--muted);
+}
+@media (hover: hover) {
+  .cn-page .rd-btn.ghost:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+.cn-page .rd-btn.danger {
+  color: var(--bad);
+}
+@media (hover: hover) {
+  .cn-page .rd-btn.danger:hover {
+    background: color-mix(in srgb, var(--bad) 12%, transparent);
+  }
+}
+.cn-page .rd-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.cn-page .rd-btn.xs {
+  height: 24px;
+  padding: 0 9px;
+  font-size: 11.5px;
+  border-radius: 999px;
+}
+/* The one action a header exists to drive (landing page's Add, the detail page's
+   Connect/Disconnect/Reconnect). A fixed height like every other size — spec §9's "controls
+   never resize" — deliberately NOT padding-driven, and no breakpoint moves it. */
+.cn-page .rd-btn.lg {
+  height: 38px;
+  padding: 0 20px;
+  font-size: 13.5px;
+  border-radius: 999px;
+}
+.cn-page .rd-btn.lg svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── badges ───────────────────────────────────────────────────────────────── */
+.cn-page .rd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.cn-page .rd-badge.good {
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+  border-color: color-mix(in srgb, var(--good) 26%, transparent);
+}
+.cn-page .rd-badge.warn {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 26%, transparent);
+}
+.cn-page .rd-badge.bad {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  border-color: color-mix(in srgb, var(--bad) 26%, transparent);
+}
+.cn-page .rd-badge.accent {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+/* ── forms ────────────────────────────────────────────────────────────────── */
+.cn-page .rd-input,
+.cn-page .rd-select,
+.cn-page .rd-textarea {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 11px;
+  outline: none;
+  transition: border-color 0.12s ease;
+}
+.cn-page .rd-input,
+.cn-page .rd-select {
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 11px;
+}
+.cn-page .rd-input:focus,
+.cn-page .rd-select:focus,
+.cn-page .rd-textarea:focus {
+  border-color: var(--accent);
+}
+.cn-page .rd-input::placeholder,
+.cn-page .rd-textarea::placeholder {
+  color: var(--fg-3);
+}
+.cn-page .rd-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239aa3b2' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  padding-right: 30px;
+}
+.cn-page .rd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.cn-page .rd-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cn-page .rd-req {
+  color: var(--bad);
+  margin-left: 2px;
+}
+.cn-page .rd-help {
+  font-size: 11px;
+  color: var(--faint);
+}
+.cn-page .rd-help--bad {
+  color: var(--bad);
+}
+/* A secret field in the rd-* input language: the input plus the eye that reveals the SAVED
+   value (backend/services/connector_secrets.py). Mirrors ui/PasswordField's .ui-password,
+   which cannot be reused here because these are rd-input/rd-textarea elements. */
+.cn-page .rd-secret {
+  position: relative;
+  display: block;
+}
+.cn-page .rd-secret .rd-input,
+.cn-page .rd-secret .rd-textarea {
+  padding-right: 34px;
+}
+.cn-page .rd-secret--plain .rd-textarea {
+  padding-right: 11px;
+}
+.cn-page .rd-secret-eye {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition:
+    color 0.12s ease,
+    background 0.12s ease;
+}
+.cn-page .rd-secret-eye--block {
+  top: 6px;
+  transform: none;
+}
+@media (hover: hover) {
+  .cn-page .rd-secret-eye:hover {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+}
+.cn-page .rd-formgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px 16px;
+}
+/* The landing page's Details footer: three fixed columns (Author · endpoint · More info) so the
+   link list sits BESIDE the other two rather than dropping to a lonely row of its own, plus room
+   under the last link so it doesn't collide with the modal footer. */
+.cn-page .cn-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 24px;
+  align-items: start;
+  padding-bottom: 20px;
+}
+.cn-page .rd-formgrid .full {
+  grid-column: 1 / -1;
+}
+/* The bank front door's search row (InstitutionPickerModal): country · bank name · Search on
+   ONE row. The two rd-fields are auto-placed into columns 1 and 2, so their labels share a
+   baseline and their inputs share another; the button is PINNED to that first row so the 30px
+   pill lands on the 34px inputs' bottom edge rather than drifting with whatever is tallest.
+   The help gets a row of its own — the 6px row-gap puts it the same distance under the country
+   input as the label sits above it, and spanning full width keeps it off the name field. */
+.cn-page .cn-linkrow {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 6px 10px;
+}
+.cn-page .cn-linkrow > .rd-btn {
+  grid-row: 1;
+  grid-column: 3;
+}
+.cn-page .cn-linkrow > .rd-help {
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+.cn-page .rd-search {
+  position: relative;
+  flex: 0 1 220px;
+  min-width: 90px;
+}
+.cn-page .rd-search input {
+  height: 30px;
+  border-radius: 999px;
+  padding-left: 32px;
+  width: 100%;
+}
+.cn-page .rd-search svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--faint);
+  pointer-events: none;
+}
+
+/* ── segmented control (status filter · transport picker) ─────────────────── */
+.cn-page .rd-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.cn-page .rd-seg-b {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .cn-page .rd-seg-b:hover {
+    color: var(--ink);
+  }
+}
+.cn-page .rd-seg-b.on {
+  color: var(--ink);
+  background: var(--selected);
+}
+
+/* ── connector list rows (compact list, replaces card grid) ────────────────── */
+.cn-page .cn-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--surface);
+}
+.cn-page .cn-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.cn-page .cn-row:last-child {
+  border-bottom: none;
+}
+@media (hover: hover) {
+  .cn-page .cn-row:hover {
+    background: color-mix(in srgb, var(--surface2) 45%, transparent);
+  }
+}
+.cn-page .cn-tile {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  border: 1px solid transparent;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.cn-page .cn-tile svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+}
+/* The header tile (spec §3 identity / §6 preview). Deliberately much larger than the row
+   tile: the header is the one place a connector states WHAT IT IS rather than listing itself,
+   and the name+sub block centres against this. */
+.cn-page .cn-tile.lg {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+}
+.cn-page .cn-tile.lg svg {
+  width: 26px;
+  height: 26px;
+}
+/* A brand mark gets a light PLATE instead of the category tint. Marks are drawn in their own
+   colours and several are near-black on transparent (Tavily, Yodlee, Perplexity) — those
+   vanish on this app's dark surfaces, and tinting a vendor's mark would alter it. The plate is
+   the same in both themes so a logo always sits on the ground it was designed for. */
+.cn-page .cn-tile.plate {
+  background: #fff;
+  border-color: var(--line);
+}
+.cn-page .cn-tile-logo {
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 6px;
+  box-sizing: border-box;
+  object-fit: contain;
+}
+/* Not every mark is square — Firecrawl's official PNG is 600×852 with transparent padding —
+   so `contain` letterboxes rather than stretching or cropping it. */
+.cn-page .cn-tile.lg .cn-tile-logo {
+  padding: 9px;
+}
+.cn-page .cn-main {
+  min-width: 0;
+}
+.cn-page .cn-name {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.cn-page .cn-name > b {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cn-page .cn-statusgood {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--good);
+  font-size: 12px;
+  font-weight: 600;
+}
+.cn-page .cn-statusgood svg {
+  width: 14px;
+  height: 14px;
+}
+.cn-page .cn-statusbad {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--bad);
+  font-size: 12px;
+  font-weight: 600;
+}
+.cn-page .cn-statusbad svg {
+  width: 13px;
+  height: 13px;
+}
+.cn-page .cn-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: none;
+}
+.cn-page .cn-colhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+.cn-page .cn-addlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 6px 2px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+@media (hover: hover) {
+  .cn-page .cn-addlink:hover {
+    color: var(--accent);
+  }
+}
+.cn-page .cn-addlink svg {
+  color: inherit;
+}
+
+/* ── directory (browse & add) marketplace grid ──────────────────────────────── */
+.cn-page .cn-dirsearch {
+  position: relative;
+}
+.cn-page .cn-dirsearch input {
+  width: 100%;
+  padding: 10px 14px 10px 36px;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+}
+.cn-page .cn-dirsearch svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--faint);
+}
+.cn-page .cn-chiprow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.cn-page .cn-chip {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 13px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .cn-page .cn-chip:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+}
+.cn-page .cn-chip.on {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface2));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+.cn-page .rd-select.cn-sortselect {
+  height: 30px;
+  padding: 0 28px 0 13px;
+  font-size: 12px;
+  border-radius: 999px;
+}
+.cn-page .cn-sublabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.cn-page .cn-poprow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.cn-page .cn-poptile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+}
+@media (hover: hover) {
+  .cn-page .cn-poptile:hover {
+    border-color: var(--line-strong);
+  }
+}
+.cn-page .cn-poptile b {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cn-page .cn-poptile svg {
+  flex: none;
+  color: var(--faint);
+}
+.cn-page .cn-dirgrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.cn-page .cn-dircard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+/* The one card with no real product behind it (no logo, no publisher, nothing to preview) —
+   dashed border marks it as a build-your-own slot rather than a specific item sitting in the
+   grid alongside real, named servers (owner review, 2026-08-19). */
+.cn-page .cn-dircard.generic {
+  border-style: dashed;
+  background: transparent;
+}
+.cn-page .cn-dircard-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cn-page .cn-dircard-name {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cn-page .cn-dircard-desc {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.cn-page .cn-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+.cn-page .cn-verified-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+/* Outbound link + its ↗. Inherits the ambient colour so the same affordance reads correctly
+   in the ink-coloured "Developed by" line and in the muted Details footer; the glyph and the
+   faint underline are what mark it as leaving the app. */
+/* border-bottom: none cancels the ambient `.cn-page a` rule — without it the border (under the
+   whole inline-flex box, glyph included) and this underline (under the text only) draw TWO
+   offset lines. */
+.cn-page .cn-extlink {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: inherit;
+  border-bottom: none;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentcolor 30%, transparent);
+  text-underline-offset: 2px;
+}
+@media (hover: hover) {
+  .cn-page .cn-extlink:hover {
+    color: var(--ink);
+    text-decoration-color: currentcolor;
+  }
+}
+.cn-page .cn-extlink svg {
+  flex: none;
+  align-self: center;
+}
+@media (max-width: 560px) {
+  .cn-page .cn-dirgrid,
+  .cn-page .cn-poprow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── connector header (the landing page's and the detail page's identity block) ──
+   ONE treatment, shared by both, so the two cannot drift: a large tile on the left, the name
+   and its one-line sub stacked beside it and VERTICALLY CENTRED against that tile, and the
+   primary action pinned right. `align-items: center` is what does the centring — the previous
+   `flex-start` hung the text off the top of the tile and read as a misalignment. */
+.cn-page .cn-idhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.cn-page .cn-idhead-main {
+  flex: 1;
+  min-width: 0;
+}
+.cn-page .cn-idhead-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  line-height: 1.3;
+}
+.cn-page .cn-idhead-sub {
+  font-size: 12.5px;
+  color: var(--faint);
+  margin-top: 3px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.cn-page .cn-idhead-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+/* ── permission ladder ────────────────────────────────────────────────────── */
+.cn-page .cn-tagchip {
+  display: inline-flex;
+  align-items: center;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 11px;
+}
+.cn-page .cn-permlist {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.cn-page .cn-permrow2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+.cn-page .cn-permrow2:last-child {
+  border-bottom: none;
+}
+.cn-page .cn-permtool {
+  font-size: 12.5px;
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  flex: 1;
+}
+.cn-page .cn-permseg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  flex: none;
+}
+.cn-page .cn-permbtn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--faint);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .cn-page .cn-permbtn:hover {
+    color: var(--ink);
+  }
+}
+.cn-page .cn-permbtn svg {
+  width: 14px;
+  height: 14px;
+}
+.cn-page .cn-permbtn.on.good {
+  background: color-mix(in srgb, var(--good) 18%, transparent);
+  color: var(--good);
+}
+.cn-page .cn-permbtn.on.warn {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+}
+.cn-page .cn-permbtn.on.bad {
+  background: color-mix(in srgb, var(--bad) 18%, transparent);
+  color: var(--bad);
+}
+
+/* ── MCP add-server setup flow ──────────────────────────────────────────────── */
+.cn-page .cn-pastelink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 999px;
+  padding: 6px 13px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .cn-page .cn-pastelink:hover {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    border-color: var(--hover-line);
+  }
+}
+.cn-page .cn-pastebox {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11.5px;
+  line-height: 1.6;
+  background: var(--bg-2);
+}
+.cn-page .cn-spinner {
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent);
+  flex: none;
+  animation: cn-spin 0.7s linear infinite;
+}
+.cn-page .cn-spinner.lg {
+  width: 22px;
+  height: 22px;
+  border-width: 3px;
+}
+@keyframes cn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Test connect, while it runs. A first `npx -y <pkg>` connect downloads the package before
+   the server exists, so this wait can run for minutes: `tabular-nums` keeps the clock from
+   jittering as it ticks, and the log is a FIXED-HEIGHT scroller — the tail it shows is
+   bounded server-side, but the modal's geometry (spec §9 — pinned footer, body scrolls) must
+   not shift under a command that suddenly starts talking.
+
+   .cn-connecting is that step's own root, `flex: 1` so it claims whatever room `.rd-modal.xl`'s
+   fixed height leaves it, ALWAYS vertically centered — no more `.bare`-only centering that
+   dropped to top-aligned the instant a log line/`stalled`/`slow` appeared (2026-08-18): that
+   binary CSS-class flip is what made the whole hero visibly jump from mid-box to the top,
+   not centering itself. Content growing under an always-centered block still nudges its
+   vertical position as the browser reflows — that is ordinary, continuous, expected motion,
+   nothing like the one-frame discontinuity the toggle caused (owner review, same day, on the
+   live app: first "why the fuck sometime it's shifted to top", then — once top-anchored to
+   fix that — "wtf this is not centered"; always-centered is the one answer to both). */
+.cn-page .cn-connecting {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  padding: 4px;
+  flex: 1;
+}
+/* The hero (2026-08-18 redesign, owner review: the old inline spinner+text+clock row read as
+   a sparse, half-finished loading state floating in a mostly-empty box). Bigger, centered
+   column — spinner and status text carry the step, the clock demoted to a small pill
+   underneath rather than competing with the status line for attention on the same row. The
+   halo behind the spinner gives it presence instead of a bare ring floating on flat black. */
+.cn-page .cn-connecting-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  padding: 4px 16px;
+}
+.cn-page .cn-spinner-halo {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.cn-page .cn-spinner-halo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 20%, transparent) 0%,
+    transparent 72%
+  );
+}
+.cn-page .cn-spinner.xl {
+  width: 40px;
+  height: 40px;
+  border-width: 3.5px;
+}
+.cn-page .cn-connecting-status {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  max-width: 460px;
+  line-height: 1.4;
+}
+.cn-page .cn-connecting-clock {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--faint);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 13px;
+}
+.cn-page .cn-connecting-note {
+  text-align: center;
+  max-width: 460px;
+  align-self: center;
+}
+.cn-page .cn-probe-log {
+  max-height: min(320px, 40vh);
+  overflow-y: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cn-page .cn-probe-log-line {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* ── kebab menu ───────────────────────────────────────────────────────────── */
+.cn-page .rd-kebab {
+  position: relative;
+}
+.cn-page .rd-kebab-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (hover: hover) {
+  .cn-page .rd-kebab-btn:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+}
+.cn-page .rd-kebab-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  display: block;
+}
+.cn-page .rd-kebab-pop {
+  position: absolute;
+  right: 0;
+  top: 30px;
+  z-index: var(--z-dropdown);
+  min-width: 150px;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+}
+.cn-page .rd-kebab-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .cn-page .rd-kebab-item:hover {
+    background: var(--hover);
+  }
+}
+.cn-page .rd-kebab-item.danger {
+  color: var(--bad);
+}
+.cn-page .rd-kebab-item svg,
+.cn-page .rd-btn svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  display: block;
+}
+/* collision neutraliser — tabs/automations.css's own .rd-kebab-item adds `white-space: nowrap`.
+   The prototype leaves it at the initial value, so whether a long menu item wrapped depended
+   on which tab had been visited. `normal` is what the prototype computes. */
+.cn-page .rd-kebab-item {
+  white-space: normal;
+}
+
+/* ── empty state ──────────────────────────────────────────────────────────── */
+.cn-page .rd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 44px 20px;
+  text-align: center;
+}
+.cn-page .rd-empty-title {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.cn-page .rd-empty-body {
+  font-size: 12.5px;
+  color: var(--faint);
+  max-width: 380px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* ── modal ────────────────────────────────────────────────────────────────── */
+.cn-page .rd-modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(6, 8, 12, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.cn-page .rd-modal {
+  width: min(520px, 100%);
+  max-height: min(80vh, 720px);
+  overflow: hidden;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-modal);
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.cn-page .rd-modal.lg {
+  width: min(760px, 100%);
+}
+.cn-page .rd-modal.xl {
+  width: min(980px, 100%);
+  height: min(86vh, 800px);
+}
+.cn-page .rd-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.cn-page .rd-modal-title {
+  flex: 1;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.cn-page .rd-modal-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .cn-page .rd-modal-x:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+}
+.cn-page .rd-modal-body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  transition: height 0.18s ease;
+}
+.cn-page .rd-modal-body::-webkit-scrollbar {
+  width: 10px;
+}
+.cn-page .rd-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cn-page .rd-modal-body::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+.cn-page .rd-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  flex: none;
+}
+
+/* ── misc ─────────────────────────────────────────────────────────────────── */
+.cn-page .rd-hr {
+  height: 1px;
+  background: var(--line);
+  border: none;
+  margin: 4px 0;
+}
+.cn-page .rd-code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11.5px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  color: var(--muted);
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.6;
+}
+/* Centered on the SAME region the modal scrim is (`SCRIM_STYLE`'s `right: var(--chat-width)`
+   in primitives.tsx), not the full viewport — plain `left: 50%` sat the toast under the
+   Lucius side panel's share of the screen, visibly off-center from the modal above it. The
+   `-50%` term centers via the toast's own width (the usual trick); the `- chat-width / 2`
+   term shifts that left by half of whatever width the side panel is currently claiming. */
+.cn-page .rd-toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(calc(-50% - var(--chat-width, 0px) / 2));
+  z-index: var(--z-toast);
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 18px;
+  box-shadow: var(--shadow-lg);
+  /* Sized to its text, never squeezed: centred with left 50% + translate, a shrink-to-fit box
+     only gets half the viewport, so a long message wrapped into a tall pill-shaped oval. */
+  width: max-content;
+  max-width: min(520px, calc(100vw - 32px));
+  text-align: center;
+  border-radius: 14px;
+}
+
+/* ── phone ────────────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .cn-page .rd-formgrid {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+  /* The pair still fits a 390px modal (88 + 10 + 252), and a full-width box for a 2-letter
+     code would be the wrong kind of stack — so only Search drops, to its own row at its own
+     width. Grid items stretch by default; a button is one of the controls that must not. */
+  .cn-page .cn-linkrow {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+  .cn-page .cn-linkrow > .rd-btn {
+    grid-row: 3;
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .cn-page .cn-details-grid {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+  .cn-page .rd-label {
+    font-size: var(--text-sm);
+  }
+  .cn-page .rd-help {
+    font-size: var(--text-xs);
+  }
+  .cn-page .rd-masthead-head {
+    padding-bottom: 12px;
+  }
+  /* No room for a subtitle on a phone header, and the title should scroll away with the
+     page like ordinary content — only the search/add toolbar and the tabs stay put. Dissolving
+     the masthead's own box (instead of un-stickying it) lets `.rd-masthead-pinned` become a
+     sticky sibling of the title in the SAME scrolling ancestor, rather than being confined
+     inside a still-sticky parent. */
+  .cn-page .rd-masthead {
+    display: contents;
+  }
+  .cn-page .rd-masthead-sub {
+    display: none;
+  }
+  .cn-page .rd-masthead-pinned {
+    /* No bottom padding at all — any solid strip here sits IN FRONT of the ::after fade
+       below, forcing a row to clear a fully-opaque gap before any visible fading starts.
+       The fade below is the only breathing room. */
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--bg);
+  }
+  /* Same idea as Assets' `.as-bar::after`, held darker/longer and with more stops for a
+     smoother curve: a card scrolling up should fade INTO view as it emerges from under the
+     bar, not appear behind a hard solid-color edge, and not visibly "step" while it does. */
+  .cn-page .rd-masthead-pinned::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -32px;
+    height: 32px;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      var(--bg) 0%,
+      color-mix(in srgb, var(--bg) 92%, transparent) 25%,
+      color-mix(in srgb, var(--bg) 78%, transparent) 45%,
+      color-mix(in srgb, var(--bg) 55%, transparent) 62%,
+      color-mix(in srgb, var(--bg) 30%, transparent) 78%,
+      color-mix(in srgb, var(--bg) 12%, transparent) 90%,
+      transparent 100%
+    );
+  }
+  /* The pinned bar's fade (above) reaches 32px below it — without this, "Channels" (the
+     first section, sitting only 16px below at rest) would render permanently dimmed under
+     the fade instead of the fade being a transient scroll effect. */
+  .cn-page .rd-content {
+    padding-top: 30px;
+  }
+  /* The status filter (All/Connected/Attention) doesn't fit next to the family tabs at
+     phone width and wraps to its own row, doubling the pinned bar's height. Dropped rather
+     than collapsed to an icon — each card already shows its own attention state. */
+  .cn-page .rd-seg {
+    display: none;
+  }
+
+  /* On a phone the header runs out of room: 390px less the modal's own gutters leaves ~350px,
+     and a 52px tile plus a 140px action leaves the title about 138px to wrap "Google
+     Programmable Search" into. The action drops to its own row instead, still right-aligned
+     and still the same fixed 38px height — spec §9's rule is that a control never RESIZES,
+     not that it never moves. */
+  .cn-page .cn-idhead {
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+  .cn-page .cn-idhead-main {
+    flex-basis: calc(100% - 66px);
+  }
+  .cn-page .cn-idhead-actions {
+    flex: 1 0 100%;
+    justify-content: flex-end;
+  }
+
+  .cn-page .rd-modal-scrim {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .cn-page .rd-modal {
+    width: 100%;
+    max-height: 90vh;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  }
+  /* The shared sheet handle (`.ui-modal-handle`, index.css): drag the sheet down to close it. */
+  .cn-page .rd-modal .ui-modal-handle-wrap {
+    display: flex;
+    justify-content: center;
+    flex: none;
+    padding: var(--space-3) 0 0;
+    touch-action: none;
+  }
+  .cn-page .rd-modal-foot {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  /* a lone footer button does not stretch full width — only multi-button footers split evenly */
+  .cn-page .rd-modal-foot .rd-btn:not(:only-child) {
+    flex: 1;
+  }
+}
+
+/* Details' copy control: an icon square that matches the code field's height rather than a
+   text button that sits proud of it. */
+.cn-page .cn-copybtn {
+  flex: none;
+  padding: 0;
+  width: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.cn-page .cn-copybtn svg {
+  width: 15px;
+  height: 15px;
+}
+
+@media (max-width: 700px) {
+  .cn-page .rd-toast {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}

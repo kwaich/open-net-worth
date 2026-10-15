@@ -1,0 +1,181 @@
+/* ActivityPanel — the Lucius landing screen's Active/Scheduled sections (below the greeting
+   + composer, inside ChatPanel's isHomeEmpty block). Deliberately FLAT — no outer bordered
+   card and no per-row bordered card either (an earlier version nested both, which read as
+   boxes-inside-a-box; owner: "too nested, must be more flat"). Just a plain label+count
+   header per section and a divider-separated row list, matching the reference mockup.
+
+   Alignment (owner: "equal width" / "left and right align with the composer" — got this wrong
+   twice before landing here): `.lx-automation-activity` carries NO horizontal padding, so its
+   box is the EXACT same 760px-wide box as `.lx-inputblock` (composer) — same left/right edges,
+   full width, nothing narrower. The inset that lines the TEXT up with the composer's own
+   (border + --lx-field-pad) inset lives on `.lx-activity-row`/`.lx-activity-section-head`
+   THEMSELVES as padding, not on the shared outer container — so the row's divider line and
+   hover background still span the FULL width (edge to edge with the composer above), while
+   only the text/icons inside sit inset to match. Putting the inset on the container instead
+   (an earlier version of this file) shrank the whole list narrower than the composer — exactly
+   the "list is smaller than composer" bug. */
+
+/* Row/header text sits on a SMALLER inset than the composer's own (owner: "reduce the left and
+   right padding for the items") — the row/divider BOX still matches the composer's box exactly
+   (no padding on the container, see above), only how far the icon/text sits in from that box's
+   edge is tighter here than inside the composer field. */
+/* Arrives, rather than appears: it loads a beat after the greeting. */
+@keyframes lx-activity-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.lx-automation-activity {
+  --lx-activity-inset: var(--space-4);
+  width: 100%;
+  animation: lx-activity-in 240ms ease-out;
+  /* Matches .lucius-home-main .lx-inputblock's 760px reading column (lucius-home.css) so the
+     panel lines up with the composer above it instead of reading as a narrower afterthought. */
+  max-width: 760px;
+  margin: var(--space-8) auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.lx-activity-section {
+  display: block;
+}
+
+.lx-activity-section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding-inline: var(--lx-activity-inset);
+}
+
+.lx-activity-section-title {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lx-activity-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.lx-activity-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  text-align: left;
+  background: none;
+  /* No line between rows (owner, 2026-09-28: "remove the separator lines") — spacing and the
+     hover highlight carry each row, as in Documents. */
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--lx-activity-inset);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.lx-activity-row--action-only {
+  cursor: default;
+}
+
+.lx-activity-row:focus-visible {
+  background: var(--hover-surface2);
+}
+
+@media (hover: hover) {
+  .lx-activity-row:hover {
+    background: var(--hover-surface2);
+  }
+
+  .lx-activity-row--action-only:hover {
+    background: none;
+  }
+}
+
+.lx-activity-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.lx-automation-activity-dot {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.lx-automation-activity-dot--waiting {
+  color: var(--warn);
+}
+
+.lx-automation-activity-dot--running {
+  color: var(--lucius);
+}
+
+.lx-automation-activity-dot--completed {
+  color: var(--pos);
+}
+
+.lx-automation-activity-dot--failed {
+  color: var(--neg);
+}
+
+.lx-automation-activity-dot--cancelled {
+  color: var(--muted);
+}
+
+.lx-automation-activity-dot--scheduled {
+  color: var(--muted);
+}
+
+.lx-automation-activity-dot-pulse {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--lucius);
+  animation: lx-pulse 1s ease-in-out infinite;
+}
+
+.lx-activity-row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lx-activity-row-action {
+  flex: none;
+}
+
+.lx-activity-row-chevron {
+  flex: none;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.lx-activity-row:focus-visible .lx-activity-row-chevron {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .lx-activity-row:hover .lx-activity-row-chevron {
+    opacity: 1;
+  }
+}
+
+.lx-activity-show-more {
+  align-self: flex-start;
+  margin-top: var(--space-2);
+  margin-inline-start: var(--lx-activity-inset);
+}

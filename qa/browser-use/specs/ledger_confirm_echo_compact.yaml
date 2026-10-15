@@ -1,0 +1,84 @@
+# Spec: LCG-04 — tapping Confirm echoes a compact chip, never the raw tool/token plumbing
+# Covers: the 2026-07-19 owner-reported bug — ChangePreview.handleConfirm sends a synthetic
+# "Confirmed — apply the update to the transaction (call update_transaction with
+# confirm_token \"...\")" string as the new user turn, and MessageBubble used to render it
+# VERBATIM. Fix: frontend/src/utils/untrusted.ts's stripConfirmHandshake, applied at RENDER
+# only in MessageBubble.tsx — the model's own copy of that turn (what the server actually
+# receives + redeems) is untouched.
+# Requires ANTHROPIC_API_KEY; SKIP otherwise.
+#
+# THIS SPEC MUTATES DATA — it taps ✓ on a single small expense so a real confirm bubble
+# appears. Safe: make qa-e2e boots against a throwaway clone of the data dir.
+id: LCG-04
+# Budgets a real Lucius turn (90s) + a clarifying round (45s) + the confirm + a reload +
+# re-check; the runner's 120s default would only ever time out.
+timeout_seconds: 420
+acceptance_ids:
+  - LCG-CONFIRM-ECHO-IS-COMPACT
+title: "Tapping Confirm echoes a compact chip, not the raw tool name + confirm_token"
+description: >
+  After Lucius books a small expense and the confirm card renders, tapping ✓ appends a NEW
+  chat bubble for that tap. Before the fix this bubble showed the literal synthetic
+  instruction the frontend sends to the model — "Confirmed — apply the update to the
+  transaction (call update_transaction with confirm_token \"...\")" — plumbing, not
+  conversation. The bubble must instead read a short compact confirmation, and stay compact
+  after a reload (the fix runs at render, from whichever source supplied Message.text).
+
+acceptance_criteria:
+  - AC1: The chat can be opened and a message sent
+  - AC2: A confirm card appears with a ✓/confirm affordance
+  - AC3: Tapping ✓ adds a new bubble that reads a short compact confirmation — no tool name,
+         no confirm_token
+  - AC4: Reloading the page still shows the compact bubble, not the raw handshake
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Learn a real account name.
+  Open the "Cash" or "Accounts" tab and note the exact NAME of one asset account (for
+  example "DBS Savings"). Remember it. Return to the main view.
+
+  Step 2 — Open chat and check for an API key.
+  Click the chat button (speech bubble, "Ask Lucius", or the floating dock pill at the
+  bottom-right). If the chat shows a message about an "API key", "not configured", or a
+  setup notice pointing at Settings, return
+  "SKIP: AI not configured — cannot test the confirm echo".
+
+  Step 3 — Ask Lucius to book one small expense.
+  Click the message input and type exactly, substituting the account name you noted:
+    log a 4.50 expense for coffee from <ACCOUNT NAME>
+  Press Enter. Wait up to 90 seconds for a confirm card (a bordered card with a Confirm and
+  a Dismiss button). If Lucius asks a clarifying question, answer it briefly and wait
+  another 45 seconds.
+
+  Step 4 — Tap Confirm and read the NEW bubble carefully.
+  Click the Confirm / ✓ / Apply button on the card. Wait a couple of seconds. A NEW chat
+  bubble appears below the card — this is YOUR OWN message, sent automatically by the
+  click. Read its FULL text and report it VERBATIM.
+
+  Step 5 — Reload the page.
+  Reload the browser tab (full page refresh). Wait for the chat to reappear with the same
+  conversation. Scroll to find the same bubble from Step 4 and read its text again.
+
+  Decision — return ONE line starting with PASS, FAIL or SKIP:
+  - PASS if the Step 4 bubble text is short (a few words, like "✓ Confirmed") and contains
+    NEITHER a tool-call-looking phrase (e.g. "call update_transaction", "call
+    add_transactions") NOR the word "confirm_token", AND the Step 5 re-read after reload
+    shows the SAME short compact text (not the raw handshake). Format:
+    "PASS: tap-echo=<verbatim text> | after reload=<verbatim text>"
+  - FAIL if the Step 4 bubble contains a tool name or "confirm_token" — quote the exact text
+    you saw. Format: "FAIL: raw handshake leaked — bubble read: <verbatim text>"
+  - FAIL if the Step 5 re-read differs from Step 4 in a way that re-introduces the raw
+    handshake (compact before reload, raw after). Format: "FAIL: reload regression — before:
+    <text> after: <text>"
+  - FAIL if no confirm card appeared at all, or an error appeared. Format: "FAIL: <what
+    happened>"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "LCG-04-confirm-echo-compact.png"
+  note: >
+    SKIP is acceptable when ANTHROPIC_API_KEY is not set. The compacting happens entirely at
+    render (frontend/src/utils/untrusted.ts's stripConfirmHandshake, called from
+    MessageBubble.tsx) — the confirm_token the server actually redeems is unchanged, so this
+    spec is display-only and never touches whether the write itself succeeds.

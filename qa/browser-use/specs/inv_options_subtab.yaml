@@ -1,0 +1,144 @@
+# Spec: INV-OPT-01 — Options sub-tab: two sections, ≤14-day chip, ITM badge
+# Covers: docs/qa/acceptance/investments-options.md
+id: INV-OPT-01
+acceptance_ids:
+  - INV-OPT-TWO-SECTIONS
+  - INV-OPT-ACTIVE-SECTION-CONTENT
+  - INV-OPT-EXPIRING-SECTION-CONTENT
+  - INV-OPT-14D-CHIP-VISIBLE
+  - INV-OPT-14D-CHIP-ABSENT-BEYOND
+  - INV-OPT-14D-CHIP-STYLE
+  - INV-OPT-ITM-BADGE-VISIBLE
+  - INV-OPT-OTM-NO-BADGE
+  - INV-OPT-ITM-BADGE-STYLE
+  - INV-OPT-EMPTY-NO-OPTIONS
+title: "Investments Options — two sections, ≤14-day expiry chip, ITM badge"
+description: >
+  Exercises the Options sub-tab of the redesigned Investments tab:
+    1. The sub-tab renders two distinct sections: "Active" contracts and
+       "Expiring Soon" (≤14 days).
+    2. Contracts expiring within 14 days show a styled urgency chip.
+    3. In-the-money (ITM) contracts show an "ITM" badge; OTM contracts do not.
+    4. Empty state is shown when no options positions exist.
+
+  NOTE: This spec depends on the Options sub-tab existing in the redesigned
+  Investments tab. If absent, the spec reports SKIP. The demo dataset may not
+  include options positions — the spec checks the empty-state path in that case.
+
+acceptance_criteria:
+  - AC1: Options sub-tab loads without JS error
+  - AC2: Two sections are visible (Active and Expiring Soon / near-expiry)
+  - AC3: ≤14-day contracts show an urgency chip in a distinct style
+  - AC4: Contracts > 14 days away have no urgency chip
+  - AC5: ITM contracts show an ITM badge in a distinct style
+  - AC6: OTM contracts do not show an ITM badge
+  - AC7: Empty state is shown when no options exist
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open the Investments tab, Options sub-tab (AC1).
+  Click "Investments" in the left sidebar. Wait 3 seconds.
+  Look for an "Options" sub-tab in the Investments sub-tab navigation.
+  If NO "Options" sub-tab is visible:
+    return "SKIP: Options sub-tab not present — either no options positions exist (empty-state path) or the redesign is not yet integrated"
+
+  Click "Options". Wait 3 seconds.
+  Is there a visible JS error? If yes: return "FAIL: JS error on Options sub-tab"
+  Record: OPTIONS_TAB_LOADED = "yes".
+
+  Step 2 — Check two-section layout (AC2).
+  Look for two distinct sections on the page. Common labels:
+  - Section A: "Active", "Open contracts", or "Open positions"
+  - Section B: "Expiring Soon", "Near expiry", "≤14 days", or similar
+  Are both section headers visible?
+  Record: TWO_SECTIONS = "yes" or "no".
+  If only one section is visible, note which label it has.
+
+  Step 3 — Check for contract rows.
+  Look at the Active section. Are any contract rows listed (showing ticker,
+  strike, expiry, Call/Put)?
+  Record: ACTIVE_ROWS = "present" or "absent (empty or empty-state)".
+
+  Look at the Expiring Soon section. Are any contract rows listed there?
+  Record: EXPIRING_ROWS = "present" or "absent".
+
+  Step 4 — Check ≤14-day urgency chip (AC3, AC4).
+  If EXPIRING_ROWS = "present" (a contract is in the Expiring Soon section):
+    Examine that row. Is there a chip/badge showing days remaining (e.g. "7d",
+    "3 days", "! 14d") in a distinct colour (yellow, amber, orange, or warning
+    tone)?
+    Record: URGENCY_CHIP_PRESENT = "yes" or "no".
+    Record: URGENCY_CHIP_STYLED = "yes (distinct colour)" or "no (same as normal text)".
+
+  If ACTIVE_ROWS = "present" (a contract in Active section is > 14 days away):
+    Examine those rows. Do any show an urgency chip / countdown badge?
+    Record: FAR_EXPIRY_CHIP = "yes (should not be there)" or "no (correct)".
+
+  Step 5 — Check ITM badge (AC5, AC6).
+  For any visible contract rows (in either section):
+    Look for an "ITM" label or badge. Is one present on any row?
+    Record: ITM_BADGE_PRESENT = "yes", "no", or "no contracts to check".
+
+    If ITM_BADGE_PRESENT = "yes":
+      Is the ITM badge in a distinct colour (e.g. green, accent, positive tone)?
+      Record: ITM_BADGE_STYLED = "yes" or "no".
+
+      Look at contract rows WITHOUT the ITM badge (OTM rows). Do any of those
+      rows incorrectly show an ITM badge?
+      Record: OTM_HAS_ITM_BADGE = "yes (wrong)" or "no (correct)".
+
+  Step 6 — Check empty state (AC7).
+  If ACTIVE_ROWS = "absent" and EXPIRING_ROWS = "absent":
+    Is there an empty-state message displayed (e.g. "No options positions",
+    "No open contracts")?
+    Record: EMPTY_STATE_SHOWN = "yes" or "no".
+    Is the page blank/white with no message?
+    Record: BLANK_PAGE = "yes" or "no".
+
+  Decision:
+  - If OPTIONS_TAB_LOADED = "no": return "FAIL: Options sub-tab failed to load"
+
+  - Evaluate two sections (AC2):
+    if TWO_SECTIONS = "no": SECTIONS_CHECK = "fail — two distinct sections not found"
+    else: SECTIONS_CHECK = "pass"
+
+  - Evaluate ≤14-day chip (AC3, AC4):
+    if EXPIRING_ROWS = "absent": CHIP_CHECK = "skip — no near-expiry contracts in demo data"
+    elif URGENCY_CHIP_PRESENT = "no": CHIP_CHECK = "fail — no urgency chip on expiring-soon contract"
+    elif URGENCY_CHIP_STYLED = "no": CHIP_CHECK = "fail — urgency chip present but not visually distinct"
+    elif FAR_EXPIRY_CHIP = "yes (should not be there)": CHIP_CHECK = "fail — urgency chip incorrectly on far-expiry row"
+    else: CHIP_CHECK = "pass"
+
+  - Evaluate ITM badge (AC5, AC6):
+    if ITM_BADGE_PRESENT = "no contracts to check": ITM_CHECK = "skip — no contracts to evaluate"
+    elif ITM_BADGE_PRESENT = "no": ITM_CHECK = "skip — no ITM contracts in demo data to check badge"
+    elif ITM_BADGE_STYLED = "no": ITM_CHECK = "fail — ITM badge not visually distinct"
+    elif OTM_HAS_ITM_BADGE = "yes (wrong)": ITM_CHECK = "fail — OTM row incorrectly showing ITM badge"
+    else: ITM_CHECK = "pass"
+
+  - Evaluate empty state (AC7):
+    if ACTIVE_ROWS = "present" or EXPIRING_ROWS = "present": EMPTY_CHECK = "n/a — contracts present, empty state not applicable"
+    elif EMPTY_STATE_SHOWN = "yes": EMPTY_CHECK = "pass"
+    elif BLANK_PAGE = "yes": EMPTY_CHECK = "fail — blank page instead of empty-state message"
+    else: EMPTY_CHECK = "pass (empty state implied)"
+
+  - If any check is "fail":
+    return "FAIL: INV-OPT-01 — SECTIONS=<SECTIONS_CHECK>, CHIP=<CHIP_CHECK>, ITM=<ITM_CHECK>, EMPTY=<EMPTY_CHECK>"
+
+  - If all pass or skip or n/a:
+    return "PASS: INV-OPT-01 — SECTIONS=<SECTIONS_CHECK>, CHIP=<CHIP_CHECK>, ITM=<ITM_CHECK>, EMPTY=<EMPTY_CHECK>"
+
+max_steps: 30
+timeout_seconds: 240
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "INV-OPT-01-options-subtab.png"
+  note: >
+    SKIP is the expected verdict in two scenarios:
+    1. The Options sub-tab does not yet exist (redesign not integrated).
+    2. The demo dataset has no options positions — the empty-state path is PASS.
+    The spec transitions from SKIP to PASS once the redesign is integrated AND
+    options positions are added to the QA seed data.
+    No ANTHROPIC_API_KEY required.

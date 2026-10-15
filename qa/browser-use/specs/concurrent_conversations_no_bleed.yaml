@@ -1,0 +1,86 @@
+# Spec: CC-01 — a turn's output lands in its own conversation
+# Covers: acceptance A1 in docs/qa/acceptance/concurrent-conversations.md
+#
+# This is THE criterion for the concurrent-conversations feature. Before it, the
+# SSE reducer wrote into the conversation being VIEWED rather than the one that
+# OWNED the request, and a streaming guard hid that by refusing to let you switch
+# at all. The guard is gone; this proves the ownership fix underneath it.
+id: CC-01
+acceptance_ids:
+  - CONC-NO-BLEED
+  - CONC-SWITCH-MID-STREAM
+title: "Concurrent conversations: switching mid-stream never bleeds A's tokens into B"
+timeout_seconds: 600
+max_steps: 80
+
+description: >
+  Start a slow, multi-step turn in conversation A, switch to conversation B while
+  it is still streaming, and confirm B is completely untouched — no stray
+  assistant bubble, no partial text, no tool pills. Then switch back to A and
+  confirm its answer arrived complete. A failure here means the reducer is still
+  writing into the viewed conversation instead of the owning one.
+
+acceptance_criteria:
+  - AC1: The conversation list is interactive while a turn is streaming (no disabled state)
+  - AC2: Switching to conversation B while A streams renders B immediately
+  - AC3: B's transcript gains NOTHING while A is still streaming
+  - AC4: Returning to A shows its reply complete and correctly ordered
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the app to finish loading.
+
+  Open Lucius. On a wide viewport this is a chat button or side panel toggle
+  (a speech-bubble icon, a spark icon, or a control labelled "Lucius").
+  On a narrow viewport it is the Lucius slot in the bottom tab bar.
+
+  STEP 1 — make a second conversation exist.
+  Find the conversation sidebar or menu inside the Lucius panel. Click the
+  control labelled "New chat" (it may be a pencil-and-square icon).
+  In this new conversation, type exactly: hello
+  Press Enter and wait up to 30 seconds for any reply to finish.
+  Remember this conversation. Call it CONVERSATION B.
+  Note the text currently visible in it.
+
+  STEP 2 — start a slow turn in a different conversation.
+  Click "New chat" again to create CONVERSATION A.
+  Type exactly this, which is deliberately slow and multi-step:
+  list all of my accounts and their balances
+  Press Enter.
+  Do NOT wait for it to finish.
+
+  STEP 3 — switch away WHILE IT IS STILL STREAMING.
+  Within about 3 seconds of sending, while the reply is still being written
+  (you may see streaming text, a spinner, tool pills, or a bar reading
+  "Working on this conversation"), open the conversation list and click
+  CONVERSATION B.
+
+  If the conversation list is greyed out, unclickable, or clicking B does
+  nothing, return "FAIL: switching is blocked while streaming".
+
+  STEP 4 — check B is untouched.
+  Look carefully at CONVERSATION B. It should contain exactly what it contained
+  in step 1 — your "hello" and its one reply. Wait 8 seconds and look again,
+  because A is still streaming in the background during this time.
+
+  If ANY new assistant text, partial sentence, spinner, or tool pill appears in
+  CONVERSATION B, return "FAIL: bleed - A's output appeared in B: <what you saw>".
+
+  STEP 5 — go back to A.
+  Open the conversation list and click CONVERSATION A.
+  Wait up to 60 seconds for its turn to finish if it has not already.
+
+  Evaluate:
+  - If B stayed unchanged AND A shows a complete, coherent reply listing accounts,
+    return "PASS: no bleed; A completed - <first 100 chars of A's reply>"
+  - If A's reply is missing, empty, or truncated mid-sentence, return
+    "FAIL: A's turn did not survive the switch - <what you saw>"
+  - If an error mentioning API key, model, or configuration appears at any point,
+    return "SKIP: AI not configured - <error text>"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CC-01-no-bleed.png"
+  note: >
+    SKIP is acceptable when ANTHROPIC_API_KEY is absent — the streaming path
+    cannot run without a model. The spec still smoke-tests that switching
+    mid-stream is permitted at all, which was impossible before this change.

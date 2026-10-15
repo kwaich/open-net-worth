@@ -1,0 +1,533 @@
+/* lucius-home.css — the Lucius home tab: two-pane shell + the persistent history sidebar.
+   The sidebar's background matches the PAGE (var(--bg)), not a raised panel — same rule
+   .acct-side (accounts.css) uses, at the owner's explicit request. */
+
+/* Toggled on <body> (LuciusHome.tsx) for the duration of either drag-resize (the history
+   sidebar's or the artifact panel's) — a sandboxed artifact iframe is its own document, and
+   the instant the pointer crosses over one mid-drag it swallows the mousemove before the
+   listener on `document` ever sees it, stalling the resize (owner report: "tough to drag").
+   Global rather than scoped to just this tab's iframes: nothing else should be receiving
+   pointer input during an active drag anyway, and this class exists for at most the ~1-2s a
+   drag actually takes. */
+body.lucius-resizing iframe {
+  pointer-events: none;
+}
+
+.lucius-home-side {
+  border-right: 1px solid var(--line);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 8px 14px;
+  /* margin, not padding-top: padding sits INSIDE the border-right divider (wouldn't move
+     where the line itself starts), margin shifts the whole box — line included — down by a
+     small 12px (owner: flush read as too tight, wanted a touch of both back). Same color as
+     the page behind it (--bg, above), so the gap this opens above the box is invisible. */
+  margin-top: 12px;
+}
+.lucius-home-side-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px 4px;
+}
+/* Both controls in this row share ONE explicit height (34px) — box-sizing:border-box so the
+   border doesn't add to it — rather than each deriving its own from padding/content, which
+   is what let them drift a few px apart (owner report). */
+.lucius-home-side-new {
+  flex: 1;
+  height: 34px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .lucius-home-side-new:hover {
+    background: var(--hover);
+    border-color: var(--line-strong);
+  }
+}
+.lucius-home-side-collapse {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  /* Matches .acct-side-collapse's own (known-good) defensive pair — an inherited line-height
+     taller than the icon, with no explicit reset here, is the recurring cause of a lucide
+     icon collapsing to invisible inside a small flex button (owner: seen this before). */
+  font-size: 14px;
+  line-height: 1;
+}
+.lucius-home-side-new svg,
+.lucius-home-side-collapse svg {
+  flex: none;
+}
+@media (hover: hover) {
+  .lucius-home-side-collapse:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+}
+.lucius-home-side-scroll {
+  flex: 1;
+  overflow-y: auto;
+  /* No margin of its own (owner: gap above "Automation runs" was too big) — the first
+     section's own .conv-menu-sec margin-top (chat.css, shared with the dock) already
+     provides the separation; stacking this on top doubled it. */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* The shared .conv-menu-sec margin-top (chat.css, 10px — also used by the dock's own
+   ConversationMenu, left untouched there) stacks with .conv-menu-sec-h's own 8px top padding
+   for the FIRST section specifically, reading as one big ~18px gap under "New" (owner report,
+   still too big after removing this container's own margin above). Zeroed for the first
+   section only, scoped to this sidebar — every section after the first keeps its normal 10px
+   separator untouched. */
+.lucius-home-side-scroll .conv-menu-sec:first-child {
+  margin-top: 0;
+}
+/* Positioning context for the drag handle below — .lucius-home-side itself can't carry it
+   (its own overflow:hidden would clip a handle sitting astride its edge). */
+.lucius-home-side-wrap {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+.lucius-home-side-wrap .lucius-home-side {
+  flex: 1;
+}
+/* Drag-to-resize handle, mirrors .lx-side-resizer's footprint/cursor (lucius.css) — hover
+   color uses --accent (primary) instead of --lucius (owner: should be the primary color, not
+   the brand purple) since this handle isn't Lucius-identity chrome, just a plain resizer. */
+.lucius-home-side-resizer {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  cursor: ew-resize;
+  z-index: 5;
+  touch-action: none;
+}
+@media (hover: hover) {
+  .lucius-home-side-resizer:hover {
+    background: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+}
+
+.lucius-home-shell {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  transition: grid-template-columns 0.16s ease;
+}
+/* Flush against the nav rail AND the right edge — unlike .acct-shell (accounts.css), which
+   only zeroes padding-left (its own content isn't centered, so the leftover right padding
+   never showed), this tab's content IS centered via margin-inline:auto (see the reading-
+   column rules below), so an asymmetric left-zero/right-intact padding threw that centering
+   off by the untouched right inset (owner report: measured ~27px left/right mismatch). */
+/* 2026-08-24: .app-layout no longer carries horizontal padding at all — the reading band
+   moved onto its children and .topbar was excluded so the price ticker spans the column
+   (see index.css's band rule). So the parent-padding zeroing this used to do is now the
+   global default, and the .topbar padding it restored is now the global default too. What
+   IS still needed is keeping this shell edge-to-edge: the band rule pads every non-topbar
+   child by 24px, and this tab wants none. */
+.app-layout--panel:has(.lucius-home-shell) {
+  padding-inline: 0;
+}
+
+.lucius-home-main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+/* Positioning context for the collapsed-sidebar reopen button and, as a flex sibling, the
+   "New conversation" button (owner, 2026-08-13 — collapsing the sidebar hid the only "New"
+   affordance, forcing a re-expand just to start a fresh chat). */
+.lucius-home-collapsed-bar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+/* Positioning context for the button (still relative to .lucius-home-collapsed-bar, moved
+   here from .lucius-home-reopen itself so the hover-preview list below has a stable anchor)
+   and the preview popover it reveals. */
+.lucius-home-reopen-wrap {
+  position: relative;
+  /* Bridges the 6px gap to .lucius-home-reopen-preview's `top: calc(100% + 6px)` below.
+     The wrap's own hoverable box otherwise ends at the button's 34px height (the preview is
+     position:absolute and out of flow, so it doesn't grow the wrap) — that 6px strip belongs
+     to whatever renders underneath, not to this element's DOM subtree, so a cursor crossing
+     it on the way down fired mouseleave and unmounted the popover before it ever arrived
+     (owner report: hovering to reveal it, then moving toward it to click, made it vanish). */
+  padding-bottom: 6px;
+}
+/* Same footprint as .lucius-home-side-collapse (34px, box-sizing:border-box, 9px radius) —
+   this button is that SAME control shown in its "collapsed" state, not a different one, so
+   it must not drift in size (owner report: was 30px/var(--radius-md), one size off). */
+.lucius-home-reopen {
+  width: 34px;
+  height: 34px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  /* Floats over the scrolling transcript like the Documents button — lifted, not flat. */
+  box-shadow: var(--shadow-sm);
+}
+/* Without this the ChevronRight collapses to 0-width (confirmed: height rendered at 15px,
+   width at 0px) — the icon-collapse bug from lucius.css's .acct-spark comment, here because
+   this button never got the per-container svg rule every other icon container in this
+   codebase carries. Matches .lucius-home-side-collapse's icon size (14px). */
+.lucius-home-reopen svg {
+  display: block;
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+@media (hover: hover) {
+  .lucius-home-reopen:hover {
+    color: var(--ink);
+    border-color: var(--hover-line);
+  }
+}
+/* Hover/focus-only peek at the conversation list (owner, 2026-08-13: "switch without having
+   to toggle again"). Mount/unmount is JS-driven (LuciusHome.tsx's peekingHistory state), not
+   a CSS display:none/:hover toggle — an always-mounted version made the collapsed sidebar's
+   rows findable by tests/a11y tools even while visually hidden. This rule is purely visual
+   positioning for whenever it IS mounted. */
+.lucius-home-reopen-preview {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: var(--z-dropdown);
+  width: 300px;
+  /* Reach the bottom of the viewport instead of stopping short (owner report: capped at
+     520px left a large dead gap below on a tall screen), but leave real breathing room at
+     the bottom edge instead of running flush against it (owner report, second pass: 100px
+     wasn't enough — clears this wrap's own ~54px top offset plus a genuine bottom margin). */
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--hover-surface2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+}
+/* Auto-hide scrollbar, both the transient hover flyout (.lucius-home-reopen-preview, above —
+   shown while the sidebar is collapsed) AND the persistent, always-docked sidebar
+   (.lucius-home-side-scroll, LuciusHistorySidebar.tsx) — owner: "hide the scroll indicator
+   when user is not moving to the chat history one", then "not just the floating one". Invisible
+   at rest, only drawn while the cursor is actually over the list. Overrides index.css's
+   app-wide always-visible thin scrollbar for these two conversation-history areas
+   specifically; every other scrollable area in the app keeps the always-visible bar. */
+.lucius-home-reopen-preview,
+.lucius-home-side-scroll {
+  scrollbar-color: transparent transparent;
+}
+.lucius-home-reopen-preview::-webkit-scrollbar-thumb,
+.lucius-home-side-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+@media (hover: hover) {
+  .lucius-home-reopen-preview:hover,
+  .lucius-home-side-scroll:hover {
+    scrollbar-color: color-mix(in srgb, var(--line) 85%, transparent) transparent;
+  }
+}
+@media (hover: hover) {
+  .lucius-home-reopen-preview:hover::-webkit-scrollbar-thumb,
+  .lucius-home-side-scroll:hover::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--line) 85%, transparent);
+  }
+}
+@media (hover: hover) {
+  .lucius-home-reopen-preview::-webkit-scrollbar-thumb:hover,
+  .lucius-home-side-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--muted);
+  }
+}
+/* The Vault button — top right of the chat pane, mirroring the collapsed bar's top-left
+   controls (same 34px height, 9px radius). It opens the Vault in the right-hand slot the
+   artifact panel uses (LuciusHome.tsx). */
+.lucius-home-vault-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2; /* z-local: same layer as .lucius-home-collapsed-bar */
+  height: 34px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px 0 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.lucius-home-vault-btn svg {
+  display: block;
+  flex: none;
+  color: var(--muted);
+}
+/* Opaque in every state: it floats over the transcript, and --selected is a tint over
+   transparent — scrolled text showed through the pressed button (owner report). */
+.lucius-home-vault-btn.is-on {
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--ink) 13%, var(--surface));
+}
+@media (hover: hover) {
+  .lucius-home-vault-btn:hover {
+    border-color: var(--hover-line);
+    background: var(--hover-surface);
+  }
+}
+/* The collapsed bar (top left) and the Vault button (top right) float over the transcript's
+   top edge. A conversation starts below them — otherwise a right-aligned first message sits
+   under the Vault button whenever a side panel narrows the pane. Scrolled content still
+   passes beneath them, as it does beneath the phone's floating header. */
+.lucius-home-main .lx-side:not(.lx-side--home-empty) .lx-side-scroll {
+  padding-top: 60px;
+}
+/* ── Artifact side panel (owner, 2026-08-13) ──
+   Same drag-handle pattern as .lucius-home-side-resizer, mirrored to the LEFT edge since
+   this panel is docked to the right instead of the left. */
+.lucius-home-artifact-wrap {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+.lucius-home-artifact-resizer {
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  cursor: ew-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+@media (pointer: coarse) {
+  .lucius-home-side-resizer {
+    right: -12px;
+    width: 24px;
+  }
+
+  .lucius-home-artifact-resizer {
+    left: -12px;
+    width: 24px;
+  }
+}
+@media (hover: hover) {
+  .lucius-home-artifact-resizer:hover {
+    background: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+}
+/* ChatPanel's base .lx-side assumes a FIXED floating dock (position:fixed, translateX(100%)
+   off-canvas by default). homeMode renders it in-flow instead — this is this tab's own
+   equivalent of the mobile-only `.app-layout--lucius .lx-side` override in index.css. */
+/* lucius.css sets --lx-panel-bg to --surface in warm/light themes — a deliberate "raised
+   floating panel over the page" treatment for the DOCKED side panel. This is that same
+   .lx-side element repurposed as the home tab's own MAIN CONTENT, sitting flush beside the
+   sidebar (var(--bg)) and under the topbar, not floating over anything — so that override
+   made this pane a visibly different shade from both neighbors in warm/light only (owner
+   report; dark theme never showed it, since dark's --lx-panel-bg is already --bg). Reset it
+   back to --bg here, scoped to the home tab only — the docked panel elsewhere is untouched. */
+.lucius-home-main .lx-side {
+  --lx-panel-bg: var(--bg);
+  position: relative;
+  width: 100%;
+  max-width: none;
+  transform: none;
+  border-left: none;
+  z-index: auto;
+  flex: 1;
+  min-height: 0;
+}
+/* A narrower reading column for the conversation content (messages/empty-state + composer) —
+   homeMode's tab is full viewport width, and letting the composer/transcript stretch
+   edge-to-edge read as a bug rather than a design choice (owner feedback, screenshots of a
+   padded/centered composer). The sidebar keeps its own width; this only narrows the main
+   pane's content, matching the reference's dark gutters on both sides. */
+.lucius-home-main .lx-side-scroll-inner--home,
+.lucius-home-main .lx-inputblock {
+  max-width: 760px;
+  margin-inline: auto;
+  width: 100%;
+}
+/* The composer's floating glass backdrop (.lx-side-foot::before in lucius.css) spans its
+   full-width parent — fine on the docked panel, but on this tab that parent is now the
+   whole pane (matching the scrollbar-placement fix above), so the blur was reaching all the
+   way to the true edges and smearing straight over the scrollbar track. Inset it instead of
+   leaving it edge-to-edge (owner report). */
+.lucius-home-main .lx-side-foot::before {
+  left: 16px;
+  right: 16px;
+}
+/* The "View all conversations" browser overlay reuses the dock's own ConversationBrowser
+   (built for a ~396px-wide panel) — on this full-width tab it needs the same breathing room. */
+.lucius-home-browser-wrap {
+  max-width: 900px;
+  margin-inline: auto;
+  width: 100%;
+  height: 100%;
+  padding: 0 24px;
+}
+/* A taller default composer than the docked panel's 24-130px range (that range fits a
+   396px-wide panel where most turns are short; the home tab is a primary destination, not a
+   glance-and-close side panel) — and, since .chat-composer is a contentEditable div rather
+   than a <textarea>, `resize: vertical` needs `overflow: auto` to actually show the browser's
+   native drag handle (already true of the base rule, restated here since it's load-bearing
+   for this override). Users can still drag it taller up to the cap; growing past that scrolls
+   internally exactly like the base composer does at its own cap. */
+/* More generous internal padding than the docked panel's 8px (--space-3) — a 396px-wide
+   panel can't spare much, but a full-width tab reads cramped at that same value ("too
+   relaxed" was the ask; --space-6 is the app's own next full step up). */
+.lucius-home-main .lx-inputblock {
+  --lx-field-pad: var(--space-6);
+}
+.lucius-home-main .lx-editrow .chat-composer {
+  min-height: 48px;
+  max-height: 420px;
+  overflow-y: auto;
+  resize: vertical;
+}
+/* Keep the resize HANDLE (draggable corner) but hide the browser's own gray grip glyph —
+   it sat awkwardly over the send button and read as a rendering glitch, not an affordance. */
+.lucius-home-main .lx-editrow .chat-composer::-webkit-resizer {
+  background: transparent;
+}
+/* Empty state: greeting → composer → Activity panel read as ONE centered group top-to-bottom
+   (owner: "push the input higher, activity goes below it") — not a scrolling transcript area
+   with the composer pinned to the panel's bottom edge regardless of how little is above it.
+   ChatPanel.tsx places `composerFooter` INSIDE `.lx-side-scroll-inner` for this state (a
+   sibling of the greeting and `<ActivityPanel>`, not of `.lx-side-scroll` itself the way the
+   dock's pinned-bottom composer is), so `.lx-side-foot` here just rides the inner flex
+   column's normal flow/gap instead of the dock's floating/absolute treatment. Scoped to
+   `.lx-side--home-empty` (ChatPanel.tsx), so a real conversation with messages keeps the
+   dock's usual pinned-composer/scrolling-transcript layout untouched.
+
+   Centered via `margin-block: auto` on the inner wrapper (below), NOT `.lx-side`'s own
+   `justify-content: center` (an earlier version of this rule) — that trick sizes
+   `.lx-side-scroll` to shrink-to-content (`flex: 0 1 auto; overflow: visible`) so `.lx-side`
+   has leftover space to center it IN, which works only as long as the group is shorter than
+   the viewport. Once the Activity panel grows past that (owner: "must be scrollable, so I
+   can scroll back to the composer" — the Scheduled list expanded via "Show more" overflowed
+   the screen with nothing scrollable, stranding the composer above the fold), that content
+   just overflowed with no way to reach it. `margin-block: auto` on a flex-column child is the
+   SAME trick `.lx-side-empty` already uses for the plain docked panel's own empty state
+   (lucius.css, above) — it centers only while there's slack, and safely degrades to normal
+   top-anchored, scrollable flow the instant content doesn't fit, with no "unsafe centering"
+   clipping at the top. `.lx-side-scroll` itself goes back to its plain default (flex: 1;
+   overflow-y: auto, this file's own base rule) to make that scrolling possible. */
+/* A grid, not a centred stack: the greeting and the composer sit in the middle rows, with
+   equal flexible rows above and below, so they rest exactly where auto-margin centring put
+   them — and the Activity panel lives in the LOWER flexible row, appearing there (it loads a
+   beat after the greeting) without moving the rows above it. Centring the whole stack moved
+   the greeting up by half the panel's height the moment the review count arrived (owner,
+   2026-09-21). The top row keeps a floor so a panel taller than the lower half (Scheduled
+   expanded via "Show more") still leaves the settled breathing room above the greeting when
+   scrolled to the top (owner, 2026-08-22: "a top calculated padding"); the wrapper grows past
+   the scroll box then, and the box scrolls as before. */
+.lucius-home-main .lx-side--home-empty .lx-side-scroll {
+  display: flex;
+  flex-direction: column;
+}
+.lucius-home-main .lx-side--home-empty .lx-side-scroll-inner--home {
+  display: grid;
+  grid-template-rows: minmax(clamp(32px, 15vh, 200px), 1fr) auto auto minmax(0, 1fr);
+  /* Basis 0, NOT auto: sized from its content, the wrapper resolved the two flexible rows
+     intrinsically, and a flexible track sized from content makes every flexible track that
+     size — the empty top row became the twin of a 527px Activity panel and the greeting sat
+     at the bottom of the screen (owner, 2026-09-21). From a zero basis it fills the scroll
+     box and the rows share the real height. min-height 0 as well: the automatic minimum is
+     that same intrinsic size, which pinned the wrapper at 1307px regardless of the basis. A
+     panel taller than its half then overflows the wrapper's box, and the scroll box scrolls
+     as before. */
+  flex: 1 1 0;
+  min-height: 0;
+  margin-block: 0;
+  /* The desktop empty-state composer is in normal flow, not overlaid. */
+  padding-bottom: 0;
+}
+.lucius-home-main .lx-side--home-empty .lx-side-empty--home {
+  grid-row: 2;
+}
+.lucius-home-main .lx-side--home-empty .lx-side-foot {
+  grid-row: 3;
+}
+.lucius-home-main .lx-side--home-empty .lx-automation-activity {
+  grid-row: 4;
+  align-self: start;
+}
+.lucius-home-main .lx-side--home-empty .lx-side-scroll {
+  /* Keeps the same "shift the centered group up a touch" math the old `.lx-side`-level
+     padding-bottom used to do (bottom padding on the flex container shifts auto-centered
+     content up by HALF the padding value — 26px reads as a ~13px lift, owner: "only
+     10-15px") — moved here since `.lx-side-scroll` is now the one providing the centering
+     space, not `.lx-side`. */
+  padding-bottom: 26px;
+}
+.lucius-home-main .lx-side--home-empty .lx-side-foot {
+  position: static;
+  margin-top: 8px;
+  /* The default `.lx-side-foot` rule (lucius.css) carries 13px of its own horizontal padding —
+     breathing room for the dock's floating/pinned composer against the panel's edges. Nested
+     here as a normal flex child next to `.lx-automation-activity` (which has none — it isn't a
+     floating overlay), that padding shrank the composer 26px narrower than the activity list
+     below it and shifted its left edge 13px right, so their text/icons no longer lined up
+     (owner: "they must be left and right align"). Both now size off the SAME 760px column. */
+  padding-inline: 0;
+}
+.lucius-home-main .lx-side--home-empty .lx-side-foot::before {
+  /* The floating/glass backdrop-filter treatment exists to blur the transcript scrolling
+     underneath a pinned composer — there is no transcript here, just page background, so
+     the blur/tint layer would only dim the composer's own surroundings for no reason. */
+  content: none;
+}

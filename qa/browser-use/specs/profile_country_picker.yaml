@@ -1,0 +1,84 @@
+# Spec: PROFILE-COUNTRY-PICKER — Tax residency and nationality country fields styled as dark pickers
+# Covers: Profile Settings → Tax residency / Nationality fields use design-system TextField (dark)
+# Verifies: both fields render as styled TextField inputs (dark theme) not bare white boxes;
+#           field values persist when saved
+id: PROFILE-COUNTRY-PICKER
+acceptance_ids:
+  - TAX-COUNTRY-NORMALIZE
+title: "Profile country picker fields use design-system dark theme styling"
+description: >
+  The Profile Settings panel must render the "Tax residency" and "Nationality" fields
+  as design-system TextField components with dark-theme styling (matching the rest of Profile).
+  The fix (from commit b439893) replaced bare white input boxes with styled TextField.
+  Both fields must:
+    - Render with dark background (not white)
+    - Accept country names (e.g. "Singapore", "Vietnam", "United States", "SG", "VN")
+    - Normalize aliases to canonical codes (e.g. "Singapore" → "SG")
+    - Persist values on save
+
+acceptance_criteria:
+  - AC1: Settings Profile page loads without error
+  - AC2: Tax residency field is visible and styled as dark TextField, not white box
+  - AC3: Nationality field is visible and styled as dark TextField, not white box
+  - AC4: Both fields have consistent styling with other Profile form fields
+  - AC5: Clicking a field opens a picker or allows text entry
+  - AC6: Entering Singapore text normalizes to SG code and persists
+  - AC7: Entering Vietnam text normalizes to VN code and persists
+  - AC8: Values are correctly saved and retrieved on page reload
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  1. Ensure demo data is loaded.
+
+  2. Go to Settings → Profile (sidebar → Settings, look for Profile link/tab).
+
+  3. Locate the form fields on the Profile page. Find:
+     - "Tax residency" field
+     - "Nationality" field
+     Record: TAX_RESIDENCY_VISIBLE = yes/no, NATIONALITY_VISIBLE = yes/no
+
+  4. Inspect the visual styling of both fields. Are they:
+     - Dark background (matching the rest of the form)? Or white/light?
+     - Using a consistent border and padding style?
+     Record: TAX_RES_DARK_STYLED = yes/no (is it dark like other fields?)
+     Record: NATIONALITY_DARK_STYLED = yes/no
+
+  5. Click the "Tax residency" field. Does it open a country picker / dropdown,
+     or allow typing? (AC5)
+     Record: TAX_RES_INPUT_TYPE = picker/text-input
+
+  6. Type "Singapore" into the Tax residency field. Does it autocomplete or show
+     suggestions? Select "Singapore" from any dropdown if available.
+     Then click Save Profile and wait for feedback.
+     After save, check what value is displayed. (AC6)
+     Record: TAX_RES_VALUE_AFTER_SAVE = value shown (should be "SG" or "Singapore")
+
+  7. Repeat step 6 for the Nationality field: type "Vietnam", save, check the value.
+     Record: NATIONALITY_VALUE_AFTER_SAVE = value shown (should be "VN" or "Vietnam")
+
+  8. Reload the page (Cmd+R or Ctrl+R). Do the saved values reappear? (AC8)
+     Record: TAX_RES_PERSISTS = yes/no, NATIONALITY_PERSISTS = yes/no
+
+  9. Check for any JS errors or console warnings. (AC1)
+     Record: JS_ERROR = yes/no
+
+  Decision:
+  - If TAX_RESIDENCY_VISIBLE = no or NATIONALITY_VISIBLE = no: FAIL "Country fields not visible"
+  - If TAX_RES_DARK_STYLED = no: FAIL "Tax residency field is white/light (not dark-styled)"
+  - If NATIONALITY_DARK_STYLED = no: FAIL "Nationality field is white/light (not dark-styled)"
+  - If TAX_RES_VALUE_AFTER_SAVE not in ("SG", "Singapore"): FAIL f"Tax residency did not persist: {TAX_RES_VALUE_AFTER_SAVE}"
+  - If NATIONALITY_VALUE_AFTER_SAVE not in ("VN", "Vietnam"): FAIL f"Nationality did not persist: {NATIONALITY_VALUE_AFTER_SAVE}"
+  - If TAX_RES_PERSISTS = no or NATIONALITY_PERSISTS = no: FAIL "Values did not persist after page reload"
+  - If JS_ERROR = yes: FAIL "JavaScript error in Profile country fields"
+  - Otherwise: PASS "Country picker fields styled dark and persist correctly"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "PROFILE-COUNTRY-PICKER-dark-styled.png"
+  note: >
+    This spec validates the visual fix from commit b439893 (fix(profile): theme CountryPicker inputs with design-system TextField).
+    The fix ensures the country picker inputs match the dark-theme styling of the rest of the Profile form,
+    not a bare white HTML input box.
+    Aliases like "Singapore" should normalize to ISO codes like "SG" in the backend,
+    but the UI may display either form after save.

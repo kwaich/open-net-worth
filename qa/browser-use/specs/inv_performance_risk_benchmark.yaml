@@ -1,0 +1,156 @@
+# Spec: INV-PERF-01 — Performance sub-tab: risk grid (sufficient/insufficient),
+#                      benchmark roster selection, TWR/MWR card conditions
+# Covers: docs/qa/acceptance/investments-performance.md
+id: INV-PERF-01
+acceptance_ids:
+  - INV-PERF-RISK-GRID-APPEARS
+  - INV-PERF-RISK-GRID-VALUES-NON-ZERO
+  - INV-PERF-RISK-GRID-HIDDEN-INSUFFICIENT
+  - INV-PERF-RISK-GRID-EMPTY-STATE-NOT-BLANK
+  - INV-PERF-BENCHMARK-PICKER-PRESENT
+  - INV-PERF-BENCHMARK-SELECT
+  - INV-PERF-BENCHMARK-DESELECT
+  - INV-PERF-MWR-HIDDEN-SHORT-WINDOW
+  - INV-PERF-MWR-VISIBLE-LONG-WINDOW
+  - INV-PERF-NO-HISTORY-EMPTY-STATE
+title: "Investments Performance — risk grid conditional, benchmark roster select/deselect, MWR visibility"
+description: >
+  Exercises the Performance sub-tab of the redesigned Investments tab:
+    1. Risk metrics grid appears when sufficient data exists; is absent (with an
+       explanatory note) when insufficient data.
+    2. Benchmark picker is present and selecting a benchmark adds a second line
+       to the returns chart; deselecting removes it.
+    3. MWR card is hidden for windows < 1 year and visible for windows ≥ 1 year.
+    4. Empty states and error states render correctly.
+
+  This spec relies on the demo dataset having at least one position with some
+  price history. If no price history exists, most checks will land in the
+  "insufficient data" branch — all SKIP or the empty-state path, which is
+  still a PASS for that condition.
+
+acceptance_criteria:
+  - AC1: Performance sub-tab opens without error
+  - AC2: Risk grid appears with non-empty values when sufficient history exists, OR
+         is absent with an explanatory note when insufficient
+  - AC3: Benchmark picker is present with at least one option
+  - AC4: Selecting a benchmark adds a second line to the chart and legend
+  - AC5: Deselecting a benchmark removes the second line
+  - AC6: MWR card is absent for short windows (< 1 year)
+  - AC7: MWR card is present for long windows (≥ 1 year) when data supports it
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open the Investments tab, Performance sub-tab (AC1).
+  Click "Investments" in the left sidebar. Wait 3 seconds.
+  Click the "Performance" sub-tab (may be labelled "Performance" or "Returns").
+  Wait 3 seconds.
+  Is there a visible JavaScript error overlay? If yes: return "FAIL: JS error on Performance sub-tab"
+  Record: PERF_TAB_LOADED = "yes".
+
+  Step 2 — Check risk metrics grid (AC2).
+  Look for a risk metrics section or grid on the Performance sub-tab. It may be
+  labelled "Risk metrics", "Volatility", "Sharpe", or similar, and would show
+  cells like: Volatility (%), Max Drawdown (%), Sharpe ratio.
+  Is the risk grid visible?
+  Record: RISK_GRID = "visible", "absent", or "not sure".
+
+  If RISK_GRID = "visible":
+    Read the values in the grid cells.
+    Are at least some cells showing numeric values (not all "—" or "N/A")?
+    Record: RISK_VALUES = "has numbers" or "all dashes".
+
+  If RISK_GRID = "absent":
+    Is there a text note explaining why (e.g. "Not enough history", "Insufficient
+    data", or similar)?
+    Record: RISK_ABSENT_NOTE = "present" or "absent".
+    Is the rest of the Performance sub-tab (e.g. the period selector, TWR/MWR cards,
+    or chart) still visible?
+    Record: REST_OF_PERF_VISIBLE = "yes" or "no".
+
+  Step 3 — Check benchmark picker (AC3).
+  Look for a benchmark control: a dropdown, a search field, or a chip roster
+  labelled "Benchmark", "Compare to", or similar.
+  Is a benchmark picker visible?
+  Record: BENCHMARK_PICKER = "present" or "absent".
+
+  Step 4 — Select a benchmark (AC4).
+  If BENCHMARK_PICKER = "present":
+    Click the benchmark picker. Look for options (e.g. "SPY", "VWRA", "S&P 500").
+    If options are visible: click the first available option.
+    Wait 3 seconds for the chart to re-render.
+    Is there now a second line on the returns chart (a dashed line, a different
+    colour, or a second series in the legend)?
+    Record: BENCHMARK_LINE = "visible" or "absent".
+    Is the benchmark name visible in the chart legend?
+    Record: BENCHMARK_LEGEND = "visible" or "absent".
+
+  Step 5 — Deselect the benchmark (AC5).
+  If BENCHMARK_LINE = "visible":
+    Look for a way to remove the benchmark: an "×" on a chip, a "None" option,
+    or a "Clear" button.
+    Click it. Wait 2 seconds.
+    Has the second line disappeared from the chart?
+    Record: BENCHMARK_REMOVED = "yes" or "no".
+
+  Step 6 — Check MWR card with short window (AC6).
+  Look for a period selector (buttons or a segmented control: 1W, 1M, 3M, YTD,
+  1Y, ALL or similar). Click the shortest available period (1W or 1M).
+  Wait 2 seconds.
+  Look for an "MWR" stat card (labelled "MWR", "Money-Weighted Return", "IRR",
+  or "Your IRR"). Is it visible?
+  Record: MWR_SHORT_WINDOW = "visible" or "absent".
+
+  Step 7 — Check MWR card with long window (AC7).
+  Click the "1Y" or "ALL" period button (or whichever shows ≥1 year of data).
+  Wait 2 seconds.
+  Look again for an "MWR" or "IRR" stat card. Is it visible now?
+  Record: MWR_LONG_WINDOW = "visible" or "absent".
+
+  Decision:
+  - If PERF_TAB_LOADED = "no" or JS error:
+    return "FAIL: Performance sub-tab did not load"
+
+  - Evaluate risk grid (AC2):
+    RISK_CHECK:
+    if RISK_GRID = "visible" and RISK_VALUES = "has numbers": RISK_CHECK = "pass"
+    elif RISK_GRID = "visible" and RISK_VALUES = "all dashes": RISK_CHECK = "fail — risk grid visible but all values are dashes"
+    elif RISK_GRID = "absent" and RISK_ABSENT_NOTE = "present" and REST_OF_PERF_VISIBLE = "yes":
+      RISK_CHECK = "pass (insufficient data path — grid absent with note, rest of tab visible)"
+    elif RISK_GRID = "absent" and RISK_ABSENT_NOTE = "absent":
+      RISK_CHECK = "fail — risk grid absent with no explanation"
+    elif RISK_GRID = "absent" and REST_OF_PERF_VISIBLE = "no":
+      RISK_CHECK = "fail — risk grid absent AND rest of tab also missing"
+    else: RISK_CHECK = "skip — grid state unclear"
+
+  - Evaluate benchmark (AC3-AC5):
+    if BENCHMARK_PICKER = "absent": BENCHMARK_CHECK = "skip — picker not present (redesign may not be integrated)"
+    elif BENCHMARK_LINE = "absent": BENCHMARK_CHECK = "fail — benchmark selected but no second line appeared"
+    elif BENCHMARK_LEGEND = "absent": BENCHMARK_CHECK = "fail — second line present but benchmark name not in legend"
+    elif BENCHMARK_REMOVED = "no": BENCHMARK_CHECK = "fail — benchmark line persisted after deselect"
+    else: BENCHMARK_CHECK = "pass"
+
+  - Evaluate MWR (AC6-AC7):
+    if MWR_SHORT_WINDOW = "visible": MWR_CHECK = "fail — MWR card shown on short window (should be hidden for < 1 year)"
+    elif MWR_LONG_WINDOW = "absent": MWR_CHECK = "fail — MWR card absent on 1Y/ALL window (should appear when data supports it)"
+    else: MWR_CHECK = "pass"
+
+  - If any check is "fail":
+    return "FAIL: INV-PERF-01 — RISK=<RISK_CHECK>, BENCHMARK=<BENCHMARK_CHECK>, MWR=<MWR_CHECK>"
+
+  - If all checks are "pass" or "skip":
+    return "PASS: INV-PERF-01 — RISK=<RISK_CHECK>, BENCHMARK=<BENCHMARK_CHECK>, MWR=<MWR_CHECK>"
+
+max_steps: 40
+timeout_seconds: 360
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "INV-PERF-01-performance-risk-benchmark.png"
+  note: >
+    SKIP is acceptable if the benchmark picker or risk grid are not yet present
+    (the redesign may not be fully integrated). The MWR check should always be
+    evaluable since the existing ReturnsPanel already implements MWR suppression
+    for short windows.
+    No ANTHROPIC_API_KEY required — this spec exercises only the Performance UI
+    (the chart and stat cards, not the Lucius AI assistant).

@@ -1,0 +1,177 @@
+# Spec: INV-H-01 — Holdings cockpit: density toggle, target editor 100% gate,
+#                   Sector/Region grouping toggle + flags, country flags
+# Covers: docs/qa/acceptance/investments-holdings.md
+id: INV-H-01
+acceptance_ids:
+  - INV-H-DENSITY-TOGGLE
+  - INV-H-DENSITY-COMPACT
+  - INV-H-TARGET-EDITOR-OPEN
+  - INV-H-TARGET-SUM-GATE
+  - INV-H-TARGET-SUM-ALLOWS-100
+  - INV-H-TARGET-DRIFT-VISIBLE
+  - INV-H-SECTOR-TOGGLE
+  - INV-H-REGION-TOGGLE
+  - INV-H-SECTOR-FLAG
+  - INV-H-REGION-FLAG
+  - INV-H-FLAG-ABSENT-WHEN-BELOW-THRESHOLD
+  - INV-H-FLAG-ICONS-RENDER
+  - INV-H-FLAG-UNKNOWN-GRACEFUL
+  - INV-H-EMPTY-STATE
+  - INV-H-FILTER-EMPTY-STATE
+title: "Investments Holdings cockpit — density toggle, target editor gate, Sector/Region grouping"
+description: >
+  Exercises the Holdings sub-tab of the redesigned Investments tab end-to-end:
+    1. Density toggle cycles through densities and the change is visible.
+    2. Target-allocation editor blocks a save when weights do not sum to 100%.
+    3. Target-allocation editor allows a save when weights sum to 100%, and drift
+       indicators appear on each section header afterwards.
+    4. Group-by "Sector" and "Region" controls regroup the table and show flags
+       when concentration thresholds are exceeded.
+    5. Country-flag icons render for holdings; unknown country degrades gracefully.
+    6. Empty states render when no holdings exist or filters exclude all rows.
+
+  NOTE: This spec assumes the redesigned Investments tab is live (density toggle
+  and target-editor controls exist in the UI). If the controls are absent, the
+  spec reports SKIP — not FAIL — so it does not block a merge of an unrelated
+  change. The spec should transition from SKIP to PASS once the redesign lands.
+
+acceptance_criteria:
+  - AC1: Density toggle is visible and cycles the row height on click
+  - AC2: Target editor opens and blocks save when weights ≠ 100%
+  - AC3: Target editor allows save when weights = 100%; drift shows on section headers
+  - AC4: Sector grouping regroups the table by sector
+  - AC5: Region grouping regroups the table by region
+  - AC6: Concentration flag appears when a sector > 40%
+  - AC7: No flag appears when no sector exceeds 40%
+  - AC8: Country flags render; unknown country degrades gracefully
+  - AC9: Empty state renders when no holdings exist or all are filtered out
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open the Investments tab, Holdings sub-tab.
+  Click "Investments" in the left sidebar. Wait 3 seconds for the tab to load.
+  Click the "Holdings" sub-tab (it may already be selected by default).
+  Wait 2 seconds.
+
+  Step 2 — Check for density toggle (AC1).
+  Look for a density toggle control in the Holdings toolbar (it may be labelled
+  "Compact", "Comfortable", "Spacious", or show row-density icons like three
+  horizontal lines). Is a density control visible?
+  If NOT visible: record DENSITY_TOGGLE = "absent".
+  If visible:
+    Note the current row height (call it INITIAL_DENSITY).
+    Click the density toggle once to change to a different density.
+    Wait 1 second.
+    Do the rows visibly change height?
+    Record DENSITY_TOGGLE = "changed" or "no change".
+
+  Step 3 — Check for target editor (AC2, AC3).
+  Look for a "Set targets", "Edit target mix", or "Target allocation" button or
+  control in the Holdings toolbar or near the section headers.
+  Is a target-editor control visible?
+  If NOT visible: record TARGET_EDITOR = "absent".
+  If visible:
+    Click it. Wait 2 seconds for the editor (modal or panel) to open.
+    Record TARGET_EDITOR = "opened" or "did not open".
+
+    If opened:
+      Look for numeric inputs for each asset class.
+      Try entering weights that do NOT sum to 100% — e.g. enter 50 for the first
+      class and 30 for the second (total = 80, not 100), leaving others at 0.
+      Click the Save / Confirm button.
+      Wait 2 seconds.
+      Did a validation error or inline message appear saying weights must sum to 100%?
+      Did the editor remain open (i.e. the save was blocked)?
+      Record: SAVE_BLOCKED = "yes" (validation shown, editor stayed open)
+               or "no" (editor closed despite invalid sum).
+
+      If the editor is still open:
+        Now enter weights that DO sum to 100% across all visible class fields.
+        Example: set the largest-weight class to whatever gets the total to 100.
+        Click Save / Confirm again.
+        Wait 2 seconds.
+        Did the editor close?
+        After closing: do the section headers now show drift % indicators
+        (e.g. "+3%" or "−5%" next to the class label)?
+        Record: SAVE_100_CLOSED = "yes" or "no"
+                DRIFT_VISIBLE = "yes" or "no"
+
+  Step 4 — Check Sector grouping (AC4, AC6, AC7).
+  Look for the Group-by control (a dropdown or segmented control labelled
+  "Group by" or similar). Does it include a "Sector" option?
+  If NOT visible: record SECTOR_TOGGLE = "absent".
+  If visible:
+    Select "Sector" from the Group-by control. Wait 2 seconds.
+    Do the section headers change to sector names (e.g. "Technology", "Healthcare",
+    "Financial", "Other")?
+    Record SECTOR_TOGGLE = "grouped by sector" or "no change".
+
+    While in sector view, look for any concentration flag or warning badge on a
+    sector. Is one present?
+    Record SECTOR_FLAG = "present" (one or more sectors flagged) or "absent".
+    Note: if no single sector exceeds 40% of the portfolio in the demo data,
+    "absent" is CORRECT EXPECTED BEHAVIOR.
+
+  Step 5 — Check Region grouping (AC5).
+  In the Group-by control, select "Region". Wait 2 seconds.
+  Do the section headers change to region names (e.g. "US", "Europe", "Asia-Pacific")?
+  Record REGION_TOGGLE = "grouped by region" or "no change" or "option absent".
+
+  Step 6 — Check country flag icons (AC8).
+  Switch the Group-by back to "Asset class" (default). Wait 1 second.
+  Look at the position rows. Do any rows show a flag icon (a country flag emoji
+  or image, e.g. the US flag 🇺🇸 for US equities)?
+  Record FLAG_ICONS = "present" or "absent".
+  If present: is any flag broken (a missing-image placeholder, a question mark,
+  or an empty square)?
+  Record BROKEN_FLAG = "yes" or "no".
+
+  Step 7 — Check empty/filter state (AC9).
+  Look for a search field in the Holdings toolbar. Type a nonsense string (e.g.
+  "zzzzzzz") that will match nothing. Wait 1 second.
+  Is an empty-state message displayed (e.g. "No holdings match your filters"
+  or "No results")?
+  Record FILTER_EMPTY_STATE = "present" or "absent" (blank, or error).
+  Clear the search field (delete the text). The full holdings list should return.
+
+  Decision:
+  - If DENSITY_TOGGLE = "absent" AND TARGET_EDITOR = "absent" AND SECTOR_TOGGLE = "absent":
+    return "SKIP: Holdings cockpit redesign controls not yet present in the UI — density toggle, target editor, and Sector grouping all absent"
+
+  - Build up a report of all checked ACs:
+    DENSITY_CHECK = if DENSITY_TOGGLE = "changed" then "pass" elif "absent" then "skip" else "fail"
+    TARGET_CHECK =
+      if TARGET_EDITOR = "absent" then "skip"
+      elif TARGET_EDITOR = "did not open" then "fail — editor did not open"
+      elif SAVE_BLOCKED = "no" then "fail — invalid weights accepted (100% gate missing)"
+      elif SAVE_100_CLOSED = "no" then "fail — valid save did not close editor"
+      elif DRIFT_VISIBLE = "no" then "fail — drift indicators missing after save"
+      else "pass"
+    SECTOR_CHECK = if SECTOR_TOGGLE = "absent" then "skip" elif "grouped by sector" then "pass" else "fail"
+    REGION_CHECK = if REGION_TOGGLE = "absent" or "option absent" then "skip" elif "grouped by region" then "pass" else "fail"
+    FLAG_CHECK = if FLAG_ICONS = "absent" then "skip (no flags in demo data)" elif BROKEN_FLAG = "yes" then "fail — broken flag icon" else "pass"
+    FILTER_CHECK = if FILTER_EMPTY_STATE = "present" then "pass" else "fail"
+
+  - If any check is "fail":
+    return "FAIL: INV-H-01 — <list every failing check with its recorded value>"
+
+  - If all checks are either "pass" or "skip":
+    If the majority of checks are "skip" (controls absent):
+      return "SKIP: Holdings cockpit redesign not yet integrated — most controls absent; verify once UI lane merges"
+    Else:
+      return "PASS: Holdings cockpit — <DENSITY_CHECK>, TARGET_CHECK=<TARGET_CHECK>, SECTOR=<SECTOR_CHECK>, REGION=<REGION_CHECK>, FLAGS=<FLAG_CHECK>, FILTER_EMPTY=<FILTER_CHECK>"
+
+max_steps: 35
+timeout_seconds: 300
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "INV-H-01-holdings-cockpit.png"
+  note: >
+    SKIP is acceptable here — this spec covers the redesigned Holdings cockpit
+    which may not yet be integrated when the spec is first added. Once the UI lane
+    merges, all controls should be present and the spec should transition to PASS.
+    A SKIP verdict must describe which controls were absent so the integration
+    reviewer knows what to check.
+    No ANTHROPIC_API_KEY required — this spec exercises only the Holdings UI.

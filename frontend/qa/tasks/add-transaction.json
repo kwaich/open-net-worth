@@ -1,0 +1,11 @@
+{
+  "name": "add-transaction",
+  "title": "Add a transaction on the Transactions tab",
+  "tab": "transactions",
+  "body": "Exercise the add-transaction flow on the Transactions (Ledger) tab end-to-end against the demo dataset. Find the control to add a transaction (e.g. an 'Add' / '+' button), open the form, fill plausible values (a small expense, a category, an account), and submit. Then confirm the new transaction appears in the list. This is a disposable demo instance — it is safe to create one transaction. Do NOT delete anything or reset data.",
+  "criteria": [
+    { "id": "tx-add-control", "text": "There is a discoverable control to add a transaction." },
+    { "id": "tx-form", "text": "The add form opens and accepts amount / category / account input." },
+    { "id": "tx-appears", "text": "After submitting, the new transaction shows up in the transaction list." }
+  ]
+}

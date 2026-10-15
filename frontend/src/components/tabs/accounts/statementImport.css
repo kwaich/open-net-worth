@@ -1,0 +1,3116 @@
+/* statementImport.css — the Statement Import Choose / Read / Decide steps, ported VERBATIM from
+   frontend/design_handoffs/statement_import_handoff/prototype/import_v3/import3.css.
+   The handoff is the visual and interaction source of truth; the production decision
+   pipeline is the data source of truth. Rules keep the prototype's own class names,
+   order, and values so the shipped DOM can be diffed against the prototype 1:1.
+
+   The handoff's index.html scopes itself to "the Decide step only"; that note is
+   STALE — prototype/import_v3/flow3.jsx ships a fully-designed DropStep (Choose)
+   and ReadStep (Read) in the same imp3- language. Both were ported here in a later
+   pass; see PARITY_AND_GAPS.md and docs/adr/2026-07-26-statement-import-choose-read-verbatim-port.md.
+
+   What was deliberately NOT copied (skill port-design-handoff §3 "consume frozen
+   shared services"):
+     - the standalone-shell scaffolding (imp3-stage, imp3-ghost-*, imp3-bar-*)
+     - the prototype's own dialog chrome (imp3-overlay, imp3-sheet, imp3-head,
+       imp3-title, imp3-x) — the canonical production Modal hosts this flow (focus
+       trap, Escape, backdrop, trigger restoration). imp3-body IS ported, minus its
+       padding, which the Modal body already owns.
+     - imp3-check-* — the prototype's own ReadStep never renders those rows
+     - the imp3-drawer-* transaction stand-in — the real TxnDetail drawer is used
+     - :root token redefinitions — the live tokens (index.tokens.generated.css)
+       already carry every token the prototype used, in BOTH themes
+
+   Unlayered on purpose, like accounts.css / plan.css / investments/design.css.
+   Registered in frontend/scripts/check-css-classes.mjs CSS_FILES. */
+
+/* ── production host: the workspace modal the Decide step lives in ─────────────
+   The prototype's wide sheet is 960px x 92vh; reproduce that on the real
+   Modal card instead of shipping a second dialog implementation.
+   BUG FIX: `size="workspace"` also brings the DS's manager-tier background
+   swap (`.ui-modal-card--workspace { background: var(--bg-2) }` — the
+   Monitors/Manage Payees convention). The prototype's own wide sheet
+   (imp3-sheet.wide, import3.css) never swaps background — every size of
+   its sheet stays `var(--modal-bg)`, and `.imp3-filter`/`.imp3-cfg`/etc.
+   inside it are painted that SAME token. Without this override the sticky
+   filter bar (which stays `--modal-bg`, byte-identical to the prototype)
+   reads as a visibly bluer band against the surrounding `--bg-2` card — a
+   seam that doesn't exist in the design. Restore modal-bg so the whole
+   sheet is one uniform color again, per the prototype. */
+.ui-modal-card:has(.imp-pane--ws) {
+  width: min(960px, calc(100vw - 32px));
+  max-width: 960px;
+  height: min(92vh, 900px);
+  overflow: hidden;
+  background: var(--modal-bg);
+}
+.ui-modal-card:has(.imp-pane--ws) .ui-modal__body {
+  min-height: 0;
+  /* BUG FIX: this was `overflow-y: auto`, directly contradicting the comment below and giving
+     the Decide step TWO nested scroll contexts (this body AND .imp3-scroll inside it) — a
+     second, usually-invisible scrollbar track that could reserve or release its own gutter
+     independently of .imp3-scroll's, compounding the content-shift-on-overflow bug. */
+  overflow: hidden;
+  /* .imp3-scroll owns the scroll; the body must not add a second scroll context. */
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+/* Scoped to the DIRECT child on purpose: the prototype also uses a bare `imp` as a MODIFIER
+   (`.imp3-lc-btn.imp` — the primary import action), and a descendant selector here matched those
+   buttons too, stretching the excluded row's Import CTA across the whole row. */
+.ui-modal-card:has(.imp-pane--ws) > .ui-modal__body > .imp {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.ui-modal__footer:has(.imp3-foot) {
+  padding: 0;
+}
+/* The LuciusDock is deliberately above everything (--z-toast + 10) so it can float over page
+   content AND stay reachable/interactive while a modal is open (owner requirement — tapping
+   Lucius must never dismiss or block interaction with the modal underneath). That used to
+   conflict with the workspace modal's own primary action (Confirm & book) at the bottom-right,
+   exactly where the expanded dock sits — measured at 1024px, the open dock covered
+   x 440–1000 / y 683–878 and the commit button landed inside that box.
+   Fixed via REPOSITION, not z-index: dropping the dock BEHIND the overlay (the previous fix)
+   made it non-interactive by construction — any click there lands on the overlay first, so no
+   amount of DOM-ancestry "is this click inside Lucius" logic in Modal.tsx ever gets a chance to
+   run (the click target IS the overlay, not a descendant of .lx-dock). Instead, lift the whole
+   dock clear of the workspace footer's own height while a workspace modal is open, so the two
+   never physically overlap — z-index (and therefore interactivity) stays untouched.
+   NEEDS VISUAL VERIFICATION (screenshot/live check) — this offset is reasoned from the
+   original measurement, not confirmed against a running app. */
+/* Scoped away from the Settings overlay: it is a workspace modal too, but it has no bottom
+   action bar to clear, so the lift just parked the pill 74px up the screen for no reason. */
+body:has(.modal-overlay--workspace:not(.onw-settings-overlay)) .lx-dock {
+  bottom: calc(22px + 74px);
+}
+
+/* the prototype's dialog head: title left, Choose/Read/Decide crumbs right */
+.ui-modal-card:has(.imp) .ui-modal__heading {
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+/* The base modal head aligns to the top (a stacked title+subtitle can be taller than the ✕),
+   but this header's title+crumbs sit on ONE row — center them against the ✕ so it doesn't
+   read as vertically offset. */
+.ui-modal-card:has(.imp) .ui-modal__head {
+  align-items: center;
+}
+.ui-modal-card:has(.imp) .ui-modal__title {
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-right: auto;
+}
+.ui-modal-card:has(.imp) .ui-modal__subtitle {
+  flex: none;
+  margin: 0;
+}
+
+/* ── crumbs (prototype .imp3-crumbs) ──────────────────────────────────────── */
+.imp3-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-3);
+}
+.imp3-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.imp3-crumb i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  display: inline-block;
+}
+.imp3-crumb.on {
+  color: var(--ink);
+}
+.imp3-crumb.on i {
+  background: var(--accent);
+}
+.imp3-crumb.done {
+  color: var(--muted);
+}
+.imp3-crumb.done i {
+  background: var(--good);
+}
+.imp3-crumb + .imp3-crumb::before {
+  content: '';
+  width: 14px;
+  height: 1px;
+  background: var(--line);
+  margin-right: 7px;
+}
+
+/* ── body (prototype .imp3-body) ──────────────────────────────────────────────
+   The prototype's own sheet body. Only its `padding: 6px 22px 22px` is dropped —
+   the production Modal's `.ui-modal__body` already owns the dialog's padding, and
+   stacking both double-inset the Choose/Read panes. */
+.imp3-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── drop (the Choose step) ───────────────────────────────────────────────────
+   Ported verbatim from import3.css `── drop ──`. */
+.imp3-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 36px 24px;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: 14px;
+  background: var(--bg-2);
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  /* The prototype's rule is `transition: border-color .12s`. `background` is added on the
+     same duration for the `.over` drag state below — a production-only state the static
+     fixture has no equivalent for; without it the tint would snap. `width`/`box-sizing`
+     are here because production renders this as a real <button>, not a fixture <div>. */
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+@media (hover: hover) {
+  .imp3-drop:hover {
+    border-color: var(--hover-line);
+  }
+}
+/* Production affordances the static prototype has no state for: the file input is a real
+   drag target and a real keyboard control. Both borrow the prototype's own hover colour. */
+.imp3-drop:focus-visible {
+  outline: 2px solid var(--lucius);
+  outline-offset: 3px;
+  border-color: var(--lucius);
+}
+.imp3-drop.over {
+  border-color: var(--lucius);
+  background: color-mix(in srgb, var(--lucius) 8%, var(--bg-2));
+}
+.imp3-drop-ic {
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.imp3-drop-t {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.imp3-drop-t .lk {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.imp3-drop-d {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.imp3-urllink {
+  background: none;
+  border: none;
+  color: var(--faint);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: center;
+  padding: 2px 0;
+}
+@media (hover: hover) {
+  .imp3-urllink:hover {
+    color: var(--ink);
+    text-decoration: underline;
+  }
+}
+/* The URL source and the map-columns-yourself route are real production paths the
+   prototype's fixture has no equivalent for; they ride the same quiet link idiom,
+   left-aligned so they read as secondary to the CTA rather than centred CTAs. */
+.imp3-urllink.start {
+  align-self: flex-start;
+}
+.imp3-urlbox {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.imp3-urlbox input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 9px 11px;
+}
+.imp3-urlbox input:focus {
+  outline: none;
+  border-color: var(--lucius);
+}
+.imp3-urlbox-acts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.imp3-file {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.imp3-file-badge {
+  flex: none;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 4px 7px;
+}
+.imp3-file-nm {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.imp3-file-sub {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+.imp3-file-x {
+  margin-left: auto;
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--faint);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+@media (hover: hover) {
+  .imp3-file-x:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+.imp3-known {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lucius) 9%, var(--bg-2));
+  border: 1px solid color-mix(in srgb, var(--lucius) 30%, var(--line));
+}
+.imp3-known-ic {
+  color: var(--lucius);
+  flex: none;
+  display: inline-flex;
+}
+.imp3-known-t {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.imp3-known-t b {
+  color: var(--ink);
+}
+/* Pending (checking whether the format is remembered) — neutral, not the confirmed-lucius
+   tint: nothing has been confirmed yet, and the box keeps the same shape so the resolved
+   banner never causes a layout jump. */
+.imp3-known.pending {
+  background: var(--bg-2);
+  border-color: var(--line);
+}
+.imp3-known-spin {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--muted);
+  border-top-color: transparent;
+  border-radius: var(--radius-pill);
+  animation: ui-spin 0.7s linear infinite;
+  flex: none;
+}
+.imp3-known-cb {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.imp3-known-cb input {
+  accent-color: var(--primary);
+  cursor: pointer;
+  margin: 0;
+}
+.imp3-acctchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+.imp3-achip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.imp3-achip svg {
+  color: var(--lucius);
+}
+.imp3-achip em {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--lucius);
+}
+.imp3-achip button {
+  background: none;
+  border: none;
+  color: var(--faint);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  line-height: 1;
+}
+@media (hover: hover) {
+  .imp3-achip button:hover {
+    color: var(--bad);
+  }
+}
+.imp3-achip.add {
+  border-style: dashed;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+@media (hover: hover) {
+  .imp3-achip.add:hover {
+    color: var(--ink);
+    border-color: var(--fg-3);
+  }
+}
+.imp3-acctpick {
+  position: relative;
+  display: flex;
+}
+.imp3-acctpick .imp3-lpick-pop {
+  left: 0;
+  top: calc(100% + 5px);
+  min-width: 240px;
+}
+.imp3-acctpick .imp3-lpick-pop button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.imp3-acct-ccy {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.imp3-cache-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.imp3-cache-hint svg {
+  color: var(--lucius);
+  flex: none;
+}
+.imp3-cfg {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.imp3-cfg-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+}
+.imp3-cfg-l {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--faint);
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 7px;
+}
+.imp3-cfg-l em {
+  font-style: normal;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fg-3);
+}
+.imp3-cfg-note {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.imp3-cfg-note textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 9px 11px;
+  resize: vertical;
+  /* Auto-grows to fit content (JS, see ImportModal.tsx) up to this cap, then scrolls — a long
+     saved instruction no longer sits cramped in a fixed 3-row box with its own scrollbar. */
+  max-height: 200px;
+  overflow-y: auto;
+}
+.imp3-cfg-note textarea:focus {
+  outline: none;
+  border-color: var(--lucius);
+}
+.imp3-remember {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.imp3-remember input {
+  accent-color: var(--primary);
+  cursor: pointer;
+  margin: 0;
+}
+.imp3-drop-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+.imp3-drop-cost {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-right: auto;
+  line-height: 1.45;
+}
+
+/* ── reading (the Read step) ──────────────────────────────────────────────────
+   Ported verbatim from import3.css `── reading ──`. The prototype's `imp3-check*`
+   checklist rows are not ported — its own ReadStep never renders them. */
+.imp3-reading {
+  align-items: center;
+  padding-top: 26px;
+  padding-bottom: 30px;
+}
+.imp3-orb {
+  color: var(--lucius);
+  animation: imp3pulse 1.6s ease-in-out infinite;
+}
+@keyframes imp3pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .imp3-orb {
+    animation: none;
+  }
+  .imp3-stagebar .seg.on {
+    animation: none;
+  }
+}
+.imp3-reading-t {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  text-align: center;
+}
+.imp3-reading-t b {
+  color: var(--ink);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.imp3-phase {
+  font-size: 12.5px;
+  color: var(--faint);
+  min-height: 18px;
+  text-align: center;
+}
+/* B20: a poll failure is never an error — same tone as the healthy phase line, just an
+   honest "still working" instead of a specific stage. */
+.imp3-phase--stale {
+  color: var(--faint);
+}
+
+/* Live 7-stage bar (B20) — render/read/reconcile/match/lucius/categorise/ledger_check.
+   Segments only; the current one's name lives in `.imp3-phase` above, so the bar stays a
+   compact position indicator rather than a second copy of the same text. */
+.imp3-stagebar {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+.imp3-stagebar .seg {
+  width: 22px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+}
+.imp3-stagebar .seg.done {
+  background: var(--lucius);
+  opacity: 0.55;
+}
+.imp3-stagebar .seg.on {
+  background: var(--lucius);
+  animation: imp3pulse 1.6s ease-in-out infinite;
+}
+
+.imp3-retry {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+  text-align: center;
+}
+.imp3-elapsed {
+  font-size: 11.5px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+  text-align: center;
+}
+.imp3-hint {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 6px;
+  text-align: center;
+}
+/* "Continue in background" (B20 async) — a low-emphasis text action, not a second CTA
+   competing with the (footerless) processing step. */
+.imp3-bgbtn {
+  margin-top: var(--space-4);
+}
+
+/* ── review layout ────────────────────────────────────────────────────────── */
+/* The production pane IS this scroll container (co-classed onto .imp-pane--ws) — the design's
+   review column with a scrolling body and a fixed footer. */
+.imp3-scroll {
+  flex: 1;
+  overflow-y: auto;
+  /* Reserve the scrollbar track always — otherwise switching filter chips (which changes the
+     row count, and so whether the list overflows) shifts every column sideways as the
+     scrollbar appears/disappears. */
+  scrollbar-gutter: stable;
+  /* padding-TOP must stay 0 (the handoff's is 2px). A `position: sticky` box is clamped to its
+     containing block — this element's CONTENT box — while its `top: 0` is measured from the
+     SCROLLPORT, which includes the padding. So any top padding here is a slit inside the
+     scrollport that .imp3-filter structurally cannot cover, and every row scrolled visibly
+     through it above the pinned filter bar (owner, 2026-07-27: "I see the content behind the
+     header when I scroll"). The 2px inset moves onto the first flow child instead, where it
+     buys the same breathing room without opening a gap over the sticky bar. */
+  padding: 0 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  min-height: 0;
+}
+/* …except when that first child IS the sticky bar — it must stay flush with the scrollport. */
+.imp3-scroll > :first-child:not(.imp3-filter) {
+  margin-top: 2px;
+}
+.imp3-facts {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 11.5px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.imp3-facts > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.imp3-facts i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: none;
+}
+.imp3-facts-ok {
+  color: var(--good);
+  font-weight: 600;
+}
+.imp3-facts-cost {
+  margin-left: auto;
+  color: var(--fg-3);
+}
+/* the facts line's own inline affordances (Re-read / edit instructions / view skipped) —
+   real production actions the prototype's static fixture had no equivalent for; styled as
+   quiet inline links so they never out-weigh the facts they sit beside. */
+.imp3-facts-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .imp3-facts-btn:hover {
+    text-decoration: underline;
+  }
+}
+.imp3-facts-dim {
+  color: var(--fg-3);
+}
+
+/* the rows list inside the scroll area (production structure: it is also the scroll anchor
+   the verdict's jump-links scroll to) */
+.imp3-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  scroll-margin-top: 44px;
+}
+/* the plain (unmatched) row's status cell — its chip sits on the text baseline of a row that
+   has no ledger line under it */
+.imp3-plain-decision {
+  align-items: baseline;
+}
+
+/* ── verdict ──────────────────────────────────────────────────────────────── */
+.imp3-verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+/* The collapsed summary row (worst-tone icon + one headline) — always visible; expands the
+   full per-question detail below it rather than showing every line standing at once. */
+.imp3-vsummary {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.imp3-vsummary b {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.imp3-vsummary svg {
+  flex: none;
+  color: var(--faint);
+}
+.imp3-vsummary.ok .imp3-vic {
+  background: color-mix(in srgb, var(--good) 18%, transparent);
+  color: var(--good);
+}
+.imp3-vsummary.wait .imp3-vic {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+}
+.imp3-vsummary.warn .imp3-vic {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+}
+.imp3-vdetail {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+}
+.imp3-vline {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+}
+.imp3-vline b {
+  display: block;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.imp3-vline em {
+  display: block;
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 2px;
+}
+.imp3-vic {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 0;
+}
+.imp3-vline.ok .imp3-vic {
+  background: color-mix(in srgb, var(--good) 18%, transparent);
+  color: var(--good);
+}
+.imp3-vline.wait .imp3-vic {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+}
+.imp3-vline.warn .imp3-vic {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+}
+/* No handoff twin (production-only fact) — "not available" isn't a warning, just unknown. */
+.imp3-vline.info .imp3-vic {
+  background: var(--surface2);
+  color: var(--faint);
+}
+.imp3-voff {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.imp3-voff b {
+  color: var(--warn);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--warn) 45%, transparent);
+}
+.imp3-voff em {
+  display: block;
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 2px;
+}
+/* production-only, no prototype twin: the honesty caveat under the two verdict lines
+   ("no printed period on this statement"). Quieter than a verdict line — it qualifies one,
+   it isn't one. */
+.imp3-verdict-note {
+  font-size: 11.5px;
+  color: var(--faint);
+  padding-left: 31px;
+}
+
+/* ── Lucius transparency note ─────────────────────────────────────────────── */
+.imp3-lunote {
+  display: flex;
+  gap: 9px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lucius) 9%, var(--bg-2));
+  border: 1px solid color-mix(in srgb, var(--lucius) 30%, var(--line));
+  font-size: 12px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--lucius) 32%, var(--muted));
+}
+.imp3-lunote i {
+  color: var(--lucius);
+  font-style: normal;
+  flex: none;
+  margin-top: 1px;
+}
+.imp3-lunote-b {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.imp3-routed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lucius);
+  background: color-mix(in srgb, var(--lucius) 12%, transparent);
+  border-radius: 7px;
+  padding: 3px 8px;
+  flex: none;
+  white-space: nowrap;
+}
+.imp3-routed .x {
+  color: var(--faint);
+  font-size: 9px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+@media (hover: hover) {
+  .imp3-routed .x:hover {
+    color: var(--bad);
+  }
+}
+
+/* ── filter bar ───────────────────────────────────────────────────────────── */
+.imp3-filter {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+  margin: 0 -2px;
+  background: var(--modal-bg);
+}
+.imp3-filter button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .imp3-filter button:hover {
+    color: var(--ink);
+  }
+}
+.imp3-filter button.on {
+  background: var(--selected);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.imp3-filter button i {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--faint);
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.imp3-filter button.on i {
+  background: var(--bg-2);
+}
+.imp3-filter button em {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+/* Production-only: below the 960px composition the chips stop fitting. They must stay REACHABLE
+   (a clipped filter is a hidden population), so the bar scrolls horizontally — without its own
+   scrollbar, which would out-weigh the pills. The bar itself never overflows the page. Scoped to
+   THIS inner wrapper (not .imp3-filter itself) — overflow-x:auto forces overflow-y:auto too on
+   whichever element carries it, which would clip the kind-filter button's popover if it lived
+   on the same element as that button. */
+/* Vertical padding lives INSIDE this clipping box (not on .imp3-filter) — overflow-x:auto
+   forces the UA to compute overflow-y as auto too, which clips visual overflow (focus rings,
+   antialiasing) right at the box edge with zero buffer if the padding sits outside it instead. */
+.imp3-filter-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.imp3-filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+/* the transient Off-by drift filter keeps the same pill chrome, warn-tinted. */
+.imp3-filter button.offby {
+  color: var(--warn);
+}
+.imp3-filter button.offby.on {
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--line-strong));
+}
+/* The `Possible matches` lens — same transient-pill chrome as Off by, dashed and muted rather
+   than warn-tinted, because it surfaces an option rather than a problem (SIUM-CHIP-WEAK). */
+.imp3-filter button.maybe {
+  color: var(--muted);
+  border-style: dashed;
+}
+.imp3-filter button.maybe.on {
+  border-style: solid;
+  color: var(--ink);
+}
+.imp3-filter button .x {
+  font-size: 9px;
+  color: var(--faint);
+}
+/* The kind filter (Expense/Income/Transfer) — a second, independent dimension, pushed to the
+   far right of the same bar. A single icon trigger rather than standing chips, so it doesn't
+   visually compete with the decision chips beside it; expands into a small popover. */
+.imp3-kindfilter {
+  position: relative;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.imp3-kindfilter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--ink);
+  cursor: pointer;
+}
+.imp3-kindfilter-btn svg {
+  width: 20px;
+  height: 20px;
+}
+@media (hover: hover) {
+  .imp3-kindfilter-btn:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+}
+.imp3-kindfilter-btn.on {
+  background: var(--bg-2);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.imp3-kindfilter-pop {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  min-width: 150px;
+  z-index: 60;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+}
+.imp3-kindfilter-pop button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  width: 100%;
+  padding: 6px 9px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .imp3-kindfilter-pop button:hover {
+    background: var(--hover);
+  }
+}
+.imp3-kindfilter-pop button.sel {
+  background: var(--selected);
+  font-weight: 600;
+  color: var(--accent);
+}
+.imp3-kindfilter-pop button.sel i {
+  color: var(--accent);
+}
+.imp3-kindfilter-pop button i {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--faint);
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+/* ── queue ────────────────────────────────────────────────────────────────── */
+.imp3-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.imp3-queue-h {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0 2px;
+}
+.imp3-queue-t {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--warn);
+}
+.imp3-queue-n {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.imp3-qcard {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  padding: 13px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.imp3-qcard.flash {
+  animation: imp3flash 1.5s ease;
+}
+/* Neutral, not green (owner, 2026-07-27: "stop having that green color border and that
+   text") — deliberate deviation from the handoff's own .done/.after-import treatment, which
+   reads as a loud success state across many rows now that a confident default counts as
+   decided immediately instead of only after an explicit tap. */
+.imp3-qcard.done {
+  border-color: var(--line-strong);
+}
+.imp3-qcard-top {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.imp3-qn {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--faint);
+  letter-spacing: 0.05em;
+}
+.imp3-qtitle {
+  font-size: 13px;
+  color: var(--muted);
+}
+.imp3-qtitle b {
+  color: var(--ink);
+}
+.imp3-conf {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--warn);
+}
+.imp3-qcard-done {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.imp3-qcard-done i {
+  font-style: normal;
+}
+.imp3-why {
+  display: flex;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.imp3-why i {
+  color: var(--lucius);
+  font-style: normal;
+  flex: none;
+}
+.imp3-fixrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.imp3-fixrow input {
+  width: 100px;
+  background: var(--bg-2);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+}
+.imp3-fixgo {
+  background: var(--primary);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.imp3-fixno {
+  background: none;
+  border: none;
+  color: var(--faint);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.imp3-undo {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--faint);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+@media (hover: hover) {
+  .imp3-undo:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+
+/* ── compare ──────────────────────────────────────────────────────────────── */
+.imp3-cmp {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: stretch;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 11px 13px;
+}
+.imp3-cmp-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.imp3-cmp-h {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  margin-bottom: 2px;
+}
+.imp3-cmp-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.imp3-cmp-lk {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--line-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+@media (hover: hover) {
+  .imp3-cmp-lk:hover {
+    color: var(--primary);
+    text-decoration-color: var(--primary);
+  }
+}
+.imp3-cmp-lk:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.imp3-cmp-src {
+  font-size: 11px;
+  color: var(--faint);
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+.imp3-cmp-src.pad {
+  padding: 2px;
+}
+.imp3-cmp-facts {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.imp3-cmp-facts b {
+  font-size: 13px;
+  color: var(--ink);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.imp3-cmp-facts .hi {
+  color: var(--warn);
+}
+.imp3-cmp-facts b.hi {
+  color: var(--warn);
+}
+.imp3-orig {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+/* The boundary bucket's amount cell is a plain inline span, not the flex-column
+   .imp3-arow-amtwrap every other row uses, so its original needs the line break spelled out —
+   otherwise it runs on after the settled figure instead of sitting under it like everywhere
+   else. Right-aligned to match the amount it belongs to. */
+.acct-stmtview-check-row .nums .imp3-orig {
+  display: block;
+  text-align: right;
+}
+.imp3-cmp-mid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  border-left: 1px dashed var(--line);
+  border-right: 1px dashed var(--line);
+}
+.imp3-cmp-eq {
+  color: var(--good);
+  font-size: 15px;
+  font-weight: 800;
+}
+.imp3-cmp-drift {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent);
+  border-radius: 7px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+/* ── audit sections ───────────────────────────────────────────────────────── */
+.imp3-sec {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+  overflow: clip;
+}
+/* a popover inside a section must not be clipped by `overflow: clip` — the LinkPicker
+   renders position:fixed, but the section still needs to release the clip while open. */
+.imp3-sec:has(.imp3-lpick-pop) {
+  overflow: visible;
+}
+.imp3-sec-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+@media (hover: hover) {
+  .imp3-sec-h:hover {
+    background: var(--hover);
+  }
+}
+.imp3-sec-badge {
+  flex: none;
+  min-width: 22px;
+  height: 20px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 0 6px;
+}
+.imp3-sec.link .imp3-sec-badge {
+  background: color-mix(in srgb, var(--good) 16%, transparent);
+  color: var(--good);
+}
+.imp3-sec.new .imp3-sec-badge {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--primary);
+}
+.imp3-sec.skip .imp3-sec-badge {
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn);
+}
+.imp3-sec.ledger .imp3-sec-badge {
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn);
+}
+.imp3-sec.stmt .imp3-sec-badge {
+  background: var(--surface2);
+  color: var(--muted);
+}
+.imp3-qchip {
+  flex: none;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.imp3-qchip.open {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent);
+}
+/* The weak band's row chip. Muted on purpose — `.open` above is amber because it means "we
+   are waiting on you"; a possible match is waiting on nobody (SIUM-WEAK-QUIET). */
+.imp3-qchip.maybe {
+  color: var(--faint);
+  background: var(--selected);
+}
+.imp3-qchip.done {
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 11%, transparent);
+}
+.imp3-qchip.skip {
+  color: var(--bg);
+  background: var(--warn);
+  font-weight: 800;
+}
+/* The prototype uses bare single-word MODIFIERS (`link`, `new`, `skip`, …). `link` collides with
+   the app's global `.link` utility (index.css: accent colour + underline). On a leaf (a verdict
+   chip) that only mis-styled the chip. On a CONTAINER it is far worse: the "Already in your
+   ledger — will link" band renders as `<section class="imp3-sec link">`, and per CSS Text
+   Decoration §2.2 a `text-decoration` PROPAGATES to every in-flow descendant box and CANNOT be
+   cancelled by those descendants — so every date, payee, note and amount in that whole section
+   was underlined, and no amount of `text-decoration: none` on the children could remove it. It
+   has to die on the element that declares it. Neutralise the utility across the flow rather than
+   renaming the prototype's modifier — the class vocabulary IS the contract here. Real `<a>`s keep
+   their underline. `color` is reset on the section too: the utility also repaints inherited text
+   --accent, which only stayed invisible because the children happen to set colours explicitly. */
+.imp-pane--ws .link:not(a) {
+  text-decoration: none;
+}
+.imp3-sec.link {
+  color: inherit;
+}
+.imp3-dchip,
+.imp3-qchip {
+  text-decoration: none;
+}
+.imp3-dchip {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.imp3-dchip.link {
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+}
+.imp3-dchip.new {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.imp3-dchip.skip {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+}
+/* production-only decision states with no prototype twin: an L0 duplicate and an FX leg
+   folded into its partner transfer. Both are IMMUTABLE outcomes, not user choices, so they
+   read as quiet neutral facts rather than one of the three coloured verdicts. */
+.imp3-dchip.dup,
+.imp3-dchip.absorbed,
+.imp3-dchip.ledger {
+  color: var(--muted);
+  background: var(--surface2);
+}
+/* production-only: how near a window cut-off a ledger-only entry sits (server-decided, see
+   ledger_diff._near_cutoff). Amber-adjacent-but-quieter than .skip — it QUALIFIES the "Ledger
+   only" chip beside it ("…but it's probably on the next statement"), it is not a fourth
+   verdict. Unlike its siblings it may SHRINK: the status rail is a fixed 212px shared with
+   the band chip, and a truncated hint still beats pushing the amount column off the row —
+   the phrase is repeated in full in the row body and in the boundary bucket below. */
+.imp3-dchip.cutoff {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+/* A ledger-only entry the reviewer MARKED for deletion. Reads as the loudest verdict on the
+   screen because it is the only destructive one — it replaces the neutral "Ledger only" chip
+   rather than sitting beside it, since the row's status is now the staged outcome, not its
+   provenance. */
+.imp3-dchip.willdelete {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.imp3-sec-t {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.imp3-sec-sub {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-left: auto;
+  margin-right: 8px;
+  /* A signed figure must never break between its sign and digits ("–" / "$750.03"). */
+  white-space: nowrap;
+}
+.imp3-chev {
+  color: var(--faint);
+  transition: transform 0.15s;
+  flex: none;
+}
+.imp3-chev.open {
+  transform: rotate(180deg);
+}
+.imp3-sec-body {
+  border-top: 1px solid var(--line);
+}
+.imp3-arow {
+  border-bottom: 1px solid var(--line);
+}
+.imp3-arow:last-child {
+  border-bottom: none;
+}
+/* Marked for deletion — a tinted row with a danger rail, so a scan of the section reads the
+   marked set at a glance without opening every disclosure. Deliberately NOT struck-through or
+   faded: the entry still exists and the user must be able to read what they are about to
+   destroy. */
+.imp3-arow.marked-delete {
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+.imp3-arow.flash {
+  animation: imp3flash 1.5s ease;
+}
+@keyframes imp3flash {
+  0%,
+  60% {
+    background: color-mix(in srgb, var(--warn) 10%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+.imp3-arow-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+}
+@media (hover: hover) {
+  .imp3-arow-line:not(.static):hover {
+    background: var(--hover);
+  }
+}
+.imp3-arow-line.static {
+  cursor: default;
+}
+.imp3-arow-date {
+  flex: none;
+  width: 48px;
+  font-size: 11.5px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.imp3-lo-why {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+.imp3-lo-ic {
+  color: var(--warn);
+  font-size: 12px;
+  flex: none;
+}
+.imp3-lo-t {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+/* The "already imported" reason line doubles as the open-the-existing-transaction control
+   when a ledger id backs it — the whole line is the tap target. It used to carry no cue at all
+   (only a desktop hover state), so on a phone nothing said it opened anything; the trailing
+   "Open ›" is that cue. */
+.imp3-lo-why-btn {
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+@media (hover: hover) {
+  .imp3-lo-why-btn:hover .imp3-lo-t {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent);
+    text-underline-offset: 2px;
+  }
+}
+.imp3-lo-why-btn:disabled {
+  cursor: default;
+}
+.imp3-lo-open {
+  flex: none;
+  margin-left: auto;
+  padding-left: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  white-space: nowrap;
+}
+.imp3-arow-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: none;
+  width: 252px;
+}
+.imp3-arow-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  width: 150px;
+  flex-wrap: wrap;
+  row-gap: 3px;
+}
+/* The only column whose content has no natural width bound: an ordinary chip is "Startup Costs",
+   a transfer identity is "Transfer ← DBS Multiplier (SGD)". It keeps the 140px rail as a FLOOR
+   (so every ordinary row's chip and the pencil beside it stay on the same x as before), stretches
+   to content up to a cap, and ellipsizes past that rather than overrunning the amount column
+   (owner, 2026-07-29). No grow factor — the amount's auto margin still owns the row's slack. */
+.imp3-arow-catcol {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 140px;
+  max-width: 260px;
+}
+.imp3-arow-catcol .imp3-cat {
+  flex: 0 1 auto;
+}
+.imp3-arow-desc {
+  font-size: 10.5px;
+  color: var(--fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.imp3-arow-amtwrap {
+  margin-left: auto;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.imp3-arow-amtwrap .imp3-arow-amt {
+  margin-left: 0;
+}
+/* The complete raw bank descriptor, WRAPPED — the one surface guaranteeing the whole text is
+   readable. The row's own name rail ellipsizes at a fixed width and a native tooltip is not a
+   way to read 14 rows, so a row can no longer be categorized from the list alone (owner,
+   2026-08-09: "there must be a way that users can see the entire description"). Every row
+   expands, duplicates included. */
+.imp3-arow-full {
+  margin: 0 0 2px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.imp3-arow-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.imp3-arow-amt {
+  margin-left: auto;
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.imp3-arow-amt.pos {
+  color: var(--good);
+}
+.imp3-arow-amt.dim {
+  color: var(--faint);
+  text-decoration: line-through;
+}
+/* always-on preview of the matched ledger entry, nested as a quieter panel under the statement
+ * row — not a peer row — so it reads as confirming/supporting data, not a duplicate. Only the
+ * amount escalates to a loud warning color, and only when it actually drifts from the statement;
+ * an exact match stays deliberately quiet instead of repeating the same bold number twice. */
+.imp3-arow-match {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 14px 9px 46px;
+  /* Right padding matches the statement row's own right inset (14px line padding + 12px gap +
+     12px chevron = 38px) so the two amounts' right edges line up — the statement row has no
+     trailing chevron of its own to reserve that space for. */
+  padding: 6px 24px 6px 10px;
+  border-radius: 9px;
+  background: var(--bg-2);
+  width: calc(100% - 60px);
+  border: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .imp3-arow-match:hover {
+    background: var(--hover);
+  }
+}
+.imp3-arow-match:disabled {
+  cursor: default;
+}
+.imp3-arow-match-ic {
+  flex: none;
+  color: var(--fg-3);
+  font-size: 10.5px;
+  margin-top: 2px;
+}
+.imp3-arow-match-tag {
+  flex: none;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  background: var(--surface2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 7px;
+  vertical-align: 1px;
+}
+.imp3-arow-match-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.imp3-arow-match-name {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.imp3-arow-match-facts {
+  display: flex;
+  gap: 7px;
+  font-size: 10.5px;
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+.imp3-arow-match-facts .hi {
+  color: var(--warn);
+  font-weight: 700;
+}
+/* The prototype's fixture source phrases are all short one-liners; a real match reason can be
+   a sentence, and the handoff's own rule is that nothing hides its facts — so this line WRAPS
+   instead of clipping. Same quiet type scale either way. */
+.imp3-arow-match-src {
+  font-size: 10px;
+  color: var(--fg-3);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+/* the band verdict reads as quiet supporting text here, never an underlined link — the
+   ledger line as a whole is already the clickable affordance */
+.imp3-arow-match-src .imp-rowmatch-txt {
+  text-decoration: none;
+}
+.imp3-arow-match-src .imp-rowmatch-txt.link {
+  color: var(--good);
+}
+/* min-width, not just text-align:right: flex:none sizes strictly to content, so with no extra
+   box width the right-align has nothing to align WITHIN — the amount's left edge (and so its
+   whole position) just followed however wide the neighboring "Off by X" chip happened to be
+   for that row, drifting row to row. A fixed-width slot pins its right edge to the same spot
+   regardless of the chip.
+   align-self:center, matching .imp-offby's own — the parent row is align-items:flex-start
+   (top), and the offby pill already overrides that for itself; without the same override here
+   the plain amount text stayed pinned to the top while the pill centered next to it, reading
+   as vertically offset. */
+.imp3-arow-match-amt {
+  flex: none;
+  min-width: 72px;
+  align-self: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-3);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.imp3-arow-match-amt .imp3-orig {
+  display: block;
+  font-size: 9.5px;
+}
+.imp3-arow-match-amt.drift {
+  color: var(--warn);
+  font-weight: 800;
+  font-size: 12px;
+}
+
+/* ── the WEAK band: a suggestion, drawn weaker than the match line above ───────────────────
+   RFC 2026-07-29 §D2/§D8 + SIUM-WEAK-QUIET. The engine's settled-drift tier scores BELOW the
+   review fence, so its row must not borrow either of the confident treatments beside it:
+
+   - never GREEN (`.imp3-arow-match`'s linked family) — nothing is being linked;
+   - never AMBER (`.imp3-qchip.open`, `.hi`, `.drift`) — amber on this screen is reserved for
+     "we are blocking on you", and a weak row is explicitly NOT blocking: its default action
+     is already the safe one (Import), and it never enters the Needs-you queue.
+
+   What is left is the honest reading: dashed and dimmed, a `?` where the solid `⇄` sits, and
+   an amount at normal weight in the muted ramp. The line carries NO dismissal of its own
+   (removed 2026-07-31): the row's segmented control already answers the question, since on a
+   maybe-match "Import" IS "not the same". */
+.imp3-arow-maybe {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-3);
+  margin: 0 14px 9px 46px;
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-4);
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  background: transparent;
+  width: calc(100% - 60px);
+}
+.imp3-arow-maybe-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.imp3-arow-maybe-main:disabled {
+  cursor: default;
+}
+.imp3-arow-maybe-ic {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--line-strong);
+  border-radius: 50%;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: var(--faint);
+}
+.imp3-arow-maybe-tag {
+  flex: none;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  background: transparent;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.imp3-arow-maybe-name {
+  min-width: 0;
+  flex: 1;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.imp3-arow-maybe-facts {
+  flex: none;
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--text-2xs);
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+/* Deliberately NOT `.imp3-arow-match-amt`'s bold/drift treatment: the figures being a little
+   apart is the whole premise of a weak match, so shouting the gap would be noise. */
+.imp3-arow-maybe-amt {
+  flex: none;
+  min-width: 72px;
+  text-align: right;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.imp3-arow-maybe-amt .imp3-orig {
+  display: block;
+  font-size: 9.5px;
+}
+.imp3-arow-body {
+  padding: 4px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.imp3-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface2);
+  border-radius: 7px;
+  padding: 3px 8px;
+  flex: none;
+  min-width: 0;
+}
+.imp3-cat i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.imp3-cat em {
+  font-style: normal;
+  color: var(--lucius);
+  font-size: 10px;
+}
+.imp3-cat.none {
+  color: var(--fg-3);
+}
+/* The label lives in its own span so it can ellipsize; min-width:0 is what lets a flex item
+   shrink below its text at all. */
+.imp3-cat > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.imp3-actrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.imp3-seg {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  overflow: clip;
+  align-self: flex-start;
+}
+.imp3-seg button {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--line);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.imp3-seg button:last-child {
+  border-right: none;
+}
+@media (hover: hover) {
+  .imp3-seg button:hover {
+    color: var(--ink);
+  }
+}
+.imp3-seg button.on {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── after-import projection ──────────────────────────────────────────────── */
+.imp3-after {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  background: var(--bg-2);
+  border: 1px dashed var(--line-strong);
+}
+.imp3-after-l {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.imp3-after-rec {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.imp3-after-rec b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.imp3-after-rec .amt {
+  font-variant-numeric: tabular-nums;
+}
+.imp3-after-rec em {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface2);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+.imp3-after-none {
+  font-size: 12px;
+  color: var(--warn);
+}
+/* A real projection shows the BEFORE → AFTER move on a changed fact (production keeps the
+   drift/date deltas the prototype's fixture never had); those three deltas keep their own
+   imp-after-old / -arrow / -new classes in accounts.css — one definition site each. */
+
+/* ── link picker ──────────────────────────────────────────────────────────── */
+.imp3-lpick {
+  position: relative;
+}
+.imp3-lpick-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 0;
+}
+@media (hover: hover) {
+  .imp3-lpick-btn:hover {
+    text-decoration: underline;
+  }
+}
+.imp3-lpick-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 14px;
+  z-index: 120;
+  min-width: 340px;
+  max-width: 360px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: 11px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.5);
+  padding: 5px;
+}
+.imp3-lpick-search {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  padding: 7px 9px;
+  margin-bottom: 4px;
+}
+.imp3-lpick-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.imp3-lpick-pop button {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .imp3-lpick-pop button:hover {
+    background: var(--hover);
+  }
+}
+.imp3-lpick-pop button:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+@media (hover: hover) {
+  .imp3-lpick-pop button:disabled:hover {
+    background: transparent;
+  }
+}
+.imp3-lpick-empty {
+  font-size: 12px;
+  color: var(--faint);
+  padding: 8px 10px;
+}
+.imp3-lpick-taken {
+  color: var(--faint);
+}
+/* Phone presentation of the same picker (LinkPicker renders these only under useIsMobile): a
+   full-width sheet docked to the bottom, riding above the keyboard exactly like every other
+   phone sheet — rendered INSIDE the import modal's DOM so its focus trap and outside-click
+   guard keep working (a body-portaled BottomSheet would sit outside both). */
+.imp3-lpick-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  background: rgba(0, 0, 0, 0.4);
+}
+.imp3-lpick-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(100dvh - var(--visual-viewport-top, 0px) - var(--visual-viewport-height, 100dvh));
+  z-index: 131;
+  display: flex;
+  flex-direction: column;
+  max-height: min(70dvh, var(--sheet-visible-max-height, 70dvh));
+  padding: 0 16px max(16px, env(safe-area-inset-bottom));
+  background: var(--modal-bg);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-modal);
+  animation: ui-modal-sheet-up 0.18s ease-out;
+}
+.imp3-lpick-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0 10px;
+}
+.imp3-lpick-sheet-t {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.imp3-lpick-sheet-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.imp3-lpick-sheet-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.imp3-lpick-sheet-list .imp3-lpick-search {
+  font-size: 14px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.imp3-lpick-sheet-list button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.imp3-lpick-sheet-list button + button {
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+.imp3-lpick-sheet-list button:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+.imp3-lpick-sheet-list .imp3-lpick-empty {
+  font-size: 14px;
+  padding: 12px 10px;
+}
+
+/* ── ledger check ─────────────────────────────────────────────────────────── */
+/* production-only, no prototype twin: the entry's facts as ONE ` · `-joined line — description
+   (only when the name rail clipped it) · account · statement · its bank reference. Owner,
+   2026-07-31: "show description, account, and externalrefs (only if it's a statement) on one
+   row together!". It was a label/value grid for one day; three stacked rows to carry three
+   short values read as a form, and the labels ("Description", "Already on") made claims the
+   values could not always support. Unlabelled and inline, each term speaks for itself.
+   WRAPS rather than ellipsizes: this is the one place a long bank descriptor is readable in
+   full, the closed line's 190px rail being a hard ellipsis with no tooltip left. */
+.imp3-lc-facts {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.imp3-lc-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.imp3-lc-acts {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.imp3-lc-acts .imp3-lpick-pop {
+  left: 0;
+}
+.imp3-lc-btn {
+  background: none;
+  border: none;
+  color: var(--faint);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 0;
+}
+@media (hover: hover) {
+  .imp3-lc-btn:hover {
+    color: var(--ink);
+    text-decoration: underline;
+  }
+}
+@media (hover: hover) {
+  .imp3-lc-btn.danger:hover {
+    color: var(--bad);
+  }
+}
+.imp3-lc-btn.imp {
+  flex: none;
+  color: var(--primary);
+}
+.imp3-lc-btn:disabled {
+  color: var(--fg-3);
+  cursor: default;
+  text-decoration: none;
+}
+
+/* unified action-CTA chrome — every "what happens to this row" control (the segmented
+   Import/Link/Leave out choices, Link to existing, Import) shares this same
+   bordered-pill shape and sits on the same imp3-actrow line, so none of them reads as
+   a stray text link or drifts to a different side of the row. */
+.imp3-actbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 6px 12px;
+  background: transparent;
+  text-decoration: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .imp3-actbtn:hover {
+    background: var(--hover);
+    text-decoration: none;
+    color: var(--ink);
+  }
+}
+.imp3-actbtn.on {
+  background: var(--selected);
+  color: var(--ink);
+  font-weight: 700;
+}
+.imp3-actbtn.imp3-lc-btn.imp,
+.imp3-actbtn.imp3-lpick-btn {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--line-strong));
+}
+@media (hover: hover) {
+  .imp3-actbtn.imp3-lpick-btn:hover {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+}
+
+/* ── teach ────────────────────────────────────────────────────────────────── */
+.imp3-teach {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lucius) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--lucius) 28%, var(--line));
+}
+.imp3-teach-t {
+  display: flex;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.imp3-teach-t i {
+  color: var(--lucius);
+  font-style: normal;
+  flex: none;
+}
+.imp3-teach-acts {
+  display: flex;
+  gap: 14px;
+  padding-left: 22px;
+}
+.imp3-teach-yes {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+@media (hover: hover) {
+  .imp3-teach-yes:hover {
+    text-decoration: underline;
+  }
+}
+.imp3-teach-no {
+  background: none;
+  border: none;
+  color: var(--faint);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.imp3-teach-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 22px;
+}
+.imp3-teach-edit textarea {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  resize: vertical;
+}
+.imp3-teach-edit textarea:focus {
+  outline: none;
+  border-color: var(--lucius);
+}
+.imp3-teach-save {
+  align-self: flex-start;
+  background: var(--primary);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.imp3-teach-save:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.imp3-teach-err {
+  font-size: 11.5px;
+  color: var(--bad);
+  padding-left: 22px;
+}
+
+/* ── footer ───────────────────────────────────────────────────────────────── */
+/* The production Modal's footer slot is a flex row with justify-content:flex-end, so the
+   ported bar has to claim the full width (and allow its note to shrink) or it sizes to
+   max-content and overflows off the card's left edge. */
+.imp3-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 22px 15px;
+  border-top: 1px solid var(--line);
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.imp3-foot-note {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-right: auto;
+  line-height: 1.5;
+  min-width: 0;
+}
+.imp3-foot-note b {
+  color: var(--ink);
+  font-weight: 700;
+}
+.imp3-foot-wait {
+  color: var(--warn);
+}
+/* The destructive term in the footer summary. It overrides the generic `b` ink above because a
+   deletion must not read as one more neutral outcome in the "link 1 · import 3" run. */
+.imp3-foot-note b.imp3-foot-del {
+  color: var(--danger);
+}
+.imp3-commit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+/* Primary blue like every other primary action in this flow (Read the statement, Done). The
+   handoff painted the ready state green, which read as a different kind of button. */
+.imp3-commit.ready {
+  background: var(--primary);
+  color: #fff;
+}
+@media (hover: hover) {
+  .imp3-commit.ready:hover {
+    background: color-mix(in srgb, var(--primary) 88%, #000);
+  }
+}
+.imp3-commit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* The commit round-trip can take a few seconds — a small spinner + "Booking…" so the wait
+   reads as in-progress, not stalled. */
+.imp3-commit-spin {
+  width: 13px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--radius-pill);
+  animation: ui-spin 0.7s linear infinite;
+  flex: none;
+}
+.imp3-commit:not(.ready):not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+}
+.imp3-btn2 {
+  flex: none;
+  padding: 9px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .imp3-btn2:hover {
+    color: var(--ink);
+    border-color: var(--fg-3);
+  }
+}
+/* The Booked screen's primary action (prototype DoneStep) — the app's primary color. */
+.imp3-lubtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--primary);
+}
+@media (hover: hover) {
+  .imp3-lubtn:hover {
+    background: color-mix(in srgb, var(--primary) 88%, #000);
+  }
+}
+.imp3-lubtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ── done ─────────────────────────────────────────────────────────────────── */
+.imp3-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 34px 22px 36px;
+  gap: 6px;
+}
+.imp3-done-ic {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--good) 16%, transparent);
+  color: var(--good);
+  font-size: 20px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.imp3-done-t {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.imp3-done-sub {
+  font-size: 13px;
+  color: var(--muted);
+}
+.imp3-done-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--faint);
+  margin-top: 8px;
+  max-width: 400px;
+  line-height: 1.5;
+}
+.imp3-done-taught {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--lucius);
+  justify-content: center;
+}
+.imp3-done-review {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.imp3-done-review-btn {
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  color: var(--primary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .imp3-done-review-btn:hover {
+    background: var(--hover);
+    border-color: var(--hover-line);
+  }
+}
+.imp3-done-review-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.imp3-done-reviewed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--good);
+  font-weight: 700;
+  justify-content: center;
+}
+.imp3-done-reviewed i {
+  font-style: normal;
+}
+.imp3-done-acts {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.imp3-done-err {
+  color: var(--bad);
+}
+
+/* ── production-only row detail, no prototype twin ───────────────────────────
+   The prototype's fixture rows carry no per-flag notes and no editors, so there is
+   nothing to port for these. Styled in the DESIGN'S OWN idioms — the recessed panel
+   under a row, the quiet `imp3-cmp-src` type scale, the one bordered-pill CTA family —
+   so they read as part of the same system rather than as a second visual language
+   bolted on. */
+.imp3-detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.imp3-detail-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* Inline payee/category edit — the row's displayed value doubles as the edit trigger; tapping
+   it swaps in the shared AddCategoryField/InlinePayee pickers (same components TxnRow uses),
+   closing on an outside click via InlineField. */
+/* Compact icon-only trigger, sized like the row's own chevron — sits in the header's existing
+   horizontal space (between the category pill and the amount), not a standing full-width row. */
+.imp3-editpencil {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .imp3-editpencil:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+.imp3-detail-note {
+  display: flex;
+  /* center, not baseline — baseline lines up TEXT baselines, so a padded pill button next to
+     plain text sits visibly taller/shorter than the text around it instead of centered on
+     the line. */
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+/* ── focus visibility (production a11y — the prototype has no focus rules) ─── */
+.imp3-scroll :focus-visible,
+.imp3-foot :focus-visible,
+.imp3-done :focus-visible,
+.imp3-lpick-pop :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── responsive ───────────────────────────────────────────────────────────────
+   The prototype is desktop-only (its own "known gaps" list says so). Below the
+   960px composition the fixed 48/190/212/140 rails stop fitting, so the row
+   reflows WITHOUT hiding a fact: the amount joins the first line, and the
+   decision + category rails drop to a second line at full width. */
+@media (max-width: 900px) {
+  .imp3-scroll {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .imp3-foot {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .imp3-arow-line {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .imp3-arow-main {
+    flex: 1;
+    width: auto;
+    min-width: 140px;
+  }
+  .imp3-arow-status {
+    width: auto;
+    order: 3;
+  }
+  /* The rails are gone here, so the cell hugs its chip again (no 140px floor) and may use the
+     whole wrapped line before the chip ellipsizes. */
+  .imp3-arow-catcol {
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    order: 4;
+  }
+  .imp3-arow-amtwrap {
+    order: 2;
+  }
+  .imp3-chev {
+    order: 5;
+    margin-left: auto;
+  }
+  .imp3-arow-match {
+    margin-left: 16px;
+    width: calc(100% - 32px);
+  }
+  .imp3-arow-maybe {
+    margin-left: 16px;
+    width: calc(100% - 32px);
+  }
+}
+@media (max-width: 640px) {
+  /* The head is title + Choose/Read/Decide + the Modal's own close button on one row. At 390px
+     the title wraps and the crumbs ran under the ✕, so the crumbs take their own line. */
+  .ui-modal-card:has(.imp) .ui-modal__heading {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .ui-modal-card:has(.imp) .ui-modal__subtitle {
+    flex-basis: 100%;
+  }
+  .imp3-crumbs {
+    font-size: 11px;
+    gap: 5px;
+  }
+  .imp3-crumb + .imp3-crumb::before {
+    width: 8px;
+    margin-right: 5px;
+  }
+  .imp3-scroll {
+    padding-left: 12px;
+    padding-right: 12px;
+    gap: 11px;
+  }
+  .imp3-foot {
+    flex-wrap: wrap;
+    padding: 10px 12px 12px;
+  }
+  .imp3-foot-note {
+    margin-right: 0;
+    flex: 1 1 100%;
+  }
+  .imp3-foot .imp3-commit {
+    flex: 1;
+  }
+  .imp3-facts {
+    gap: 8px 12px;
+  }
+  .imp3-facts-cost {
+    margin-left: 0;
+  }
+  /* the two compare columns stack; the mid rail becomes a horizontal divider so the
+     Δ badge still reads as "between" the two sides instead of floating. */
+  .imp3-cmp {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  .imp3-cmp-mid {
+    border-left: none;
+    border-right: none;
+    border-top: 1px dashed var(--line);
+    border-bottom: 1px dashed var(--line);
+    padding: 6px 0;
+  }
+  .imp3-arow-date {
+    width: auto;
+  }
+  .imp3-arow-match {
+    margin-left: 12px;
+    width: calc(100% - 24px);
+  }
+  /* The weak suggestion stacks under the statement line at full row width, its facts wrapping
+     rather than clipping (SIUM-RESPONSIVE). */
+  .imp3-arow-maybe {
+    margin-left: 12px;
+    width: calc(100% - 24px);
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+  .imp3-arow-maybe-main {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    row-gap: var(--space-1);
+  }
+  .imp3-arow-maybe-amt {
+    margin-left: auto;
+  }
+  .imp3-lpick-pop {
+    min-width: 0;
+    width: calc(100vw - 40px);
+    max-width: calc(100vw - 40px);
+  }
+  .imp3-teach-acts,
+  .imp3-teach-edit {
+    padding-left: 0;
+  }
+  /* Additive, per the handoff's own "desktop-first, no narrow pass" note: the section label
+     and its sub-hint sit on one baseline row by design, which at 390px wraps BOTH of them.
+     Stack instead — nothing is hidden, the reading order is unchanged. */
+  .imp3-cfg-l {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  /* B20 processing-step lines: each its own centered row already (block-level, 100% width) —
+     just hold the font size to match .imp3-phase and rule out any horizontal scroll from the
+     stage bar's fixed-width segments. */
+  .imp3-stagebar {
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .imp3-retry,
+  .imp3-elapsed,
+  .imp3-hint {
+    font-size: 12.5px;
+  }
+  .imp3-bgbtn {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+/* ── phone (≤640px): one sheet shape across the whole flow ─────────────────────
+   Choose / Read / Booked ride the shared Modal's bottom sheet, but Decide uses the
+   `workspace` size, which the Modal deliberately keeps a near-full-screen CARD on phones — so the
+   modal changed shape (full-width sheet → 350px floating card → sheet) at every step. Scoped to
+   this flow with :has() so no other workspace modal changes: Decide docks to the bottom edge,
+   full width, under the same status-bar gap and keyboard lift as every other phone sheet. */
+@media (max-width: 640px) {
+  .modal-overlay--workspace:has(.imp-pane--ws) {
+    align-items: flex-end;
+    padding: 0;
+    padding-bottom: calc(
+      100dvh - var(--visual-viewport-top, 0px) - var(--visual-viewport-height, 100dvh)
+    );
+  }
+  .ui-modal-card:has(.imp-pane--ws) {
+    width: 100%;
+    max-width: none;
+    height: var(--sheet-visible-max-height);
+    max-height: var(--sheet-visible-max-height);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    animation: ui-modal-sheet-up 0.18s ease-out;
+  }
+  /* One 16px phone gutter for the whole flow. It used to be 25px (Choose), 35px (Decide), 13px
+     (Decide footer) and 47px (Booked) from the sheet's edge — padding stacked from the Modal card,
+     the `.imp` wrapper, the pane and `.imp3-done`, each sized for a 960px desktop sheet. */
+  .ui-modal-card:has(> .ui-modal__body > .imp):not(:has(.imp-pane--ws)) {
+    padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+    gap: 12px;
+  }
+  .ui-modal-card:has(.imp-pane--ws) .ui-modal__head {
+    padding: 12px 16px;
+  }
+  .ui-modal-card:has(.imp-pane--ws) > .ui-modal__body > .imp {
+    padding-inline: 0;
+  }
+  .imp-pane--ws.imp3-scroll {
+    padding-inline: 16px;
+  }
+  .imp3-foot {
+    padding-inline: 16px;
+  }
+  .imp3-done {
+    padding-inline: 0;
+  }
+  /* Filter chips: ONE line, always. Wrapping made the list jump whenever a decision added or
+     removed a chip (Link ⇄ Import adds "Import 1", the row rewraps, everything below drops 29px).
+     Compact enough that the usual four chips fit a 375px phone; when more do appear the row
+     scrolls, and a right-edge shadow — painted only while content runs past the edge (the
+     background-attachment local/scroll pair) — says so. */
+  .imp3-filter-scroll {
+    gap: 3px;
+    background:
+      linear-gradient(to left, var(--modal-bg) 40%, transparent) right center / 28px 100% no-repeat
+        local,
+      radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.16), transparent) right center /
+        12px 100% no-repeat scroll;
+  }
+  .imp3-filter button {
+    padding: 5px 7px;
+    gap: 5px;
+  }
+  .imp3-filter button i {
+    padding: 1px 5px;
+  }
+  /* Footer clears the home indicator. */
+  .imp3-foot {
+    padding-bottom: max(15px, env(safe-area-inset-bottom));
+  }
+  /* Row actions — ONE control size on a phone. The segment (Link / Import / Leave out) was 27px,
+     the pill beside it (Link to existing, Change match, Unlink) 44px, so the two sat on
+     different centres; the ledger-only row's Open / Link to a new row / Delete / Leave it were
+     19px bare text links. Every row-level control is now a 40px bordered control with a 13px
+     label, in the handoff's own pill family. */
+  .imp3-actrow,
+  .imp3-lc-acts {
+    gap: 8px;
+  }
+  /* A three-way segment plus a second action (Unlink, Change match) never fits one phone line,
+     so the action wrapped underneath at its own width — a ragged two-line row. Stack the row on
+     purpose instead: the segment spans the full width in equal parts, and each other action is a
+     full-width control beneath it, whatever the label lengths. */
+  .imp3-actrow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .imp3-actrow .imp3-seg {
+    display: flex;
+    align-self: stretch;
+  }
+  .imp3-actrow .imp3-seg button {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+  .imp3-actrow > .imp3-actbtn,
+  .imp3-actrow > .imp3-lpick,
+  .imp3-actrow > .imp3-lpick-btn,
+  .imp3-actrow > .imp3-lpick .imp3-lpick-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .imp3-actrow > .imp3-lpick-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    font-size: 13px;
+  }
+  .imp3-seg button,
+  .imp3-actrow .imp3-actbtn,
+  .imp3-lc-acts .imp3-lc-btn,
+  .imp3-lc-acts .imp3-lpick-btn {
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  /* The segment's own 1px border wraps its buttons: 38px inside makes it 40px outside, the same
+     as the bordered buttons beside and beneath it. */
+  .imp3-seg button {
+    min-height: 38px;
+  }
+  .imp3-lc-acts .imp3-lc-btn,
+  .imp3-lc-acts .imp3-lpick-btn {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 9px;
+    color: var(--muted);
+  }
+  .imp3-lc-acts .imp3-lc-btn.imp,
+  .imp3-lc-acts .imp3-lpick-btn {
+    color: var(--primary);
+    border-color: color-mix(in srgb, var(--primary) 45%, var(--line-strong));
+  }
+  .imp3-lc-acts .imp3-lc-btn.danger {
+    color: var(--bad);
+  }
+  /* Four actions never fit one phone line; wrapping left "Leave it" alone on a second row.
+     An even two-column grid keeps every action the same width and the rows aligned. */
+  .imp3-lc-acts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .imp3-lc-acts .imp3-lc-btn,
+  .imp3-lc-acts .imp3-lpick,
+  .imp3-lc-acts .imp3-lpick-btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+  /* One action-button size for the whole flow on a phone: Read the statement, Back, Confirm,
+     Done, View linked & imported and Import another are all 46px tall with centred labels.
+     Confirm kept its 36px desktop padding and, stretched by the footer, a left-aligned label. */
+  .imp3-commit,
+  .imp3-foot .imp3-btn2,
+  .imp3-drop-cta .ui-btn,
+  .imp3-done-acts .imp3-lubtn,
+  .imp3-done-acts .imp3-btn2 {
+    min-height: 46px;
+    justify-content: center;
+    text-align: center;
+  }
+  /* Booked: the three actions never fit on one row at phone width, so "Done" was pushed off the
+     sheet's edge. Stack them full-width with the primary action first. */
+  /* Choose: the reassurance line sits above a full-width primary action instead of squeezing it
+     into a two-line pill beside the text. */
+  .imp3-drop-cta {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .imp3-drop-cta .ui-btn {
+    justify-content: center;
+    padding: 13px 16px;
+  }
+  .imp3-drop-cost {
+    margin-right: 0;
+    text-align: center;
+  }
+  .imp3-done {
+    padding-top: 18px;
+  }
+  .imp3-done-acts {
+    flex-direction: column;
+    align-self: stretch;
+  }
+  .imp3-done-acts .imp3-lubtn {
+    order: -1;
+    justify-content: center;
+    padding: 13px 16px;
+  }
+  .imp3-done-acts .imp3-btn2 {
+    padding: 12px 14px;
+    text-align: center;
+  }
+}

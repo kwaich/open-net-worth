@@ -1,0 +1,232 @@
+/* Overview v2 — Content widget group styles (text, image, embed, lux-html;
+   lux-chart renders via the shared .ov-widget-placeholder, no styles of its
+   own). Mirrors netWorth.css's conventions (--ov-prefixed classes, the shared
+   var(--line)/var(--surface2)/var(--radius-*) tokens). */
+
+/* ── Text (Markdown note) ──────────────────────────────────────────────── */
+
+.ov-note-textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+}
+
+.ov-note-md {
+  cursor: text;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.ov-note-md > :first-child {
+  margin-top: 0;
+}
+
+.ov-note-md > :last-child {
+  margin-bottom: 0;
+}
+
+.ov-note-md h1,
+.ov-note-md h2,
+.ov-note-md h3 {
+  font-weight: 700;
+  margin: 10px 0 6px;
+}
+
+.ov-note-md h1 {
+  font-size: 17px;
+}
+
+.ov-note-md h2 {
+  font-size: 15px;
+}
+
+.ov-note-md h3 {
+  font-size: 13.5px;
+}
+
+.ov-note-md p {
+  margin: 0 0 7px;
+}
+
+.ov-note-md ul,
+.ov-note-md ol {
+  margin: 0 0 7px;
+  padding-left: 20px;
+}
+
+.ov-note-md li {
+  margin: 2px 0;
+}
+
+.ov-note-md code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11.5px;
+  background: var(--surface2);
+  border-radius: var(--radius-xs);
+  padding: 1px 5px;
+}
+
+.ov-note-md a {
+  color: var(--accent);
+}
+
+.ov-note-empty {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+}
+
+/* ── Image ─────────────────────────────────────────────────────────────── */
+
+.ov-image-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ov-image-setup-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ov-image-setup-row > .ui-input {
+  flex: 1;
+}
+
+.ov-image-body {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface2);
+}
+
+.ov-image-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ov-image-broken {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.ov-image-change {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.12s;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  padding: 5px 11px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .ov-image-body:hover .ov-image-change {
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) {
+  .ov-image-change:hover {
+    color: var(--ink);
+  }
+}
+
+/* ── Embed ─────────────────────────────────────────────────────────────── */
+
+.ov-embed-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ov-embed-setup-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ov-embed-setup-row > .ui-input {
+  flex: 1;
+}
+
+.ov-embed-body {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.ov-embed-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+.ov-embed-change {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.12s;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  padding: 5px 11px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .ov-embed-body:hover .ov-embed-change {
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) {
+  .ov-embed-change:hover {
+    color: var(--ink);
+  }
+}
+
+/* ── Lucius custom (lux-html) ──────────────────────────────────────────── */
+
+.ov-luxhtml-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ov-luxhtml-pick-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ov-luxhtml-pick-row > .ui-select {
+  flex: 1;
+}

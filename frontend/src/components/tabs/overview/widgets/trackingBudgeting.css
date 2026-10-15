@@ -1,0 +1,97 @@
+/* Overview v2 — Tracking/Budgeting widget styles (debt paydown, budget vs
+   actual). */
+
+.ov-ins-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ov-ins-gapnote {
+  margin-bottom: 2px;
+}
+
+/* ── Generic dense list rows (debt / recurring) ──────────────────────────── */
+
+.ov-ins-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ov-wmh-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.ov-wmh-row:last-child {
+  border-bottom: none;
+}
+
+.ov-iet-lab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-iet-lab i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+.ov-wmh-val {
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+/* ── Budget vs actual — progress bars ─────────────────────────────────────── */
+
+.ov-bva {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ov-bva-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ov-bva-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.ov-bva-nm {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-bva-fig {
+  white-space: nowrap;
+}
+
+.ov-bva-fig.neg {
+  color: var(--bad);
+}
+
+/* The old track/fill bar classes retired here — the fill bar now renders via the shared
+   <Meter> primitive (frontend/src/components/ui/Meter.tsx), which owns its own track/fill CSS. */

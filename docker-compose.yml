@@ -1,0 +1,77 @@
+# The whole Docker install, on any OS with Docker (the one supported path on Windows):
+#
+#   AUTH_PASSWORD=<pick a password> docker compose up -d
+#
+# Pulls the published image — no local build, no Node, no Python, no clone: this file is a
+# release asset (github.com/open-net-worth-ai/open-net-worth-releases/releases/latest/download/
+# docker-compose.yml) — runs backend migrations
+# automatically at boot, and serves the app on http://localhost:8080 (PORT= to change).
+# Data persists in a named volume across `docker compose down` (only `docker compose
+# down -v` removes it); `restart: unless-stopped` brings it back after a crash or a reboot.
+#
+# Put `AUTH_PASSWORD=...` in a `.env` file next to this one to make it stick: Compose reads
+# that file for ${...} substitution on every `up`. To build from this checkout instead of
+# pulling: `docker compose -f docker-compose.yml -f compose.build.yml up --build -d`.
+services:
+  app:
+    # Pinned to the release this file shipped with (stamped by scripts/stamp_version.py), so
+    # the compose file and the app it starts always agree. To run another release:
+    #   ONW_VERSION=0.2.1 docker compose up -d
+    image: ghcr.io/open-net-worth-ai/open-net-worth:${ONW_VERSION:-0.1.2}
+    container_name: open-net-worth
+    ports:
+      # Bound to the HOST'S LOOPBACK ONLY — reachable from this machine, not
+      # your LAN. Docker's bridge networking means every published connection
+      # (including your own browser on this machine) arrives at the app as
+      # coming from the bridge gateway, never as 127.0.0.1 — so the app's
+      # normal "you're on the box, no login needed" loopback-trust shortcut
+      # does NOT apply inside Docker, regardless of this binding. That is why
+      # AUTH_PASSWORD below is required here, not merely optional the way it
+      # is on a bare-metal install.
+      - "127.0.0.1:${PORT:-8080}:8080"
+      # To deliberately reach this from other devices on your LAN (e.g. a home
+      # server you check from your phone), widen the bind — understand this
+      # exposes a live financial app to every device on that network, with
+      # only your instance password standing between them and your data:
+      # - "0.0.0.0:${PORT:-8080}:8080"
+    environment:
+      # REQUIRED — Compose refuses to start without it, on purpose. With no password and
+      # no loopback trust (see the ports comment), nothing can ever become the operator:
+      # the app looks fine, then every action fails, and there is no way to set a password
+      # from the browser afterwards — only the recovery path in
+      # docs/product/getting-started/first-run.md#docker. The value seeds the password
+      # only while none is stored yet; change it later in Settings → Security.
+      AUTH_PASSWORD: ${AUTH_PASSWORD:?AUTH_PASSWORD is required for a Docker install - run AUTH_PASSWORD=<your password> docker compose up -d, or put it in a .env file next to docker-compose.yml}
+    volumes:
+      - onw-data:/home/onw/.open-net-worth
+      # The Claude Code / Codex / OpenCode CLI providers (Settings → AI) run inside this
+      # container's OWN filesystem, so they start with NO login — your host's
+      # subscription auth doesn't cross the container boundary on its own. To
+      # share it in:
+      #   1. On the HOST: `claude setup-token` (one-time; needs a browser) if you
+      #      haven't already got a `~/.claude/.credentials.json` — macOS normally
+      #      keeps this in the Keychain instead, which a Linux container can't
+      #      read at all, so this step is required even if `claude` already works
+      #      in your terminal. For Codex, `codex login` is enough — it's already
+      #      file-based at `~/.codex/auth.json`. For OpenCode, `opencode auth login`
+      #      is enough too — file-based at `~/.local/share/opencode/auth.json`.
+      #   2. Uncomment the bind mounts below and restart. Each mounts ONE
+      #      credential file, not the whole config directory, to avoid handing
+      #      the container the CLI's unrelated local history/telemetry too.
+      #   Mounting a path that doesn't exist yet on the host creates an empty
+      #   DIRECTORY there instead of a file — run the login step BEFORE
+      #   uncommenting, or these silently become useless empty folders.
+      #   Read-write on purpose: the CLIs rewrite their token file on refresh —
+      #   read-only here would break renewal once the initial token expires.
+      # - ${HOME}/.claude/.credentials.json:/home/onw/.claude/.credentials.json
+      # - ${HOME}/.codex/auth.json:/home/onw/.codex/auth.json
+      # - ${HOME}/.local/share/opencode/auth.json:/home/onw/.local/share/opencode/auth.json
+    # Every other variable in .env.example is optional. To load a whole .env file
+    # into the container (not just for ${...} substitution above), uncomment:
+    # env_file:
+    #   - .env
+    restart: unless-stopped
+
+volumes:
+  onw-data:
+    name: open-net-worth-data

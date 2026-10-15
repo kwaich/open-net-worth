@@ -1,0 +1,216 @@
+[
+  {
+    "name": "Overview",
+    "widgets": [
+      {
+        "defId": "hero",
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 224
+      },
+      {
+        "defId": "attention",
+        "x": 0,
+        "y": 224,
+        "w": 12,
+        "h": 196
+      },
+      {
+        "defId": "briefing",
+        "x": 0,
+        "y": 420,
+        "w": 6,
+        "h": 196
+      },
+      {
+        "defId": "upcoming",
+        "x": 6,
+        "y": 420,
+        "w": 6,
+        "h": 196
+      },
+      {
+        "defId": "alloc",
+        "x": 0,
+        "y": 616,
+        "w": 4,
+        "h": 260
+      },
+      {
+        "defId": "reach",
+        "x": 4,
+        "y": 616,
+        "w": 4,
+        "h": 220
+      },
+      {
+        "defId": "venues",
+        "x": 8,
+        "y": 616,
+        "w": 4,
+        "h": 260
+      }
+    ]
+  },
+  {
+    "name": "Investing",
+    "widgets": [
+      {
+        "defId": "networth-chart",
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 224
+      },
+      {
+        "defId": "movers",
+        "x": 0,
+        "y": 224,
+        "w": 6,
+        "h": 168
+      },
+      {
+        "defId": "inv-perf",
+        "x": 6,
+        "y": 224,
+        "w": 6,
+        "h": 260
+      },
+      {
+        "defId": "inv-drift",
+        "x": 0,
+        "y": 392,
+        "w": 4,
+        "h": 240
+      },
+      {
+        "defId": "dividends",
+        "x": 4,
+        "y": 484,
+        "w": 6,
+        "h": 140
+      },
+      {
+        "defId": "fx",
+        "x": 0,
+        "y": 632,
+        "w": 4,
+        "h": 112
+      }
+    ]
+  },
+  {
+    "name": "Cash flow",
+    "widgets": [
+      {
+        "defId": "spending",
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 168
+      },
+      {
+        "defId": "cashflow",
+        "x": 6,
+        "y": 0,
+        "w": 4,
+        "h": 112
+      },
+      {
+        "defId": "calendar",
+        "x": 0,
+        "y": 168,
+        "w": 6,
+        "h": 248
+      },
+      {
+        "defId": "bud-vsactual",
+        "x": 6,
+        "y": 112,
+        "w": 4,
+        "h": 300
+      }
+    ]
+  },
+  {
+    "name": "Plan",
+    "widgets": [
+      {
+        "defId": "goals",
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 168
+      },
+      {
+        "defId": "plan-fire",
+        "x": 4,
+        "y": 0,
+        "w": 6,
+        "h": 280
+      },
+      {
+        "defId": "plan-runway",
+        "x": 0,
+        "y": 280,
+        "w": 6,
+        "h": 280
+      },
+      {
+        "defId": "crossover",
+        "x": 6,
+        "y": 280,
+        "w": 4,
+        "h": 190
+      },
+      {
+        "defId": "ins-debt",
+        "x": 0,
+        "y": 560,
+        "w": 6,
+        "h": 240
+      }
+    ]
+  },
+  {
+    "name": "Reports",
+    "widgets": [
+      {
+        "defId": "rep-spendcat",
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 300
+      },
+      {
+        "defId": "rep-trends",
+        "x": 4,
+        "y": 0,
+        "w": 6,
+        "h": 240
+      },
+      {
+        "defId": "rep-incexp",
+        "x": 0,
+        "y": 300,
+        "w": 6,
+        "h": 240
+      },
+      {
+        "defId": "rep-savings",
+        "x": 6,
+        "y": 240,
+        "w": 3,
+        "h": 188
+      },
+      {
+        "defId": "rep-merchants",
+        "x": 0,
+        "y": 540,
+        "w": 4,
+        "h": 240
+      }
+    ]
+  }
+]

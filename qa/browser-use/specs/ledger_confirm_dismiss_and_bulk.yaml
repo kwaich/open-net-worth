@@ -1,0 +1,82 @@
+# Spec: LCG-03 — dismissing writes nothing; a bulk add is ONE card with the TRUE row count
+# Covers: the dismissed-card state (no redemption, nothing written) and
+#         services/ledger_preview.preview_bulk (one txn_bulk card for N rows, 12-row sample,
+#         count + totals over ALL N).
+# Requires ANTHROPIC_API_KEY; SKIP otherwise.
+#
+# This spec dismisses rather than confirms, so it must leave the book unchanged. It runs
+# against the throwaway qa-data clone regardless.
+id: LCG-03
+# Budgets 120s + 45s of waiting in one step alone, then a bulk card and a ledger re-check;
+# the runner's 120s default made a timeout the only possible outcome.
+timeout_seconds: 600
+acceptance_ids:
+  - LCG-DISMISS-WRITES-NOTHING
+  - LCG-BULK-ONE-CARD-TRUE-COUNT
+title: "Dismissing a card writes nothing; a multi-row add shows ONE card with the true count"
+description: >
+  One card for N rows is the contract — fanning a bulk write into N confirmations just moves
+  the round-trips from the API to the human. The card samples at most 12 rows for display but
+  must state the TRUE total. And dismissing any card must write nothing at all: the staged
+  plan is simply never redeemed.
+
+acceptance_criteria:
+  - AC1: A multi-row booking request produces exactly ONE confirm card, not one per row
+  - AC2: That card states the true total row count (the number asked for), even if it
+         displays fewer sample rows
+  - AC3: Dismissing the card writes nothing — the register is unchanged
+  - AC4: The dismissed card renders a visibly resolved/disabled state
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Learn a real account name and record the register state.
+  Open "Cash"/"Accounts", note one asset account's exact NAME. Then open the transactions
+  register and record the top row's description + amount (and the row count if visible), so
+  you can tell afterwards whether anything was written.
+
+  Step 2 — Open chat and check for an API key.
+  If the chat shows an "API key" / "not configured" / Settings notice, return
+  "SKIP: AI not configured — cannot test the ledger confirm card".
+
+  Step 3 — Ask for a multi-row booking.
+  Type exactly, substituting the account name — this is FOURTEEN rows on purpose, so it
+  exceeds the card's 12-row display sample:
+    book these 14 coffees from <ACCOUNT NAME>, one per day from 2026-03-01 to 2026-03-14, 4.50 each, description Morning coffee
+  Press Enter. Wait up to 120 seconds. If Lucius asks a clarifying question, answer briefly
+  and wait another 45 seconds.
+
+  Step 4 — Count the cards.
+  Look at the chat. Count how many separate confirm cards appeared for this request.
+  There must be exactly ONE.
+  Record: the heading; any row count / total the card states (e.g. "14 transactions");
+  how many individual sample rows are listed on the card; any totals shown.
+
+  Step 5 — Dismiss.
+  Click the dismiss button (✗ / "Discard" / "Cancel"). Wait 10 seconds.
+  Record what the card looks like afterwards (is it greyed out, marked dismissed, are the
+  buttons gone or disabled?).
+
+  Step 6 — Verify NOTHING was written.
+  Return to the transactions register and refresh the view. Compare with Step 1. There must
+  be NO "Morning coffee" rows and no new transactions at all.
+
+  Decision — return ONE line starting with PASS, FAIL or SKIP:
+  - PASS if exactly one card appeared, it stated 14 (the true count) rather than only the
+    number of sample rows it displayed, and after dismissing there are no new rows. Format:
+    "PASS: cards=1 stated_count=<text> sample_rows=<n> | dismissed_state=<describe> |
+    register unchanged"
+  - FAIL if more than one card appeared. Format: "FAIL: <n> cards appeared, expected 1"
+  - FAIL if the card stated a count matching only its displayed sample (e.g. said 12) rather
+    than the true 14. Format: "FAIL: card stated <text>, expected the true total 14"
+  - FAIL if any transaction was written after dismissing. Format:
+    "FAIL: dismiss wrote data — <describe the new rows>"
+  - FAIL if an error appeared. Format: "FAIL: error — <error text>"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "LCG-03-bulk-card-and-dismiss.png"
+  note: >
+    SKIP is acceptable when ANTHROPIC_API_KEY is not set. preview_bulk caps the rendered
+    sample at _BULK_SAMPLE_ROWS (12) and sets `truncated`, but `count` and `totals` are
+    computed over ALL rows — asking for 14 is what makes the difference observable.

@@ -1,0 +1,138 @@
+{
+  "arms": [
+    "A-real"
+  ],
+  "captured_at": "2026-07-18T23:06:36.400757+00:00",
+  "git_branch": "eval/real-model-tool-surface-run",
+  "git_commit": "394bab50b4db57e5786798143cb6fde2602ee4d2",
+  "meta": {
+    "arm C describe": "local implementation (services.domain_introspect EXISTS but describes the live service chokes, a different op namespace than arm C's apply executes)",
+    "arms": "A-real (surface=A-real, model=claude-sonnet-4-6)",
+    "catalog decoys": 259,
+    "data dir": "/var/folders/n_/9hyf3qp56yz3184bkgmrtcfc0000gn/T/onw-tool-surface-eval-578kea5y",
+    "fixture": "deterministic seed book (see fixture.py)",
+    "model": "claude-sonnet-4-6",
+    "real system prompt SIZE, informational (chars//4 estimate, NOT in $ above)": "16,571 chars (~4,142 tok est.) \u2014 size varies with live data state; see baselines/README.md for a measured count",
+    "repeats per cell": 3,
+    "tasks": 4,
+    "total runs": 12
+  },
+  "mock": false,
+  "per_task_success": {
+    "near_miss_no_account": {
+      "A-real": 1.0,
+      "category": "near_miss"
+    },
+    "near_miss_oversell": {
+      "A-real": 1.0,
+      "category": "near_miss"
+    },
+    "near_miss_unknown_account": {
+      "A-real": 1.0,
+      "category": "near_miss"
+    },
+    "read_lots_lazy": {
+      "A-real": 1.0,
+      "category": "lazy_discovery"
+    }
+  },
+  "summaries": {
+    "A-real": {
+      "api_calls": {
+        "mean": 2.8333333333333335,
+        "n": 12,
+        "stddev": 1.3371158468430429
+      },
+      "arm": "A-real",
+      "cache_read": {
+        "mean": 27257.833333333332,
+        "n": 12,
+        "stddev": 13360.707043303124
+      },
+      "cache_write": {
+        "mean": 1723.6666666666667,
+        "n": 12,
+        "stddev": 5970.956483959109
+      },
+      "cost_per_run": {
+        "mean": 0.026931333333333335,
+        "n": 12,
+        "stddev": 0.025923985374493825
+      },
+      "cost_per_success": 0.026931333333333335,
+      "discovery": {
+        "mean": 0.25,
+        "n": 12,
+        "stddev": 0.45226701686664544
+      },
+      "errors": {
+        "mean": 0.0,
+        "n": 12,
+        "stddev": 0.0
+      },
+      "estimated": false,
+      "input_tokens": {
+        "mean": 31605.416666666668,
+        "n": 12,
+        "stddev": 15531.610508650552
+      },
+      "intended": {
+        "mean": 1.0,
+        "n": 12,
+        "stddev": 0.0
+      },
+      "label": "surface=A-real, model=claude-sonnet-4-6",
+      "output_tokens": {
+        "mean": 294.5833333333333,
+        "n": 12,
+        "stddev": 156.94959140572567
+      },
+      "recovered": {
+        "mean": 0.0,
+        "n": 12,
+        "stddev": 0.0
+      },
+      "round_trips": {
+        "mean": 2.8333333333333335,
+        "n": 12,
+        "stddev": 1.3371158468430429
+      },
+      "runs": 12,
+      "selection": {
+        "mean": 1.0,
+        "n": 12,
+        "stddev": 0.0
+      },
+      "success": {
+        "mean": 1.0,
+        "n": 12,
+        "stddev": 0.0
+      },
+      "tool_calls": {
+        "mean": 2.5833333333333335,
+        "n": 12,
+        "stddev": 1.7298624923456323
+      },
+      "uncached_in": {
+        "mean": 2623.9166666666665,
+        "n": 12,
+        "stddev": 1853.7221748458294
+      },
+      "unintended": {
+        "mean": 0.0,
+        "n": 12,
+        "stddev": 0.0
+      },
+      "wall": {
+        "mean": 8.840833333333334,
+        "n": 12,
+        "stddev": 4.141616852331364
+      },
+      "wrong_value": {
+        "mean": 0.0,
+        "n": 12,
+        "stddev": 0.0
+      }
+    }
+  }
+}

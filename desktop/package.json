@@ -1,0 +1,43 @@
+{
+  "name": "open-net-worth-desktop",
+  "productName": "Open Net Worth",
+  "version": "0.1.2",
+  "description": "Your wealth, on your computer",
+  "desktopName": "open-net-worth.desktop",
+  "author": "Open Net Worth contributors",
+  "license": "AGPL-3.0-only",
+  "private": true,
+  "main": "dist/main/index.js",
+  "scripts": {
+    "build": "node resources/build-onboarding.mjs && tsc -p tsconfig.json",
+    "start": "npm run build && electron-forge start",
+    "package": "npm run build && electron-forge package",
+    "make": "npm run build && electron-forge make",
+    "pretest": "node resources/build-onboarding.mjs",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "e2e": "node qa/e2e.mjs"
+  },
+  "config": {
+    "forge": "./forge.config.cjs"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "8.0.1",
+    "@electron-forge/maker-base": "^8.0.1",
+    "@electron-forge/maker-deb": "8.0.1",
+    "@electron-forge/maker-squirrel": "8.0.1",
+    "@electron-forge/maker-zip": "8.0.1",
+    "@electron-forge/plugin-fuses": "8.0.1",
+    "@electron/fuses": "^2.0.0",
+    "@types/electron-squirrel-startup": "^1.0.2",
+    "@types/node": "^24.12.3",
+    "electron": "44.5.1",
+    "playwright": "^1.60.0",
+    "sharp": "0.34.4",
+    "tsx": "^4.21.0",
+    "typescript": "~6.0.2"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1"
+  }
+}

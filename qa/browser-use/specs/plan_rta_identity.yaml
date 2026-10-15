@@ -1,0 +1,34 @@
+# Spec: PLAN-RTA-IDENT-01 — on-budget membership is the account's TYPE, and nothing else
+# Verifies ADR `2026-09-07-seven-account-types-one-axis`: the account modal has NO "On budget"
+# and NO "Locked" control at all — on-budget = `cash` + `credit`, TYPE-ONLY, no per-account
+# override. The old Auto/On/Off tri-state this spec used to cover was retired with that ADR, not
+# merely renamed.
+#
+# The Ready-to-Assign half of this spec was deleted on 2026-09-09: it demanded a popover FOOTER
+# spelling the identity out as a formula, and no such footer exists — the operator-prefixed ROWS
+# are the formula. PLAN-RTA-BRK-01 covers the breakdown, and carries BUD-RTA-4 with it.
+id: PLAN-RTA-IDENT-01
+# One screen plus a modal.
+timeout_seconds: 240
+acceptance_ids: []
+acceptance_criteria:
+  - AC1: The account edit modal shows NO "On budget" control and NO "Locked" control anywhere on the form — on-budget membership is decided entirely by the account's type (`cash`/`credit` on-budget; everything else off-budget), with no per-account override
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1: Open an account's edit modal.
+  Click "Accounts" (or "Cash") in the left sidebar. Click on any bank/savings (Cash-type)
+  account row to open its detail, then find and click its "Edit" control (a pencil icon or
+  an Edit button — it opens a modal titled "Edit account").
+  Wait for the modal to appear.
+
+  Step 2: Confirm the On-budget/Locked controls are GONE (AC1).
+  Scroll through the entire modal. Confirm there is NO field labelled "On budget" (no
+  Auto/On budget/Off budget segmented control) and NO field labelled "Locked" anywhere on
+  the form — only Name, Type, Currency, Colour, Institution, Last 4, Note, plus
+  type-conditional fields (APR/credit limit/APY as applicable). Take a screenshot of the
+  full modal scrolled to its type-conditional section.
+  Close the modal WITHOUT saving (Cancel / Back / Escape).
+
+  Report PASS/FAIL per AC with what you observed.

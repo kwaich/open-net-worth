@@ -1,0 +1,101 @@
+# Spec: PLAN-RET-01 — Plan tab Retirement sub-tab renders without blank/crash
+# Covers: Planning.tsx SegmentedControl [Budget|Projections|Retirement];
+#         RetirementBranch → FireSection (FIRE trajectory) + RetirementReadiness
+#         (Monte-Carlo fan chart) + what-if controls; no blank region or JS error.
+id: PLAN-RET-01
+acceptance_ids:
+  - PLAN-RET-LOAD
+  - PLAN-RET-WHAT-IF
+title: "Plan → Retirement sub-tab renders FIRE trajectory and what-if controls"
+description: >
+  The Plan tab has three sub-tabs: Budget, Projections, and Retirement.
+  After clicking "Retirement", the page must render:
+    - Region B: a "FIRE trajectory" panel containing a chart or progress bar
+    - Region C: a "Retirement Readiness" section with Monte-Carlo output (fan
+      chart, success probability %, or a meaningful empty/loading state — NOT
+      blank or an unhandled error)
+    - What-if controls: at least one numeric input field the user can adjust
+      (monthly contribution, return %, retirement age, etc.)
+  None of these regions may be blank white or show a JavaScript error overlay.
+  The Lucius AI-dependent round-trip is NOT tested here; only rendering is
+  asserted. If the API returns an error for a fresh dataset (e.g. not enough
+  data for Monte-Carlo), an informative empty state ("not enough data yet") is
+  acceptable — a raw JS stack trace is not.
+
+acceptance_criteria:
+  - AC1: The Plan tab loads (Budget sub-tab or any sub-tab visible first)
+  - AC2: Clicking the "Retirement" segment shows a new view (not still the Budget table)
+  - AC3: A "FIRE trajectory" or "FIRE" panel/heading is visible — not blank
+  - AC4: A Retirement Readiness section is visible (may show a loading spinner,
+         a fan chart, a success %, or an empty state — but NOT a JS error)
+  - AC5: At least one numeric what-if input control is present on the page
+  - AC6: No JavaScript error overlay or blank white region is observed
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully (no spinner).
+
+  Step 1 — Navigate to the Plan tab.
+  In the left sidebar, find the item labelled "Plan" and click it.
+  Wait up to 5 seconds for the Plan tab to load.
+  You should see a SegmentedControl with at least "Budget" and "Retirement"
+  options at the top of the content area.
+  If the sidebar only shows icons (collapsed), look for the icon whose tooltip
+  or aria-label is "Plan" or the sidebar label says "Plan".
+
+  Step 2 — Click the "Retirement" sub-tab.
+  In the SegmentedControl at the top of the Plan tab, click the option
+  labelled "Retirement". Wait up to 5 seconds for the view to update.
+
+  Step 3 — Check Region B: FIRE trajectory.
+  Look for a panel or section with a heading like "FIRE trajectory", "FIRE
+  progress", or containing the word "FIRE". Is it present and non-blank?
+  Record: REGION_B = "present" or "missing/blank".
+
+  Step 4 — Check Region C: Retirement Readiness.
+  Look for a panel labelled "Retirement Readiness", "Monte Carlo", "success
+  probability", or similar. It may show:
+    - A fan chart (visual chart with bands)
+    - A "success probability" percentage
+    - A loading spinner (acceptable — the API call may be in flight)
+    - An empty state message like "not enough data" or "configure FIRE inputs"
+    - An error message saying data is insufficient
+  What is NOT acceptable: a completely blank white box with no content, or a
+  JavaScript error / stack trace overlay.
+  Record: REGION_C = "present" or "blank/error".
+
+  Step 5 — Check for what-if input controls.
+  Look for numeric input fields or sliders labelled something like:
+  "Monthly contribution", "Return %", "Retire at age", "Withdrawal rate",
+  "Volatility", or any other what-if parameter.
+  Are any such inputs present?
+  Record: WHAT_IF_CONTROLS = "present" or "absent".
+
+  Decision:
+  - If Region B is present AND Region C is present (even as empty/loading state,
+    NOT a blank white void or JS error) AND what-if controls are present:
+    return "PASS: Retirement sub-tab renders — REGION_B=<>, REGION_C=<>, WHAT_IF=<>"
+  - If the "Retirement" segment button did not change the view (Budget table
+    still showing):
+    return "FAIL: clicking Retirement segment did not change the view"
+  - If Region B (FIRE trajectory) is missing or blank:
+    return "FAIL: FIRE trajectory region is missing or blank"
+  - If Region C shows a JavaScript error overlay or raw stack trace:
+    return "FAIL: Retirement Readiness region shows a JS error or stack trace"
+  - If what-if controls are absent:
+    return "FAIL: no what-if input controls found on Retirement sub-tab"
+  - For any other reason the tab looks broken:
+    return "FAIL: <specific reason>"
+
+  Note: a loading spinner, an empty-state message, or a "not enough data"
+  notice in Region C all count as PASS for AC4. The spec only gates on
+  hard failures (blank + no content, JS stack traces, or a missing FIRE panel).
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "PLAN-RET-01-retirement-subtab.png"
+  note: >
+    No ANTHROPIC_API_KEY is required for this spec — it only tests that the
+    rendered UI mounts correctly. The outlook call (/api/plan/outlook) may
+    return an empty/error state on a fresh dataset; that is acceptable. The
+    spec never asks Lucius to do anything. A missing key does NOT trigger a
+    SKIP here; the rendering is deterministic.

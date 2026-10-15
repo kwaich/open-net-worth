@@ -1,0 +1,72 @@
+# Spec: Assets Register and Navigation Tests (AS-01 through AS-06)
+id: ASSETS-REGISTER
+title: "Assets Tab Register, Navigation, and Responsive Design"
+acceptance_ids:
+  - AS-01
+  - AS-02
+  - AS-04
+  - AS-05
+  - AS-06
+acceptance_criteria:
+  - AS-01: Register shows header, summary strip, class cards, category chips, and Add asset tile
+  - AS-02: Asset cards display thumbnail, name, category, value, and gain percentage
+  - AS-04: Category chips filter assets; All restores everything
+  - AS-05: Class card clicks navigate to Accounts and Investments tabs
+  - AS-06: Mobile viewport shows responsive layout without horizontal overflow
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Navigate to Assets tab.
+  Click the "Assets" tab in the sidebar. Wait 2 seconds for the register to load.
+  Take a screenshot labeled "AS-01_register_overview.png".
+
+  Record: HEADER_PRESENT = "yes" if "Assets" header is visible with "Add asset" button
+  Record: SUMMARY_VISIBLE = "yes" if summary strip shows four values (own, owe, net worth, unrealized)
+  Record: CLASS_CARDS = count of class cards visible (Cash & Savings, Investments — renamed from "Market positions")
+  Record: CATEGORY_CHIPS = list of visible category chips (All, Property, Vehicle, Watch, etc.)
+  Record: ADD_ASSET_TILE = "yes" if dashed Add asset tile is visible
+  Record: RAIL_VISIBLE = "yes" if right rail shows Composition section
+
+  Step 2 — Verify asset card content if assets exist.
+  If any asset cards are visible:
+    Take a screenshot labeled "AS-02_asset_cards.png".
+    Record: CARDS_SHOWN = count of asset cards
+    Record: CARD_HAS_ICON = "yes" if cards show category icon or photo
+    Record: CARD_HAS_NAME = "yes" if asset name is displayed
+    Record: CARD_HAS_VALUE = "yes" if value is shown (or masked)
+    Record: CARD_HAS_GAIN = "yes" if gain percentage is shown
+    Record: CARDS_SORTED = "yes" if cards appear sorted by value descending
+  Else:
+    Record: CARDS_SHOWN = 0
+
+  Step 3 — Test category chip filtering.
+  Click a non-All category chip (e.g., Property). Wait 1 second.
+  Take a screenshot labeled "AS-04_filter_property.png".
+  Record: FILTER_APPLIED = "yes" if only property cards are shown
+  Record: CLASS_CARDS_HIDDEN = "yes" if class cards disappear during filter
+
+  Click the All chip. Wait 1 second.
+  Record: FILTER_CLEARED = "yes" if all cards and class cards reappear
+
+  Step 4 — Test class card navigation.
+  Click the Cash & Savings class card. Wait 2 seconds.
+  Take a screenshot labeled "AS-05_nav_accounts.png".
+  Record: NAV_TO_ACCOUNTS = "yes" if Accounts tab is now active
+
+  Return to Assets tab. Click the Investments class card. Wait 2 seconds.
+  Record: NAV_TO_INVESTMENTS = "yes" if Investments tab is now active
+
+  Return to Assets tab.
+
+  Step 5 — Check mobile responsiveness (viewport 640px).
+  (If harness supports viewport changes) Set viewport to 640px width.
+  Wait 1 second for reflow.
+  Take a screenshot labeled "AS-06_mobile_640px.png".
+  Record: SUMMARY_LAYOUT = "2x2 grid" if summary is two columns
+  Record: CHIPS_SCROLL = "yes" if chips scroll horizontally in one row
+  Record: CARDS_LAYOUT = "single column" if cards stack vertically
+  Record: NO_OVERFLOW = "yes" if page does not scroll horizontally
+  Record: TOAST_CLEARS = "yes" if toast notifications clear the tab bar
+
+  FINAL: Check AS-01 through AS-06 criteria against observations

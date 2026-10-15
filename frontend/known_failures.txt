@@ -1,0 +1,34 @@
+# Known failures that predate the release gate. Shrinks only; see scripts/gate_baseline.py.
+src/__tests__/css-tokens.test.ts::CSS custom property tokens every bare var(--token) is defined in a CSS file or the runtime allowlist
+src/components/chat/ChatPanel.convGroups.test.ts::<suite failed to run>
+src/components/chat/ChatPanel.homeGreeting.test.ts::<suite failed to run>
+src/components/intel/TickerDesk.test.tsx::TickerDesk leads with the news story even when the price signal is more urgent
+src/components/mobile/mobileClearance.contract.test.ts::mobile tab-bar clearance ../tabs/plan/budget.tsx opts in via .mb-anchored
+src/components/tabs/accounts/AccountHeader.connectRouting.test.tsx::AccountHeader "Connect to bank" routes to Connectors (CDS-UI-21) navigates to Connectors with no toast and never writes connected
+src/components/tabs/accounts/AccountModal.linkedTo.test.tsx::AccountModal "Linked to" list CDS-UI-14: shows the empty copy when there are no external_ids
+src/components/tabs/accounts/AccountModal.typePicker.css.test.ts::edit-account metadata uses one vertical column and opens the colour picker inward
+src/components/tabs/accounts/ImportModal.categoryHint.test.tsx::ImportModal — a shown category is booked without being touched sends no category edit — and no deviation at all — when the row is genuinely Unsorted
+src/components/tabs/accounts/ImportModal.categoryHint.test.tsx::ImportModal — a shown category is booked without being touched sends the row category id as an explicit edit when the screen already resolved one
+src/components/tabs/accounts/ImportModal.handoffCharacterization.test.tsx::ImportModal handoff port — production behavior characterization commits the same mixed-state deviations through the one cached decision seam
+src/components/tabs/accounts/SearchFilter.responsive.test.ts::Accounts filter toolbar responsive contract keeps controls on one row and hides date/column labels on narrow screens
+src/components/tabs/accounts/SearchFilter.responsive.test.ts::Accounts filter toolbar responsive contract shortens the add transaction label to Add on narrow screens
+src/components/tabs/accounts/lucius.entityWiring.test.tsx::Accounts tab — Lucius account wiring (Sidebar) emits each account row as a draggable account mention entity
+src/components/tabs/accounts/statementImport.css.test.ts::statement import — global `.link` utility collision still has the collision to defend against
+src/components/tabs/commitments/Commitments.mastheadLoading.test.tsx::Commitments page — masthead-scoped loading, not a whole-page reload renders the commitment list as soon as it loads, even while coverage is still in flight
+src/components/tabs/investments/eventHistoryLayout.test.ts::investment event history desktop alignment gives the vest status column enough room for its chip and action to sit on one line, without hogging the row
+src/components/tabs/investments/eventHistoryLayout.test.ts::investment event history desktop alignment hides the price-at-vest column on mobile, alongside units, like every other desktop-only column
+src/components/tabs/investments/eventHistoryLayout.test.ts::investment event history desktop alignment right-aligns income headers above right-aligned values
+src/components/tabs/mobileViews.responsive.test.ts::affected mobile views keeps FIRE settings inline, hides the subtitle, and compacts Ready to assign
+src/components/tabs/mobileViews.responsive.test.ts::affected mobile views keeps every holdings control on one non-wrapping mobile row
+src/components/tabs/mobileViews.responsive.test.ts::affected mobile views merges the phone type + account filters into one icon-triggered sheet
+src/components/tabs/mobileViews.responsive.test.ts::affected mobile views shows an icon + label scan action on phones at the standard button height
+src/components/tabs/overview/Overview.emptyRoutes.test.tsx::Overview empty state — the data-in routes does not navigate for the coming-soon route
+src/components/tabs/overview/Overview.emptyRoutes.test.tsx::Overview empty state — the data-in routes offers every real way to get data in, not just "add an account"
+src/components/tabs/overview/Overview.emptyRoutes.test.tsx::Overview empty state — the data-in routes shows the unbuilt migration route honestly rather than hiding it
+src/components/tabs/overview/widgets/cashflowPlanning.calendarPopover.test.tsx::Spending calendar — day popover renders as a body portal and offers "Open in register" on hover
+src/components/tabs/plan/budgetLens/proportional/PropTable.test.tsx::PropTable Merge picks its target in Zero-Based’s dialog and carries the cap over
+src/components/tabs/plan/budgetLens/proportional/PropTable.test.tsx::PropTable a cap with cents survives a click in and out untouched, and typed cents stay cents
+src/components/tabs/plan/budgetLens/proportional/PropTable.test.tsx::PropTable editing a cap posts set_cap for this month onward
+src/components/tabs/plan/budgetLens/proportional/PropTable.test.tsx::PropTable stepping months keeps the month on screen, dimmed, until the next one arrives
+src/state/chatReducer.skillActivity.test.ts::skill lifecycle activity does not treat a fresh loaded transition as replay or truncate next-round text
+src/state/chatSessions.test.ts::<suite failed to run>

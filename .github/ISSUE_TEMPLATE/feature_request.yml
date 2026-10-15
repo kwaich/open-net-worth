@@ -1,0 +1,32 @@
+name: Feature request
+description: Propose something new, or a change to how an existing flow works.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: this project is deliberately working through one core flow at a time (ledger → budgeting →
+        investments), and a large feature in a currently-deferred area (intel, tax, equity comp,
+        FIRE, bank connectors) is unlikely to be picked up soon, even if it's a good idea. It's
+        still worth filing so it isn't lost.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What are you trying to do that the app doesn't support today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you want the app to do instead? Sketches/mockups welcome.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?

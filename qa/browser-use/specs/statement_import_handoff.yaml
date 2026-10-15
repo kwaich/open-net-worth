@@ -1,0 +1,123 @@
+id: SI-HANDOFF-01
+acceptance_ids:
+  - SI-69
+  - SI-70
+  - SI-71
+  - SI-72
+  - SI-73
+  - SI-74
+  - SI-75
+  - SI-76
+  - SI-77
+  - SI-78
+  - SI-79
+  - SI-80
+  - SI-81
+  - SI-82
+  - SI-83
+  - SI-84
+  - SI-85
+  - SI-86
+  - SI-87
+  - SI-88
+  - SI-89
+  - SI-90
+  - SI-91
+  - SI-92
+title: "Statement Import handoff in the live Accounts flow"
+description: >
+  Drives the production Accounts import modal using a disposable CSV and verifies the
+  handoff scan hierarchy, disclosure behavior, commit, and completion state.
+
+acceptance_criteria:
+  - AC1: Accounts opens the real Import transactions modal.
+  - AC2: The uploaded CSV reaches Review through the real preview endpoint.
+  - AC3: Review rows expose a dedicated decision column and no horizontal overflow.
+  - AC4: A deterministically seeded matched row exposes Ledger evidence before expansion and full comparison after expansion.
+  - AC5: Commit reaches the real completion screen and reports success or a visible error.
+  - AC6: The verdict is one recessed panel of badge + headline + breakdown lines, with the math folded.
+  - AC7: The section header leads with a count badge and names the band the active filter shows.
+  - AC8: Needs you is headed "Needs you · x of N decided · press 1 2 3" over cards that never collapse.
+  - AC9: One picker vocabulary (Change match / Link to existing / Link to a new row), one CTA family.
+  - AC10: The commit CTA reads "Confirm & book · link N · import M" and turns green only when every row is decided.
+  - AC11: The Choose step opens on ONE centred dropzone reading "Drop a statement here, or browse" over a single format line, with "or paste a URL / Google Sheet link" as its own control below it — no source tabs, no format pills.
+  - AC12: A picked file shows a format badge, name, size and Change, and the Choose step renders no modal footer; its CTA lives in the pane and reads "Read the statement".
+  - AC13: With no account chosen the chip row offers "Detect from the statement" and the CTA is enabled; picking accounts turns them into removable chips.
+  - AC14: The Read step shows a pulsing orb, "Lucius is reading <file>", and a phase line from the handoff's five phases.
+
+browser_use_task: |
+  Navigate to {app_url}. Open Accounts. Before importing, use Add transaction to create
+  an expense in the first available account dated 2026-06-01, payee/description "Grocer",
+  amount 42.15, and save it. This is disposable setup for a deterministic ledger match.
+
+  Click the visible Import action.
+  Confirm the dialog title is "Import a statement".
+
+  Before uploading, verify the Choose step: exactly ONE centred dashed dropzone reading
+  "Drop a statement here, or browse" above a single line listing "PDF, CSV, XLSX, OFX, QIF,
+  MT940, CAMT — scanned PDFs work too", with "or paste a URL / Google Sheet link" as a separate
+  quiet control BELOW it. Verify there is NO "Upload a file / From a URL" tab strip and NO row
+  of format badge pills.
+
+  Upload the available `statement-import-handoff.csv` fixture through the file input.
+  Verify the picked file now shows a format badge, its file name, its size, and a Change control,
+  and that the dialog shows no footer buttons on this step — its call to action sits in the pane,
+  reading "Read the statement", beside the note "You review everything before it books".
+  Verify the "Into accounts" row: with no account chosen it shows a "Detect from the statement"
+  chip and a "Select account" control, and the CTA is still enabled. Choose the first available
+  account chip; verify it becomes a removable chip and the control now reads "+ Add account".
+  Then use Read the statement, and while it runs verify the reading state shows a pulsing spark,
+  "Lucius is reading" with the file name, and a phase line such as "Reading the statement" or
+  "Checking every row against your ledger".
+  Wait for the Review step.
+
+  Verify the compact Choose / Read / Decide hierarchy and the named
+  "The statement — top to bottom" section.
+  Verify every visible row has an Import, Link/Link & update, Keep both, Leave out, or Left out
+  decision chip and that the filter bar includes Left out when exclusions exist.
+  Verify the dialog and page have no horizontal scrollbar.
+
+  Verify the Grocer row is matched and its recessed Ledger line is visible before expansion.
+  Activate the row button, verify aria-expanded becomes true, and verify On the statement,
+  In your ledger, a decision radiogroup, and a full-width After import result appear in that
+  order. Verify the rejected three-peer-column structure is absent. Exercise one decision and
+  ensure the scan-row chip updates without the row losing its statement or ledger facts.
+
+  If Needs you is present, open it, choose an option on the first numbered card, verify the
+  card stays expanded with a receipt and Undo, then undo it. If a Left out row is present,
+  verify its reason and struck/dimmed amount are visible without hover.
+
+  Verify the verdict block is ONE recessed panel whose lines each pair a round status badge with a
+  bold headline and a dim breakdown, that NO tie-out math waterfall or "Show the math" toggle
+  renders anywhere (removed 2026-07-31), and that the statement facts line above it shows the
+  account name with its colour dot, the printed period, and the AI read cost on the far right.
+  In "In your ledger, not on this statement", verify each row's second line names the STATEMENT the
+  entry is already on (a period, e.g. "5 May – 4 Jun 2026 statement") and never reads "ai"/"agent"
+  nor the name of an import batch; a row on no statement shows no second line at all. Verify a row
+  near a period edge carries a cut-off chip beside its "Ledger only" chip, and that expanding a row
+  adds exactly ONE further line — account and statement (and the bank reference when there is one),
+  led by the full description only when the collapsed name was truncated — never a stack of
+  labelled rows and never the words "Already on".
+  Verify the rows section header leads with a count badge and that selecting Will link / New /
+  Left out renames the section to that band.
+  If Needs you is present, verify its header reads "Needs you", an "<x> of <N> decided" tally and a
+  "press 1 2 3" hint, and that each choice carries a numeric key badge.
+  Verify every "which ledger entry" affordance is a bordered pill reading Change match, Link to
+  existing, or Link to a new row — never a bare underlined text link.
+
+  Commit the import using the primary footer button, whose label must read
+  "Confirm & book · link N · import M" (or "Nothing to book" when neither would happen). Verify either the imported/statement-filed
+  completion screen appears or a visible actionable error appears; a dead button is a failure.
+  Take a screenshot of Review and a screenshot of completion/error.
+
+  Return "PASS: statement import handoff is wired into the live Accounts flow" only if every
+  applicable check passes. Otherwise return "FAIL: <specific failed check>".
+
+max_steps: 40
+timeout_seconds: 600
+available_file_paths:
+  - qa/browser-use/fixtures/statement-import-handoff.csv
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "SI-HANDOFF-01-production-review.png"

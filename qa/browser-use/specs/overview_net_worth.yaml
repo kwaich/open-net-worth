@@ -1,0 +1,35 @@
+# Spec: OV-01 — Net-worth hero renders on Overview
+# Covers: GET /api/net-worth → SummaryBar net-worth card
+id: OV-01
+acceptance_ids:
+  - OV-HERO-STATS
+title: "Net-worth hero renders non-empty on Overview tab"
+description: >
+  After loading the demo dataset, the Overview tab must display a net-worth
+  figure that is not zero, not a placeholder "—", and not an error state.
+  The figure should be a formatted currency string (e.g. "$123,456").
+
+acceptance_criteria:
+  - AC1: The Overview tab loads without a visible error/spinner stuck
+  - AC2: A net-worth amount is visible and contains a currency symbol or number
+  - AC3: The value is not exactly "$0", "0", "—", or blank
+
+# Task handed to the browser-use Agent. Written in plain English so the
+# LLM can navigate the app like a real user.
+browser_use_task: |
+  Navigate to the app home page at {app_url}.
+  Wait for the page to finish loading (no spinner).
+  Look at the Overview tab — it should already be selected.
+  Find the net-worth summary card or hero number at the top of the page.
+  Read the net-worth value displayed there.
+  Return "PASS" if:
+    - The page loaded without error
+    - A net-worth figure is visible (contains "$" or a number with commas)
+    - The value is NOT "$0.00", "0", "--", blank, or an error message
+  Otherwise return "FAIL: <reason>".
+  Also return the exact net-worth text you found.
+
+# Minimum bar for a PASS verdict in the runner
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "OV-01-net-worth-hero.png"

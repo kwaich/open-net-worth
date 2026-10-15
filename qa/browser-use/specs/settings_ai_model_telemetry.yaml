@@ -1,0 +1,62 @@
+id: MODEL-TELEMETRY-01
+acceptance_ids:
+  - TELEMETRY-EMPTY
+  - TELEMETRY-LOAD
+  - TELEMETRY-PROVIDER-KNOWN
+  - TELEMETRY-PROVIDER-UNKNOWN
+  - TELEMETRY-HELP-TEXT
+  - TELEMETRY-SMOKE-SETTINGS-AI-MODEL
+title: "Settings → AI Model: Model performance telemetry panel renders"
+description: >
+  Test the new "Model performance" telemetry panel in Settings → AI Model.
+  Verify it renders (empty or with data), shows proper provider labeling,
+  displays help text, and doesn't break the rest of Settings → AI Model.
+
+acceptance_criteria:
+  - AC1: Panel exists in Settings → AI Model with title "Model performance"
+  - AC2: Empty state shows "No telemetry yet" OR data rows are displayed
+  - AC3: Help text mentions provider pooling and JSON-retry scope
+  - AC4: No layout breakage or overlaps in Settings → AI Model section
+
+browser_use_task: |
+  Navigate to {app_url}. Wait 2 seconds.
+  Click "Settings" in the left sidebar. Wait 2 seconds.
+  Click "AI Model" in the Settings section rail. Wait 3 seconds.
+
+  Look for a panel titled "Model performance" with subtitle about "Latency and structured-output reliability".
+
+  1. Does the panel exist? Record PANEL_EXISTS = yes/no. If no, return "FAIL: Model performance panel not found".
+
+  2. What state is the panel in?
+     - If it shows "No telemetry yet" text: Record STATE = empty, EMPTY_MSG_VISIBLE = yes
+     - Else if it shows one or more model rows: Record STATE = data, NUM_ROWS = count of visible rows
+     - Else: Record STATE = error, ERROR_VISIBLE = yes
+
+  3. Check the help text below the title. Does it mention:
+     - "pooled" or "provider configs"? Record HELP_MENTIONS_POOLING = yes/no
+     - "JSON-retry" or "structured-output"? Record HELP_MENTIONS_RETRY = yes/no
+
+  4. Scroll through Settings → AI Model (top to bottom). Are these sections visible without overlaps?
+     - "AI providers" section at top
+     - "AI spend" section in middle
+     - "Model performance" section at bottom
+     Record SECTIONS_VISIBLE = yes/no, LAYOUT_BROKEN = yes/no
+
+  5. Open browser console. Any JavaScript errors? Record JS_ERROR = yes/no.
+
+  Decision:
+  - PANEL_EXISTS = no → FAIL: Model performance panel not found
+  - STATE = empty and EMPTY_MSG_VISIBLE = no → FAIL: Empty state not showing properly
+  - STATE = error → FAIL: Panel in error state
+  - HELP_MENTIONS_POOLING = no or HELP_MENTIONS_RETRY = no → FAIL: Help text incomplete
+  - LAYOUT_BROKEN = yes → FAIL: Settings layout broken
+  - JS_ERROR = yes → FAIL: JavaScript error
+  - Otherwise → PASS: Model performance panel renders correctly (state: {STATE})
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "MODEL-TELEMETRY-01-panel.png"
+  note: >
+    Smoke test of the telemetry panel. Tests empty state (if no data) or
+    data display. Does not comprehensively test badge tones, error states,
+    or retry buttons — those are in lower-level component tests.

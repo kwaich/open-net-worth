@@ -1,0 +1,10 @@
+{
+  "name": "open-net-worth",
+  "private": true,
+  "scripts": {
+    "backend": "cd backend && ../.venv/bin/uvicorn main:app --reload --port 8000",
+    "frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run build && ../.venv/bin/uvicorn backend.main:app --port 8000"
+  }
+}

@@ -1,0 +1,260 @@
+# Spec: Assets Tab — Register, stepped create, section editing, values, dispose (AS-01 through AS-25)
+# Black-box QA of the owned-assets feature after the 2026-09-26 create/edit redesign.
+id: ASSETS-TAB
+title: "Assets Tab — Register, Stepped Create, Section Editing, Values, Dispose"
+acceptance_ids:
+  - AS-01
+  - AS-02
+  - AS-03
+  - AS-04
+  - AS-05
+  - AS-06
+  - AS-07
+  - AS-07A
+  - AS-08
+  - AS-08A
+  - AS-08B
+  - AS-09
+  - AS-09A
+  - AS-09B
+  - AS-09C
+  - AS-10
+  - AS-11
+  - AS-11A
+  - AS-12
+  - AS-13
+  - AS-13A
+  - AS-13B
+  - AS-13C
+  - AS-14
+  - AS-15
+  - AS-16
+  - AS-16A
+  - AS-17
+  - AS-18
+  - AS-19
+  - AS-20
+  - AS-21
+  - AS-22
+  - AS-23
+  - AS-24
+  - AS-25
+
+acceptance_criteria:
+  - AS-01: 'Register shows its own "Assets" header with "Add asset", the summary strip (Everything you own · What you owe · Net worth · Unrealized), Cash & Savings and Investments class cards, an "All" chip plus category chips, the dashed "Add an asset" tile and the Asset Composition rail; no review queue.'
+  - AS-02: "Asset cards show thumbnail (photo or category icon), name, category label, value (masked by privacy mode) and gain % (blank without a purchase price); cards sort by value descending after the class cards."
+  - AS-03: 'Register and detail show no review-status pips, "Needs a look" queue, or asset-review automation card.'
+  - AS-04: '''Clicking a category chip shows only that category''''s cards; "All" restores everything; Cash / Investments chips show only that class card.'''
+  - AS-05: "Clicking the Cash & Savings or Investments class card navigates to Accounts or Investments."
+  - AS-06: "At 640 px: summary 2×2, chips scroll in one row, cards single-column, rail below, toast clears the bottom tab bar, no horizontal overflow."
+  - AS-07: 'Add asset opens straight on "What is it?" (Step 1 of 4): category tiles, "Create a category", and a quiet "Or describe it to Lucius" link that opens the dock prefilled "Add an asset: ". No two-door chooser.'
+  - AS-07A: "With a category chip active, Add asset opens at step 2 with that category; Back returns to step 1."
+  - AS-08: 'Step 2 shows Name (category example) and Worth today with the currency symbol inside the field and thousands separators (policies: "Cash value today"); a blank name or a value of 0 shows an inline message and does not advance.'
+  - AS-08A: 'Step 3: "All mine" / "Shared" → Your share (in-field %, default 50) + Shared with; property/vehicle/custom show "Any loan against it?" with a loan securing another asset disabled and naming it; share 150 refused inline.'
+  - AS-08B: '"+ Add a loan" (Loan name, Amount owed) stages a loan shown as "(new)"; it is created in Accounts as owed only when the asset is saved, and linked; abandoning creates nothing.'
+  - AS-09: 'Step 4 is optional; "Add asset" saves, toasts "{name} added" and opens the new asset''s page; a "Bought" point appears in Value history only when both price and date were given.'
+  - AS-09A: 'A policy''s step 4 reads "How much have you paid in?" (Premiums paid so far / Policy started on); the saved policy has no purchase point and no yearly return.'
+  - AS-09B: "A refused save (loan already securing another asset, future purchase date) keeps the dialog open with every step's input and shows the server's sentence by the field; a double-click creates one asset."
+  - AS-09C: 'Closing the flow with any input asks "Discard this asset?"; step 1 with nothing entered closes silently.'
+  - AS-10: '"Create a category" creates a persisted custom category that is selected, usable, and appears as a chip after reload.'
+  - AS-11: 'Asset page: breadcrumb, a photo shown big that opens on tap (or an icon that adds one), title/description, visible "Update value" (header on desktop, one full-width button under the figures on a phone), "Your N% · amount" when shared, Net equity captioned "Whole asset", ••• with exactly Rename or change category · Add/Change photo · Sell or dispose · Delete asset, stepped chart, "Value history" and "Attachments" tabs.'
+  - AS-11A: "At 390 px, Value history is a two-line list per value; every note is readable (never one letter per line)."
+  - AS-12: 'Ownership section shows share (+ who with) and the loan with equity/LTV, or "Nothing — owned outright"; its Edit saves only share/share note/loan with toast "Ownership updated.".'
+  - AS-13: 'Details section shows guided labelled fields (empty ones invite input), Insured (not for policies), Matures on (policies), Where it''s kept (portable), Other details; its editor saves them; no "Added" fact and no "Added {Mon YYYY}" caption.'
+  - AS-13A: "Purchase section: adding/changing/clearing price and date moves or removes the purchase point; a purchase date after the first value is refused inline."
+  - AS-13B: 'Notes section shows the note or "Add a note"; its editor saves with "Note saved.".'
+  - AS-13C: "Rename or change category saves name, short description and category; a category change keeps every detail (unguided ones under Other details)."
+  - AS-14: "Picking an image on the thumbnail uploads it; the photo shows on detail and card and survives reload."
+  - AS-15: 'Attachments: "Add file" uploads a PDF/image (listed with date and a persistent "Lucius can read" switch); an unsupported file shows the server message; Remove (confirmed) removes it.'
+  - AS-16: 'Update value: New value (blank), As of (today by default; not future; not before purchase), Note; saving appends a dated value, earlier values stay, "Value updated." toast.'
+  - AS-16A: 'Tapping a value row opens "Correct this value" prefilled (replaces the value) with a confirmed "Remove value" (disabled on the last value); tapping the purchase row opens the Purchase editor; no per-row pencil/trash buttons.'
+  - AS-17: "Any section editor changes only its own fields; the current value and every recorded value stay unchanged; a failed save keeps the editor open with the server's message."
+  - AS-18: 'Delete asset confirmation includes "If you sold it, use Sell or dispose instead — that keeps its history."; confirm deletes and returns to the register with a toast; cancel changes nothing.'
+  - AS-19: "Sell or dispose with proceeds, a cash account and Sold on: gain hint, ONE transaction on that date, asset archived, loan released, a date before the purchase refused inline, retry posts nothing."
+  - AS-20: "An asset with share 50% and value V adds 0.5 × V to net worth in its band; history uses the newest value on or before each month."
+  - AS-21: "Lucius tools list/create/update/record/correct/remove/dispose/delete assets without review fields; writes confirm; the tab refetches."
+  - AS-22: "/assets?id=<id> opens the asset page directly; browser back returns to the register."
+  - AS-23: 'With a 50%-owned property, Asset Composition percentages sum to 100 and its card reads "Property · Your 50%".'
+  - AS-24: "Entering share 150 anywhere is refused with a message; nothing is stored."
+  - AS-25: 'A category of 4+ assets is ONE stacked card ("N items", total, gain, its top three names "+N more"), placed by value; fewer keep their cards; tapping the stack or its chip opens the category as its own cards (back or the All chip returns to All).'
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  PHASE 1: Register and navigation (AS-01, AS-02, AS-03, AS-04, AS-05, AS-25)
+
+  Step 1 — Click the "Assets" tab in the sidebar. Wait 2 seconds.
+  Take a screenshot labeled "AS-01_register.png".
+  Record: HEADER_VISIBLE = "yes" if the page shows its own "Assets" header with a primary "Add asset" action
+  Record: SUMMARY_STRIP = "yes" if four fields show (Everything you own · What you owe · Net worth · Unrealized)
+  Record: CLASS_CARDS = comma-separated class card titles
+  Record: ALL_CHIP = "yes" if an "All" chip is visible
+  Record: ADD_TILE = "yes" if a dashed "Add an asset" tile is visible
+  Record: COMPOSITION_RAIL = "yes" if an "Asset Composition" card is visible
+  Record: REVIEW_UI_ABSENT = "yes" if no review pips or "Needs a look" queue is visible
+
+  Step 2 — Click a category chip (e.g. "Watches & jewellery" or "Property" if present), then "All".
+  Record: CHIP_FILTERS = "yes" if only that category's cards showed, and "All" restored everything
+  Take a screenshot labeled "AS-04_filter.png".
+
+  Step 3 — Click the "Cash & Savings" card. Record NAVIGATED_TO_ACCOUNTS. Return to Assets.
+  Click the "Investments" card. Record NAVIGATED_TO_INVESTMENTS. Return to Assets.
+
+  PHASE 2: Stepped create (AS-07, AS-07A, AS-08, AS-08A, AS-08B, AS-09, AS-09A, AS-09B, AS-09C, AS-10, AS-24)
+
+  Step 4 — Click "Add asset" in the header. Wait 1 second.
+  Take a screenshot labeled "AS-07_step1.png".
+  Record: STARTS_AT_CATEGORY = "yes" if the dialog title is "What is it?" with "Step 1 of 4" and category tiles are visible
+  Record: NO_CHOOSER = "yes" if there is NO "Enter it manually" / "Describe it to Lucius" two-button chooser screen
+  Record: LUCIUS_LINK = "yes" if an "Or describe it to Lucius" link is visible below the tiles
+  Click "Or describe it to Lucius". Wait 2 seconds.
+  Record: DOCK_PREFILL = "yes" if the Lucius dock opens with its input starting "Add an asset:"
+  Close the dock.
+
+  Step 5 — Discard confirmation (AS-09C). Click "Add asset", press Escape.
+  Record: STEP1_CLOSES_SILENTLY = "yes" if the dialog closed with no confirmation
+  Click "Add asset", tap "Watch & jewellery", type "Discard test" in Name, press Escape.
+  Record: DISCARD_ASKS = "yes" if "Discard this asset?" appears; click "Discard".
+
+  Step 6 — Validation and the watch path (AS-08, AS-09). Click "Add asset", tap "Watch & jewellery".
+  Record: STEP2_FIELDS = "yes" if the title reads "Name and value" (subtitle "Watch & jewellery · Step 2 of 4") and it shows Name and "Worth today"
+  Record: CURRENCY_IN_FIELD = "yes" if the currency symbol (e.g. "S$") is inside the Worth today field, not a separate box
+  Click "Continue" with everything empty.
+  Record: NAME_REQUIRED_MSG = the inline message under Name (expected "Enter a name.")
+  Type "QA Watch" in Name and "0" in Worth today, click Continue.
+  Record: VALUE_POSITIVE_MSG = the inline message under Worth today (expected "Enter a value greater than 0.")
+  Replace Worth today with "14800". Click away from the field.
+  Record: THOUSANDS_SEPARATOR = "yes" if it now reads "14,800"
+  Click "Continue".
+  Record: STEP3_NO_LOAN = "yes" if the title "Is it all yours?" (Step 3 of 4) shows "All mine" / "Shared" and NO loan question (watches have none)
+  Click "Shared", enter "150" in Your share, click "Continue".
+  Record: SHARE_150_REFUSED = "yes" if an inline message refuses it (expected "Enter a share from 0 to 100.")
+  Click "All mine", then "Continue".
+  Record: STEP4_OPTIONAL = "yes" if the title "How much did you pay?" (Step 4 of 4) says it is optional and the dialog has no large empty area under its two fields
+  Enter "9000" in Bought for and a past date (2019-04-01) in Bought on. Click "Add asset". Wait 2 seconds.
+  Take a screenshot labeled "AS-09_watch_created.png".
+  Record: TOAST_ADDED = "yes" if a toast "QA Watch added" appeared
+  Record: OPENS_ASSET_PAGE = "yes" if the new asset's page opened (breadcrumb "Assets / QA Watch")
+  Record: BOUGHT_POINT = "yes" if Value history lists a "Bought" row dated 1 Apr 2019
+
+  Step 7 — Property with a staged new loan (AS-08A, AS-08B, AS-23). Go back to the register. Click "Add asset", tap "Property".
+  Name "QA Condo", Worth today "900000", Continue.
+  Record: LOAN_QUESTION = "yes" if "Any loan against it?" is shown
+  Click "Shared" (share defaults to 50), Shared with "Spouse".
+  Click "+ Add a loan", Loan name "QA Mortgage", Amount owed "300000", click "Add loan".
+  Record: LOAN_STAGED = "yes" if the loan select shows "QA Mortgage … (new)" and a note that it is added to Accounts when you save
+  Continue, leave step 4 empty, click "Add asset". Wait 2 seconds.
+  Record: CONDO_CREATED = "yes" if the QA Condo page opened
+  Record: SHARE_LINE = "yes" if the Value stat shows "Your 50% · S$450,000"
+  Record: LOAN_LINKED = "yes" if the Ownership section shows "Secured by QA Mortgage" with equity/LTV
+  Go to Accounts. Record: LOAN_IN_ACCOUNTS = "yes" if "QA Mortgage" exists as a loan owing 300,000. Return to Assets.
+  Record: COMPOSITION_SUMS_100 = "yes" if the Asset Composition percentages add up to 100 (no row above 100%)
+  Record: CARD_SHARE = "yes" if the QA Condo card reads "Property · Your 50%"
+  Take a screenshot labeled "AS-23_composition.png".
+
+  Step 8 — A held loan is disabled; a refused save keeps input (AS-08A, AS-09B). Click "Add asset", tap "Vehicle".
+  Name "QA Car", Worth today "96000", Continue.
+  Record: HELD_LOAN_DISABLED = "yes" if "QA Mortgage" is listed but disabled with "(secures QA Condo)"
+  Choose "No loan", Continue, enter Bought for "84000" and Bought on 2030-01-01 (a future date), click "Add asset".
+  Record: FUTURE_DATE_REFUSED = "yes" if an inline message refuses the date and the dialog stayed open
+  Record: INPUT_KEPT = "yes" if clicking Back shows Name "QA Car" and value 96,000 still filled
+  Fix Bought on to 2022-03-10, click "Add asset" twice quickly.
+  Record: ONE_CAR = "yes" if exactly one "QA Car" card exists on the register
+
+  Step 9 — Policy copy (AS-09A). Click "Add asset", tap "Insurance & endowments".
+  Record: CASH_VALUE_LABEL = "yes" if step 2's field reads "Cash value today"
+  Name "QA Endowment", value "42000", Continue, Continue.
+  Record: POLICY_STEP4 = "yes" if step 4 reads "How much have you paid in?" with "Premiums paid so far" / "Policy started on"
+  Enter premiums "18000", started 2019-06-01, Add asset.
+  Record: POLICY_NO_PURCHASE_POINT = "yes" if its Value history has no "Bought" row and the stats show no yearly return
+
+  Step 10 — Custom category (AS-10). Click "Add asset", click "Create a category", type "Test Category", press Enter.
+  Record: CUSTOM_CATEGORY_SELECTED = "yes" if the flow advanced to step 2 for the new category
+  Name "Test Custom Asset", value "5000", Continue, Continue, Add asset. Reload the page, return to Assets.
+  Record: CUSTOM_CATEGORY_PERSISTED = "yes" if the chip and card remain after reload
+
+  Step 11 — Chip pre-seed (AS-07A). Click the "Vehicles" chip, then "Add asset".
+  Record: OPENS_AT_STEP2 = "yes" if the dialog opened at step 2 ("Name and value", subtitle "Vehicle · Step 2 of 4")
+  Click Back. Record: BACK_TO_STEP1 = "yes" if "What is it?" is shown. Close the dialog. Click "All".
+
+  PHASE 3: The asset page (AS-11, AS-11A, AS-12, AS-13, AS-13A, AS-13B, AS-13C, AS-14, AS-15)
+
+  Step 12 — Open "QA Condo". Take a screenshot labeled "AS-11_asset_page.png".
+  Record: UPDATE_VALUE_VISIBLE = "yes" if an "Update value" button is visible on the page (not only inside a menu)
+  Record: EQUITY_CAPTION = "yes" if Net equity's caption starts "Whole asset"
+  Open the ••• menu. Record: MENU_ITEMS = the menu item labels (expected exactly "Rename or change category, Sell or dispose, Delete asset"). Close it.
+  Record: SUBTABS = the sub-tab labels (expected "Value history, Attachments")
+  Record: SECTIONS = the section card titles under the chart, in order (expected Ownership, Purchase, Details, Notes)
+  Record: ADDED_CAPTION = "no" if no "Added <Mon YYYY>" caption and no "Added" row appear anywhere on the page, else "yes"
+
+  Step 13 — Ownership editor (AS-12, AS-24). Click Edit on Ownership.
+  Record: SAME_CONTROLS = "yes" if it shows the same All mine / Shared, share, Shared with and loan controls as create step 3
+  Set share to 150 and save. Record: SHARE_150_REFUSED_EDIT = "yes" if refused inline and the editor stayed open.
+  Set share to 60 and save. Record: OWNERSHIP_SAVED = "yes" if the toast "Ownership updated." appears and the Value stat shows "Your 60%"
+
+  Step 14 — Purchase editor (AS-13A). Click Add/Edit on Purchase. Enter Bought for "620000", Bought on 2019-06-15, save.
+  Record: PURCHASE_POINT_ADDED = "yes" if Value history now shows a "Bought" row dated 15 Jun 2019
+  Open the Purchase editor again, set Bought on to tomorrow's date and save.
+  Record: PURCHASE_FUTURE_REFUSED = "yes" if refused inline
+  Clear both fields and save. Record: PURCHASE_POINT_REMOVED = "yes" if the "Bought" row disappeared
+
+  Step 15 — Details, Notes, Rename (AS-13, AS-13B, AS-13C). Click Edit on Details.
+  Record: GUIDED_FIELDS = the guided field labels (expected Address or unit, Tenure, Floor area, Tenanted for property)
+  Fill Tenure "99-yr", add an Other detail "Parking" = "B2-14", save.
+  Record: DETAILS_SAVED = "yes" if the Details section shows Tenure 99-yr and Parking B2-14 as labelled rows
+  Click "Add a note" in Notes, type "Keys with agent", save. Record: NOTE_SAVED = "yes" if it shows in the Notes section.
+  ••• → Rename or change category: name "QA Condo 2", category "Other", save.
+  Record: CATEGORY_CHANGE_KEEPS_DETAILS = "yes" if Tenure and Parking still show (now under Other details)
+  Record: VALUES_UNCHANGED = "yes" if Value history rows are identical to before the edits (AS-17)
+  ••• → Rename or change category: category back to "Property", name "QA Condo", save.
+
+  Step 16 — Photo and attachments (AS-14, AS-15). Click the thumbnail.
+  Record: PHOTO_PICKER = "yes" if a file picker opened (record UPLOAD_BLOCKED = yes if the harness cannot upload). Press Escape.
+  Open the "Attachments" tab. Record: ATTACH_EMPTY = "yes" if an empty state with an "Add file" action shows.
+  If the harness can upload: add a small PDF; Record FILE_LISTED; toggle "Lucius can read" and reload, Record SWITCH_PERSISTS; click remove, confirm, Record FILE_REMOVED.
+
+  PHASE 4: Values (AS-16, AS-16A)
+
+  Step 17 — Click "Update value". Take a screenshot labeled "AS-16_update_value.png".
+  Record: NEW_VALUE_BLANK = "yes" if New value is empty and "Current value: …" is shown as text
+  Record: AS_OF_TODAY = "yes" if As of defaults to today
+  Enter "950000", note "Agent estimate", click "Update value". Wait 2 seconds.
+  Record: VALUE_UPDATED = "yes" if the toast "Value updated." appears and the Value stat shows S$950,000
+  Record: HISTORY_APPENDED = "yes" if the earlier value is still listed below the new one
+
+  Step 18 — Correct and remove (AS-16A). Tap the "Agent estimate" row itself (rows have no pencil/trash buttons).
+  Record: CORRECT_PREFILLED = "yes" if "Correct this value" opens prefilled with 950,000 and the note
+  Change it to "940000", click "Save correction". Record: CORRECTED = "yes" if the row now reads S$940,000 and "Value corrected." appears.
+  Tap that row again, click "Remove value", confirm. Record: REMOVED = "yes" if the row is gone and "Value removed." appears.
+  Tap the only remaining value row. Record: LAST_VALUE_PROTECTED = "yes" if "Remove value" is disabled with "An asset needs at least one value."
+  Tap the purchase row. Record: PURCHASE_ROW_OPENS_EDITOR = "yes" if the Purchase editor opens. Close it.
+
+  PHASE 5: Dispose and delete (AS-18, AS-19)
+
+  Step 19 — Open "QA Car". ••• → Sell or dispose.
+  Record: SOLD_ON = "yes" if a "Sold on" date field defaulting to today is present
+  Set Sold on to 2020-01-01 (before its 2022 purchase) and click Record disposal.
+  Record: SALE_BEFORE_PURCHASE_REFUSED = "yes" if refused inline and the dialog stayed open
+  Set Sold on to today, proceeds "90000", pick a cash account, click "Record disposal".
+  Record: DISPOSED = "yes" if the toast "Disposal recorded · asset archived" appears and the register no longer lists QA Car
+
+  Step 20 — Open "Test Custom Asset". ••• → Delete asset.
+  Record: DELETE_COPY = "yes" if the confirmation mentions "use Sell or dispose instead"
+  Click Cancel. Record: CANCEL_KEEPS = "yes" if the asset is still there. Delete again and confirm.
+  Record: DELETED = "yes" if the register no longer lists it and a toast confirmed it
+
+  PHASE 6: Deep link and back (AS-22)
+
+  Step 21 — Navigate to /assets?id=<QA Condo's id> directly. Record: DETAIL_DIRECT. Press browser back. Record: BACK_TO_REGISTER.
+
+  PHASE 7: Phone width (AS-06, AS-11A)
+
+  Step 22 — Set the viewport to 390 px wide (or 640 px if 390 is unsupported). Take a screenshot labeled "AS-06_mobile.png".
+  Record: NO_HORIZONTAL_OVERFLOW = "yes" if the page does not scroll horizontally
+  Open "QA Watch" and its Value history. Take a screenshot labeled "AS-11A_history_phone.png".
+  Record: HISTORY_TWO_LINE = "yes" if each value renders as a two-line row and notes read normally (not one letter per line)
+
+  FINAL: Summary
+  Collect all records and produce a PASS/FAIL verdict per AS criterion. AS-20 and AS-21 are covered by
+  the backend suites (tests/test_owned_assets_networth.py, tests/test_owned_assets_tools.py) — mark them
+  PASS only if their pytest evidence is attached to this run, otherwise SKIP.

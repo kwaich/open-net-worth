@@ -1,0 +1,76 @@
+# Spec: INV-HIST-01 — received income and equity vest history
+# Covers: docs/qa/acceptance/equity.md and investments-income.md
+id: INV-HIST-01
+acceptance_ids:
+  - EQ-VEST-HISTORY
+  - EQ-VEST-HISTORY-RELEASE
+  - INC-12
+  - INC-13
+  - INC-14
+setup_script: "seed_inv_event_histories.py"
+title: "Investment event histories — vested equity and received income"
+description: >
+  Verifies the two persisted-event history panels added to Investments. The
+  equity panel keeps released and awaiting-release vest facts below Upcoming
+  vests; the income panel keeps dividend, interest, and distribution receipts
+  below Upcoming payments. It exercises each history's expansion control and
+  the existing confirmed release flow. A localhost-only setup script first
+  creates nine QAHIST rows through the real REST write choke points on the
+  harness's disposable QA backend, so none of these checks can pass on sparse data.
+
+acceptance_criteria:
+  - AC1: Vest history renders directly below Upcoming vests, newest first
+  - AC2: Vest rows show date, symbol, units, and persisted release status
+  - AC3: An awaiting-release row can be confirmed and remains as Released
+  - AC4: Recent income renders in the history position after Upcoming payments, newest first
+  - AC5: Dividend, interest, and distribution rows show net amount and delivery method
+  - AC6: Histories initially show eight rows and expand through Show all
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the app to finish loading.
+
+  Open Investments, then Equity Compensation. Scroll below Upcoming vests.
+  Confirm a "Vest history" panel is directly below it. The deterministic fixture
+  guarantees nine QAHIST vests. FAIL if "No vest history yet" appears.
+  - confirm exactly eight total vest rows are initially visible, with vested date,
+    units, and release status;
+  - confirm dates are newest first, click "Show all N vests", and confirm all nine
+    QAHIST rows are present, including Awaiting release and Released, and the control
+    becomes "Show top 8 only";
+  - on an Awaiting release QAHIST row click "Mark released", enter a valid
+    release date no earlier than the vest date, click "Confirm release", then
+    click "Done", wait for refresh, and confirm that same vest is still listed
+    as Released with the actual release date. This instance is disposable QA data.
+  Record EQUITY=pass only if every check passes.
+
+  Open the Income sub-tab and scroll below Upcoming payments. Confirm a
+  "Recent income" panel is in the history position after Upcoming payments (or
+  after the forecast panels when no upcoming payment exists). The fixture guarantees
+  nine QAHIST receipts. FAIL if "No income recorded yet" appears.
+  - confirm exactly eight total income rows are initially visible and every row shows
+    received date, holding, kind, net amount, and Cash or Reinvested;
+  - confirm dates are newest first;
+  - click "Show all N income events", confirm all nine QAHIST rows appear, require
+    Dividend, Interest, Distribution, Cash, and Reinvested labels among them, and
+    require the control to become "Show top 8 only";
+  - require the XTS test-currency row to show its native net amount and "FX unavailable",
+    and require the received-total and yield cards to say "FX unavailable" rather than
+    presenting the 1:1 compatibility fallback as base currency.
+  Record INCOME=pass only if every check passes.
+
+  Return exactly one of:
+  - "PASS: INV-HIST-01 — EQUITY=<summary>; INCOME=<summary>" when all applicable
+    checks pass.
+  - "FAIL: INV-HIST-01 — <specific failed check>" for any missing panel, wrong
+    order/field/status, failed expansion, disappearing released row, blank state,
+    or visible JavaScript error.
+
+max_steps: 40
+timeout_seconds: 300
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "INV-HIST-01-investment-event-histories.png"
+  note: >
+    Runs only against the harness's safety-checked disposable data. The setup
+    script refuses non-local or non-8090-series backends and seeds via REST only.

@@ -1,0 +1,77 @@
+# Spec: NAV-01 — Tab navigation smoke: every sidebar tab loads without error
+# Covers: App.tsx tab routing; all major tab components mount without crash;
+#         no blank page or unhandled JS error on any core tab.
+id: NAV-01
+acceptance_ids:
+  - OV-LOAD
+  - INV-LOAD
+  - CONN-LOAD
+  - SETTINGS-LOAD
+title: "All sidebar tabs load without error or blank page"
+description: >
+  Clicking each sidebar tab must display content specific to that tab — not a
+  blank white screen, not a JS error overlay, and not a loading spinner stuck
+  forever. This is a lightweight smoke test covering Overview, Investments,
+  Accounts, Planning, Connectors, and Settings. It does not validate the
+  correctness of each tab's data, only that it renders at all.
+
+acceptance_criteria:
+  - AC1: Overview tab shows at least a net-worth figure or summary card
+  - AC2: Investments tab shows at least a table or "no positions" empty state
+  - AC3: Accounts tab shows at least one account row or "no accounts" empty state
+  - AC4: Planning tab shows at least a budget table header or "no budget" empty state
+  - AC5: Connectors tab shows at least one connector card
+  - AC6: Settings tab shows at least one settings section (AI Model, Appearance, etc.)
+  - AC7: None of the above tabs shows a blank screen or a JS error overlay
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  You will visit 6 tabs in the left sidebar and check each one renders content.
+  For each tab: click it, wait 3 seconds for content to load, then note what
+  you see (heading, list, table, or empty state). Record a verdict per tab.
+
+  Tab 1 — Overview
+  Click "Overview" in the sidebar. Wait 3 seconds.
+  Is there a net-worth number, a summary bar, or any chart? If yes: TAB1=ok.
+  If the page is blank or shows an error: TAB1=blank/error.
+
+  Tab 2 — Investments
+  Click "Investments" in the sidebar. Wait 3 seconds.
+  Is there a table of holdings, or a message like "No positions" or "Add your
+  first holding"? If yes: TAB2=ok. If blank/error: TAB2=blank/error.
+
+  Tab 3 — Accounts (may be labelled "Accounts" or "Cash")
+  Click "Accounts" in the sidebar. Wait 3 seconds.
+  Is there at least one account row or an empty state message? TAB3=ok or blank/error.
+
+  Tab 4 — Planning
+  Click "Planning" in the sidebar. Wait 3 seconds.
+  Is there a budget table, "Ready to assign" header, or category rows?
+  TAB4=ok or blank/error.
+
+  Tab 5 — Connectors
+  Click "Connectors" in the sidebar. Wait 3 seconds.
+  Is there at least one connector card? TAB5=ok or blank/error.
+
+  Tab 6 — Settings
+  Click "Settings" in the sidebar. Wait 3 seconds.
+  Is there a settings panel with AI Model, Appearance, Security, or Developer
+  section tabs? TAB6=ok or blank/error.
+
+  Decision:
+  - Count how many tabs show blank/error out of 6.
+  - If 0 tabs are blank/error: return "PASS: all 6 tabs rendered — TAB1=<>, TAB2=<>, TAB3=<>, TAB4=<>, TAB5=<>, TAB6=<>"
+  - If 1 or more tabs are blank/error: return "FAIL: <N> tab(s) failed — <which tabs and what was seen>"
+
+  Note: a tab showing an "empty state" message (like "No positions yet") is
+  NOT a failure — it is a valid render. Only a completely blank screen or a
+  visible JavaScript error overlay counts as failure.
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "NAV-01-tab-smoke.png"
+  note: >
+    No API key needed. The demo dataset has data for every tab. The spec
+    deliberately avoids asserting specific data values — it only checks that
+    each tab component mounts without crashing.

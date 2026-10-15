@@ -1,0 +1,29 @@
+id: CCP-01
+title: "Credit Card Payments group - underfunded and overpaid states"
+description: >
+  Capture a screenshot of the Credit Card Payments group in Plan › Budget
+  showing underfunded (amber) and overpaid (red/negative) payment envelope rows.
+
+acceptance_criteria:
+  - CCP-UNDERFUNDED: At least one row shows "N more needed for this bill" in amber
+  - CCP-OVERPAID: At least one row shows negative "Payment" amount in red
+  - CCP-SYNCED-PILL: The "Synced" indicator is visible
+  - CCP-PAYMENT-LABEL: The "Payment" micro-label is visible
+
+browser_use_task: |
+  Navigate to {app_url}.
+  Click on the "Plan" tab in the sidebar.
+  You should see the Planning interface with the Budget section.
+  Scroll down to find the "Credit Card Payments" group.
+  This group should show payment envelope rows for credit cards (Lark Revolution, Citi Rewards, UOB Visa Infinite, DBS Woman's World).
+  Some rows should show:
+    - "N more needed for this bill" text in amber/warning color (underfunded)
+    - Negative "Payment" amounts in red/error color (overpaid)
+  Look for a "Synced" pill or indicator near the group header.
+  Verify the "Payment" label is visible above the payment amounts.
+  Take a screenshot showing the entire Credit Card Payments group with these states visible.
+  Return "PASS: Credit Card Payments group screenshot captured with underfunded and overpaid states visible" when done.
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "ccp-group-states.png"

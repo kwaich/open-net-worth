@@ -1,0 +1,210 @@
+id: ACT-01
+title: "Asset detail chart types, volume, and OHLCV tooltip"
+description: >
+  Verify the asset detail price chart supports five chart types (Line, Mountain,
+  Baseline, Candle, Bar) via a dropdown selector. Confirm volume histogram renders
+  below the price chart. Hover tooltip displays OHLCV data. Candle/Bar are disabled
+  when OHLC data is unavailable. Chart type persists across page reloads and asset
+  switches. Both equity and crypto assets render correctly.
+
+acceptance_ids:
+  - ACT-DROPDOWN-RENDERS
+  - ACT-DROPDOWN-LISTS
+  - ACT-SELECT-LINE
+  - ACT-SELECT-MOUNTAIN
+  - ACT-SELECT-BASELINE
+  - ACT-SELECT-CANDLE
+  - ACT-SELECT-BAR
+  - ACT-PERSIST-RELOAD
+  - ACT-PERSIST-DIFFERENT-ASSET
+  - ACT-PERSIST-TIMEFRAME-SWITCH
+  - ACT-VOLUME-VISIBLE
+  - ACT-VOLUME-COLORS
+  - ACT-VOLUME-ALL-TYPES
+  - ACT-TOOLTIP-HOVER
+  - ACT-TOOLTIP-OHLCV
+  - ACT-TOOLTIP-ALL-TYPES
+  - ACT-OHLC-UNAVAILABLE-CANDLE-DISABLED
+  - ACT-OHLC-UNAVAILABLE-BAR-DISABLED
+  - ACT-OHLC-UNAVAILABLE-TOOLTIP
+  - ACT-OHLC-UNAVAILABLE-FALLBACK-LINE
+  - ACT-OHLC-AVAILABLE-EQUITY
+  - ACT-EQUITY-RENDERS
+  - ACT-CRYPTO-RENDERS
+
+acceptance_criteria:
+  - AC1: Chart type dropdown exists next to the timeframe selector
+  - AC2: Dropdown lists exactly five chart types (Line, Mountain, Baseline, Candle, Bar)
+  - AC3: Selecting a chart type re-renders the chart
+  - AC4: Volume histogram pane is visible below the price chart
+  - AC5: Hovering over the chart shows an OHLCV tooltip with crosshair
+  - AC6: Chart type preference persists across page reload and asset navigation
+  - AC7: Candle and Bar are disabled (greyed out) when OHLC data is unavailable
+  - AC8: Both equity and crypto assets display correctly
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load. Complete all steps
+  without clicking any external links. Use only the app's internal navigation.
+
+  === PART 1: Chart type dropdown and rendering ===
+
+  Step 1a — Navigate to an asset detail page.
+  Use the search bar at the top of the page to find and open a well-known equity
+  (e.g., AAPL, MSFT, or NVDA). Wait for the asset detail page to fully load.
+  Record: ASSET_LOADED = "yes" or "no"
+
+  Step 1b — Locate the chart type dropdown.
+  Look at the top of the price chart area. You should see a timeframe selector
+  (1D, 5D, 1M, etc.) and NEXT TO IT, a dropdown that says "Line" or shows a
+  chart-type label. Click on that dropdown.
+  Record: DROPDOWN_FOUND = "yes" or "no"
+
+  Step 1c — Verify the dropdown lists all five chart types.
+  Look at the open dropdown menu. Count the chart type options:
+    - Line
+    - Mountain
+    - Baseline
+    - Candle
+    - Bar
+  Are all five present?
+  Record: ALL_FIVE_TYPES = "yes" or "no"
+
+  Step 1d — Select Mountain chart.
+  Click on "Mountain" in the dropdown. The chart should re-render as a filled
+  area chart. Does the dropdown close and the chart change?
+  Record: MOUNTAIN_RENDERS = "yes" or "no"
+
+  Step 1e — Select Candle chart.
+  Click the chart type dropdown again and select "Candle". The chart should
+  show candlesticks (wicks and bodies). Does it render?
+  Record: CANDLE_RENDERS = "yes" or "no"
+
+  Step 1f — Select Baseline chart.
+  Click the dropdown again and select "Baseline". The chart should show a
+  centered line with a dashed reference line. Does it render?
+  Record: BASELINE_RENDERS = "yes" or "no"
+
+  === PART 2: Volume pane ===
+
+  Step 2a — Check for volume histogram below the chart.
+  Look below the price chart. Is there a separate histogram pane showing
+  volume bars (colored red/green by candle direction)?
+  Record: VOLUME_PANE_VISIBLE = "yes" or "no"
+
+  Step 2b — Verify volume persists across chart types.
+  Switch back to "Line" chart type. Does the volume pane still appear below it?
+  Record: VOLUME_PERSISTS = "yes" or "no"
+
+  === PART 3: Hover tooltip (OHLCV) ===
+
+  Step 3a — Hover over the chart to trigger the tooltip.
+  Move your mouse over the price chart (anywhere on the line/candles/bars).
+  A crosshair line and a tooltip box should appear showing data for that point.
+  Record: TOOLTIP_APPEARS = "yes" or "no"
+
+  Step 3b — Verify the tooltip shows OHLCV fields.
+  Read the tooltip text. Does it display:
+    - Date
+    - Open
+    - High
+    - Low
+    - Close
+    - Volume
+  Record: TOOLTIP_SHOWS_OHLCV = "yes" or "no"
+
+  Step 3c — Switch to Line chart and verify tooltip still works.
+  Select "Line" from the chart type dropdown. Hover over the chart again.
+  Does the OHLCV tooltip appear?
+  Record: TOOLTIP_ON_LINE = "yes" or "no"
+
+  === PART 4: Timeframe switching ===
+
+  Step 4a — Switch to 5D timeframe.
+  Click the 5D button in the timeframe selector. The chart should update.
+  What chart type is currently selected? Record the current chart type.
+  Record: TIMEFRAME_SWITCH_WORKS = "yes" or "no"
+  Record: CHART_TYPE_AFTER_SWITCH = "Line" or "Mountain" or "Candle" etc.
+
+  Step 4b — Confirm chart type persists.
+  After switching to 5D, did the chart type remain the same (not revert to Line)?
+  Record: CHART_TYPE_PERSISTS = "yes" or "no"
+
+  Step 4c — Switch to 1M timeframe.
+  Click the 1M button. Does the chart still show the same chart type?
+  Record: CHART_TYPE_PERSISTS_1M = "yes" or "no"
+
+  === PART 5: Crypto asset and OHLC availability ===
+
+  Step 5a — Navigate to a crypto asset (BTC or ETH).
+  Use the search bar to find a major crypto coin (Bitcoin or Ethereum).
+  Open its asset detail page. Does it load?
+  Record: CRYPTO_LOADED = "yes" or "no"
+
+  Step 5b — Check chart type dropdown for crypto on 1D.
+  Click the chart type dropdown. On the 1D timeframe for crypto, are Candle and
+  Bar ENABLED (not greyed out)?
+  Record: CRYPTO_1D_OHLC_AVAILABLE = "yes" or "no"
+
+  Step 5c — Switch to 5Y timeframe for crypto.
+  Click the 5Y button in the timeframe selector. Wait for the chart to update.
+  Now click the chart type dropdown. Are Candle and Bar now GREYED OUT
+  (disabled)?
+  Record: CRYPTO_5Y_OHLC_UNAVAILABLE = "yes" or "no"
+
+  Step 5d — Check the hover tooltip on disabled option.
+  Hover your mouse over the greyed-out "Candle" option in the dropdown.
+  Does a tooltip appear saying "OHLC data not available" or similar?
+  Record: DISABLED_TOOLTIP = "yes" or "no"
+
+  Step 5e — Verify fallback to Line.
+  If the chart was showing Candle on 1D, and you switch to 5Y (where OHLC is
+  unavailable), does the chart automatically switch to Line?
+  Record: FALLBACK_LINE = "yes" or "no"
+
+  === PART 6: Persistence across assets ===
+
+  Step 6a — Verify chart type persists across asset navigation.
+  You previously selected "Mountain" or another type. Close the chart type
+  dropdown and navigate to a different asset (use search to open MSFT or AAPL).
+  When the new asset loads, what chart type is selected?
+  Record: CHART_TYPE_ON_NEW_ASSET = "Line" or "Mountain" or etc.
+
+  Step 6b — Confirm persistence.
+  Is the chart type the same as what you selected before navigating?
+  Record: CHART_TYPE_PERSISTED_TO_NEW_ASSET = "yes" or "no"
+
+  === SUMMARY DECISION ===
+
+  Collect the results:
+  - DROPDOWN_FOUND, ALL_FIVE_TYPES, MOUNTAIN_RENDERS, CANDLE_RENDERS, BASELINE_RENDERS
+  - VOLUME_PANE_VISIBLE, VOLUME_PERSISTS
+  - TOOLTIP_APPEARS, TOOLTIP_SHOWS_OHLCV, TOOLTIP_ON_LINE
+  - TIMEFRAME_SWITCH_WORKS, CHART_TYPE_PERSISTS, CHART_TYPE_PERSISTS_1M
+  - CRYPTO_LOADED, CRYPTO_1D_OHLC_AVAILABLE, CRYPTO_5Y_OHLC_UNAVAILABLE,
+    DISABLED_TOOLTIP, FALLBACK_LINE
+  - CHART_TYPE_ON_NEW_ASSET, CHART_TYPE_PERSISTED_TO_NEW_ASSET
+
+  Decision logic:
+  - If any required step is "no": return "FAIL: <describe which step failed>"
+  - If all steps are "yes": return "PASS: All chart type features work correctly"
+  - If some crypto tests are "no" but not critical (e.g., crypto asset unavailable
+    in test data): return "PASS: Equity and core features verified; crypto
+    degradation not testable"
+
+  Examples:
+  - "PASS: Chart type dropdown renders, all 5 types selectable, volume visible,
+    OHLCV tooltip works, chart type persists across reloads and assets, crypto
+    5Y OHLC correctly disabled"
+  - "FAIL: Chart type dropdown not found — the header does not show a dropdown
+    next to the timeframe selector"
+  - "FAIL: Volume pane not visible below the chart"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "ACT-01-chart-types-overview.png"
+  note: >
+    This spec exercises the complete chart-types feature end-to-end: dropdown
+    interaction, five chart type renders, volume pane visibility, OHLCV tooltip,
+    timeframe switching, OHLC availability degradation for crypto, and
+    localStorage persistence. A single manual run captures most criteria; the
+    spec can be split into multiple runs if needed.

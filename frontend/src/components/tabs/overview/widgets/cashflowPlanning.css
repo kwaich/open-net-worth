@@ -1,0 +1,536 @@
+/* Overview v2 — Cash-flow + Planning widget group (spending pulse, cash flow,
+   calendar, goals, crossover point, FIRE projection, cash-flow runway).
+   Ported from the design handoff's overview_v2b/overview.css class shapes,
+   adapted to this app's existing tokens (--good/--bad/--warn/--accent/--line/
+   --muted/--faint/--surface2/--radius-md/--radius-sm/--modal-bg/
+   --modal-border/--shadow-lg/--line-strong already exist app-wide). */
+
+/* panel footer link ("All envelopes →" etc.) */
+.ov-panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 13px;
+}
+
+@media (hover: hover) {
+  .ov-panel-link:hover {
+    text-decoration: underline;
+  }
+}
+
+/* ── spending pulse: one envelope row (name / progress bar / spent of budget) ── */
+
+.ov-env-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 130px;
+  gap: 11px;
+  align-items: center;
+  padding: 7px 0;
+  font-size: 12.5px;
+}
+
+.ov-env-nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-env-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+
+.ov-env-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 3px;
+}
+
+.ov-env-amt {
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-env-amt span {
+  color: var(--faint);
+  font-weight: 500;
+}
+
+/* ── cash flow: in/out bars ───────────────────────────────────────────────── */
+
+.ov-cf-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 76px;
+  gap: 11px;
+  align-items: center;
+  padding: 6px 0 2px;
+  font-size: 12.5px;
+}
+
+.ov-cf-lbl {
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ov-cf-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+
+.ov-cf-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 5px;
+  opacity: 0.85;
+}
+
+.ov-cf-amt {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-cf-sub {
+  font-size: 11px;
+  color: var(--faint);
+  margin: 0 0 6px 41px;
+}
+
+/* ── goals ─────────────────────────────────────────────────────────────────── */
+
+.ov-goal {
+  padding: 8px 0;
+}
+
+.ov-goal + .ov-goal {
+  border-top: 1px solid var(--line);
+}
+
+.ov-goal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ov-goal-nm {
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ov-goal-pct {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-goal-bar {
+  margin-top: 7px;
+}
+
+.ov-goal-sub {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 5px;
+}
+
+/* ── crossover point ───────────────────────────────────────────────────────── */
+
+/* One column inside the centred body — the body's own flex is a row, which laid the year, the
+   bar, the stats and the caption out side by side. */
+.ov-cross {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-cross-hd {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ov-cross-yr {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-cross-note {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+/* Reflows 3 -> 2 -> 1 columns as the card narrows; each stat keeps its label above its value. */
+.ov-cross-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 10px 14px;
+  margin-top: 12px;
+}
+
+.ov-cross-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ov-cross-lbl {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+.ov-cross-val {
+  font-size: 14px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ov-cross-cap {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 10px;
+}
+
+/* ── FIRE projection / cash-flow runway (compact insights-style layout) ──────── */
+
+.ov-ins-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.ov-ins-headrow {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.ov-ins-big {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+/* ── calendar card ─────────────────────────────────────────────────────────── */
+
+.ov-cal-wrap {
+  position: relative;
+}
+
+.ov-cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  align-content: start;
+}
+
+.ov-cal-dow {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  padding-bottom: 4px;
+}
+
+.ov-cal-pad {
+  min-height: 46px;
+}
+
+.ov-cal-cell {
+  position: relative;
+  min-height: 46px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  /* A calendar READS as a grid of cells — each day needs its own field, so this is one of
+     the places that still wants a fill a step above the page rather than collapsing onto
+     it like an ordinary card (owner, 2026-08-24). */
+  background: var(--panel);
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+
+.ov-cal-cell--hot {
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--ink) 6%, var(--panel));
+}
+
+@media (hover: hover) {
+  .ov-cal-cell--has:hover {
+    border-color: var(--line-strong);
+    background: color-mix(in srgb, var(--ink) 6%, var(--panel));
+  }
+}
+
+.ov-cal-cell--today {
+  border-color: var(--accent);
+}
+
+.ov-cal-cell--today .ov-cal-day {
+  color: var(--accent);
+}
+
+.ov-cal-day {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-cal-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 6px;
+}
+
+.ov-cal-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: block;
+}
+
+.ov-cal-dot--in {
+  background: var(--good);
+}
+
+.ov-cal-dot--out {
+  background: var(--bad);
+}
+
+/* Moved out of the widget's title row into `subhead` — a header-right toolbar was cramped
+   against the meta figures on a narrow (mobile-width) card, overlapping rather than wrapping.
+   Full-width and centered, its own row below the title. */
+.ov-cal-navwrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  margin-bottom: 4px;
+}
+
+.ov-cal-nav {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: 1px solid transparent;
+  color: var(--faint);
+  cursor: pointer;
+  transition:
+    color 0.12s,
+    background 0.12s;
+}
+
+@media (hover: hover) {
+  .ov-cal-nav:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+
+.ov-cal-nav svg {
+  display: block;
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.ov-cal-month {
+  position: relative;
+  min-width: 64px;
+  text-align: center;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .ov-cal-month:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+
+.ov-cal-dotmark {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* A body portal at fixed VIEWPORT coordinates (cashflowPlanning.tsx `cellPos`), so the
+   widget's own scroll box can never clip it — it used to lose its header above a top-row day.
+   Interactive on hover too: the pointer travels from the day straight into it (no gap) to
+   reach "Open in register". Modal tier because the widget can be fullscreened (`.ov-fs-shell`
+   is `--z-modal`); appended to <body> later, so it paints above the shell at equal z. */
+.ov-cal-pop {
+  position: fixed;
+  z-index: var(--z-modal);
+  min-width: 156px;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.4));
+  padding: 9px 11px;
+  transform: translate(-50%, 0);
+  animation: ov-cal-pop-in 0.1s ease;
+}
+
+.ov-cal-pop--above {
+  transform: translate(-50%, -100%);
+}
+
+/* The tap-pinned popover's outside-tap scrim, lifted to the same tier so it still catches a
+   tap inside a fullscreen widget; the popover is rendered after it and so sits on top. */
+.ov-cal-scrim {
+  z-index: var(--z-modal);
+}
+
+@keyframes ov-cal-pop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ov-cal-pop-d {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--faint);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+
+.ov-cal-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.ov-cal-pop-row b {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-cal-pop-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.ov-cal-pop-dot--in {
+  background: var(--good);
+}
+
+.ov-cal-pop-dot--out {
+  background: var(--bad);
+}
+
+.ov-cal-pop-net {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--faint);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.ov-cal-pop-net b {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Narrower cards (mobile stack, or a resized-down desktop card) — drop the
+   day-of-week header text density and let the calendar grid breathe. */
+@container ovcard (max-width: 300px) {
+  .ov-cal-cell {
+    min-height: 36px;
+    padding: 4px 2px;
+  }
+
+  .ov-cal-pad {
+    min-height: 36px;
+  }
+
+  .ov-env-row {
+    grid-template-columns: 84px minmax(0, 1fr) 96px;
+    gap: 6px;
+  }
+
+  .ov-cf-sub {
+    margin-left: 0;
+  }
+}

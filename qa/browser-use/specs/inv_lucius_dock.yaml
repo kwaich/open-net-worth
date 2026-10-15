@@ -1,0 +1,148 @@
+# Spec: INV-DOCK-01 — Lucius dock: per-tab prompt suggestions, hide while
+#                      chat drawer is open, reappear when drawer closes
+# Covers: docs/qa/acceptance/investments-lucius-dock.md
+id: INV-DOCK-01
+acceptance_ids:
+  - INV-DOCK-SHOWS-ON-HOLDINGS
+  - INV-DOCK-SHOWS-ON-PERFORMANCE
+  - INV-DOCK-SHOWS-ON-ACTIVITY
+  - INV-DOCK-PROMPTS-CHANGE-ON-TAB-SWITCH
+  - INV-DOCK-PROMPT-SENDS-TO-CHAT
+  - INV-DOCK-HIDES-WHEN-DRAWER-OPEN
+  - INV-DOCK-REAPPEARS-WHEN-DRAWER-CLOSED
+  - INV-DOCK-HIDDEN-ON-OPEN-PAGE-LOAD
+  - INV-DOCK-NO-SUGGESTIONS-GRACEFUL
+title: "Investments Lucius dock — per-tab prompts, hide while drawer open, reappear on close"
+description: >
+  Exercises the Lucius dock (contextual AI prompt surface) on the Investments tab:
+    1. The dock shows context-specific prompt chips on Holdings and Performance.
+    2. Switching sub-tabs updates the prompt suggestions.
+    3. Clicking a prompt chip opens the chat drawer with that prompt pre-filled.
+    4. The dock is hidden while the chat drawer is open.
+    5. The dock reappears when the chat drawer is closed.
+
+  NOTE: This spec requires ANTHROPIC_API_KEY if it needs to verify that Lucius
+  actually responds to the prompt. The dock visibility / hide / reappear behavior
+  is UI-only and does not need a key — only the chat round-trip would.
+  The spec SKIPs the round-trip check if no key is available, but verifies all
+  dock visibility / state transitions.
+
+acceptance_criteria:
+  - AC1: Lucius dock visible on Holdings with holdings-relevant prompts
+  - AC2: Lucius dock visible on Performance with performance-relevant prompts
+  - AC3: Prompt suggestions differ between Holdings and Performance sub-tabs
+  - AC4: Clicking a prompt opens chat drawer with the prompt
+  - AC5: Dock is hidden while chat drawer is open
+  - AC6: Dock reappears when chat drawer is closed
+  - AC7: If drawer is open on page load, dock starts hidden
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open the Investments tab, Holdings sub-tab (AC1).
+  Click "Investments" in the left sidebar. Wait 3 seconds.
+  Click the "Holdings" sub-tab (may already be selected). Wait 2 seconds.
+
+  Step 2 — Check Lucius dock on Holdings (AC1).
+  Look for the Lucius dock: a small panel, bar, or chip cluster typically at the
+  bottom of the page, bottom of the tab, or inline near the content, labelled
+  "Ask Lucius", "Suggestions", or showing prompt chips with Lucius-style text
+  (e.g. "Rebalance my portfolio ✦", "How concentrated am I? ✦").
+  Is the dock visible?
+  Record: DOCK_HOLDINGS = "visible" or "absent".
+  If visible: read and record 1-2 of the prompt texts as DOCK_HOLDINGS_PROMPTS.
+
+  Step 3 — Check Lucius dock on Performance (AC2).
+  Click the "Performance" sub-tab. Wait 2 seconds.
+  Is the Lucius dock still visible?
+  Record: DOCK_PERFORMANCE = "visible" or "absent".
+  If visible: read and record 1-2 of the prompt texts as DOCK_PERFORMANCE_PROMPTS.
+
+  Step 3b — Check Lucius dock on Activity (INV-DOCK-SHOWS-ON-ACTIVITY).
+  Click the "Activity" sub-tab if it exists. Wait 2 seconds.
+  If "Activity" sub-tab is not present: record DOCK_ACTIVITY = "skip (no Activity sub-tab)".
+  If present: is the Lucius dock visible?
+  Record: DOCK_ACTIVITY = "visible", "absent", or "skip (no Activity sub-tab)".
+
+  Step 4 — Check prompts change on sub-tab switch (AC3).
+  Compare DOCK_HOLDINGS_PROMPTS and DOCK_PERFORMANCE_PROMPTS.
+  Are the prompts different (at least one prompt changed)?
+  Record: PROMPTS_DIFFER = "yes" or "no" or "could not compare (dock absent)".
+
+  Step 5 — Click a prompt chip (AC4).
+  Go back to the Holdings sub-tab. Wait 1 second.
+  If the dock is visible and has at least one prompt chip:
+    Click the first prompt chip. Wait 3 seconds.
+    Did the chat drawer open?
+    Is any text pre-filled in the chat input, or is a message being sent?
+    Record: PROMPT_OPENS_CHAT = "yes" or "no".
+    Record: CHAT_DRAWER_OPEN = "yes" or "no".
+  Else:
+    Record: PROMPT_OPENS_CHAT = "skip — dock absent or no chips".
+    Record: CHAT_DRAWER_OPEN = "no".
+
+  Step 6 — Check dock hides when drawer open (AC5).
+  If CHAT_DRAWER_OPEN = "yes" (chat drawer is now open):
+    Look for the Lucius dock. Is it still visible?
+    Record: DOCK_WHILE_OPEN = "visible (wrong)" or "hidden (correct)".
+  Else:
+    Open the chat drawer manually (look for a chat icon, a "Chat" button, or
+    a Lucius avatar in the corner). Wait 2 seconds.
+    If the chat drawer opens: record CHAT_DRAWER_OPEN = "yes (manually opened)".
+    Look for the Lucius dock. Is it hidden?
+    Record: DOCK_WHILE_OPEN = "visible (wrong)" or "hidden (correct)" or "could not open drawer".
+
+  Step 7 — Check dock reappears when drawer closes (AC6).
+  If CHAT_DRAWER_OPEN = "yes" or "yes (manually opened)":
+    Close the chat drawer (click X, Escape, or the close control). Wait 2 seconds.
+    Is the Lucius dock visible again?
+    Record: DOCK_AFTER_CLOSE = "visible (correct)" or "still hidden (wrong)".
+  Else:
+    Record: DOCK_AFTER_CLOSE = "skip — could not open/close drawer".
+
+  Decision:
+  - If DOCK_HOLDINGS = "absent" and DOCK_PERFORMANCE = "absent":
+    return "SKIP: Lucius dock not present on Investments tab — redesign may not be integrated"
+
+  - Evaluate dock visibility (AC1, AC2):
+    if DOCK_HOLDINGS = "absent": DOCK_CHECK = "fail — dock absent on Holdings"
+    elif DOCK_PERFORMANCE = "absent": DOCK_CHECK = "fail — dock absent on Performance"
+    else: DOCK_CHECK = "pass"
+
+  - Evaluate prompts differ (AC3):
+    if PROMPTS_DIFFER = "yes": PROMPT_DIFF_CHECK = "pass"
+    elif PROMPTS_DIFFER = "no": PROMPT_DIFF_CHECK = "fail — same prompts on Holdings and Performance"
+    else: PROMPT_DIFF_CHECK = "skip — dock absent"
+
+  - Evaluate prompt click (AC4):
+    if PROMPT_OPENS_CHAT = "skip — dock absent or no chips": CLICK_CHECK = "skip"
+    elif PROMPT_OPENS_CHAT = "no": CLICK_CHECK = "fail — clicking prompt chip did not open chat"
+    else: CLICK_CHECK = "pass"
+
+  - Evaluate dock hides (AC5):
+    if DOCK_WHILE_OPEN = "visible (wrong)": HIDE_CHECK = "fail — dock still visible while chat drawer is open"
+    elif DOCK_WHILE_OPEN = "hidden (correct)": HIDE_CHECK = "pass"
+    else: HIDE_CHECK = "skip — could not verify (drawer could not be opened)"
+
+  - Evaluate dock reappears (AC6):
+    if DOCK_AFTER_CLOSE = "visible (correct)": REAPPEAR_CHECK = "pass"
+    elif DOCK_AFTER_CLOSE = "still hidden (wrong)": REAPPEAR_CHECK = "fail — dock did not reappear after closing drawer"
+    else: REAPPEAR_CHECK = "skip"
+
+  - If any check is "fail":
+    return "FAIL: INV-DOCK-01 — DOCK=<DOCK_CHECK>, PROMPTS_DIFFER=<PROMPT_DIFF_CHECK>, CLICK=<CLICK_CHECK>, HIDE=<HIDE_CHECK>, REAPPEAR=<REAPPEAR_CHECK>"
+
+  - If all pass or skip:
+    return "PASS: INV-DOCK-01 — DOCK=<DOCK_CHECK>, PROMPTS_DIFFER=<PROMPT_DIFF_CHECK>, CLICK=<CLICK_CHECK>, HIDE=<HIDE_CHECK>, REAPPEAR=<REAPPEAR_CHECK>"
+
+max_steps: 35
+timeout_seconds: 300
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "INV-DOCK-01-lucius-dock.png"
+  note: >
+    SKIP is acceptable if the Lucius dock is not yet present (redesign not
+    integrated). The dock hide/reappear behavior (AC5-AC6) does not require an
+    ANTHROPIC_API_KEY — only the chat round-trip would. The spec deliberately
+    avoids asserting on the content of Lucius's response.

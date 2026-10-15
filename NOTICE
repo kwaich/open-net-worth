@@ -1,0 +1,129 @@
+Open Net Worth
+Copyright (C) 2026 Tai Duong  (privacy-guard: ok)
+
+This product is licensed under the GNU Affero General Public License v3.0
+(AGPL-3.0) — see the LICENSE file in this repository for the full text.
+
+This NOTICE file lists the third-party open-source software this project
+depends on at build/run time, and the license each one is distributed under.
+It is provided for attribution and license-compatibility transparency. It
+does not modify the terms of any of the licenses listed below; consult each
+project's own repository for its authoritative license text.
+
+Compiled 2026-08-23 from backend/requirements.txt, backend/requirements-dev.txt,
+and frontend/package.json against each package's published PyPI/npm license
+metadata.
+
+================================================================================
+LICENSE-COMPATIBILITY SUMMARY
+================================================================================
+
+Every runtime dependency below is distributed under a license that is
+compatible with distributing this project as a combined work under
+AGPL-3.0: permissive licenses (MIT / BSD-2/3-Clause / Apache-2.0 / ISC), or
+a weak-copyleft library license (LGPL-3.0) that explicitly permits linking
+from an application under a different license. **No dependency was found
+under a license that is incompatible with, or that would impose additional
+restrictions in conflict with, AGPL-3.0 distribution.**
+
+One dependency is itself copyleft and deserves a direct call-out:
+
+- **PyMuPDF** (backend PDF text/table extraction) is dual-licensed by
+  Artifex Software under **GNU AGPL-3.0 or a commercial license**. Because
+  Open Net Worth is itself licensed AGPL-3.0, using PyMuPDF under its AGPL
+  option requires no separate action and imposes no extra obligation beyond
+  what this project already carries — this is the ordinary, expected case,
+  not a compatibility problem. (If Open Net Worth were ever relicensed to a
+  non-copyleft license, PyMuPDF's AGPL option would stop being usable and
+  either a commercial PyMuPDF license or a different PDF library would be
+  needed — noted here so that decision isn't made blind later.)
+
+Two dependencies are LGPL-3.0, which is a library license: LGPL explicitly
+permits an application under a different license (including AGPL) to link
+against it, with obligations (offer the LGPL library's own source/relink
+capability) attaching only to the LGPL-licensed library itself, not to the
+whole application:
+
+- **python-telegram-bot** (Telegram connector) — LGPL-3.0-only
+- **psycopg[binary]** (PostgreSQL driver) — LGPL-3.0-only
+
+Development-only tooling (test runners, linters, type checkers — never
+imported by the shipped application, never distributed to an end user) is
+listed separately at the bottom for completeness and was not held to the
+same distribution-compatibility bar.
+
+================================================================================
+BACKEND (Python) — backend/requirements.txt
+================================================================================
+
+Package                License
+----------------------------------------------------------------------
+yfinance                Apache-2.0
+fastapi                 MIT
+uvicorn[standard]       BSD-3-Clause
+python-multipart        Apache-2.0
+anthropic               MIT
+openai                  Apache-2.0
+httpx                   BSD-3-Clause
+python-dotenv           BSD-3-Clause
+pypdf                   BSD-3-Clause
+pymupdf                 AGPL-3.0-or-later OR commercial (Artifex dual license — see above)
+openpyxl                MIT
+xlrd                    BSD-3-Clause
+msoffcrypto-tool        MIT
+apscheduler             MIT
+python-telegram-bot     LGPL-3.0-only (see above)
+python-dateutil         Dual: Apache-2.0 OR BSD-3-Clause (licensee's choice)
+PyYAML                  MIT
+tzdata                  Apache-2.0
+cryptography            Dual: Apache-2.0 OR BSD-3-Clause (licensee's choice)
+websockets              BSD-3-Clause
+jsonschema              MIT
+segno                   BSD-3-Clause
+SQLAlchemy              MIT
+alembic                 MIT
+psycopg[binary]         LGPL-3.0-only (see above)
+trafilatura             Apache-2.0 (versions >= 1.8.0; this project pins >=2.2.0)
+
+================================================================================
+FRONTEND (npm) — frontend/package.json "dependencies"
+(the packages actually bundled into frontend/dist by the production build)
+================================================================================
+
+Package                     License
+----------------------------------------------------------------------
+react, react-dom            MIT
+@tanstack/react-router      MIT
+@radix-ui/react-dialog      MIT
+@dnd-kit/core                MIT
+@dnd-kit/sortable            MIT
+@dnd-kit/utilities           MIT
+chart.js                     MIT
+lightweight-charts           Apache-2.0
+lucide-react                 ISC
+prismjs                       MIT
+react-markdown                MIT
+remark-gfm                    MIT
+uuid                          MIT
+diff                          BSD-3-Clause
+@types/uuid                   MIT (type declarations only, no runtime code)
+
+================================================================================
+DEVELOPMENT / BUILD TOOLING ONLY — not imported by the shipped application,
+not distributed to an end user (backend/requirements-dev.txt,
+frontend/package.json "devDependencies"). Listed for completeness.
+================================================================================
+
+ruff, mypy, pytest, pytest-asyncio, pytest-cov, import-linter, pre-commit,
+types-python-dateutil, types-PyYAML          — MIT (ruff, mypy, pytest family,
+                                                pre-commit); import-linter is
+                                                BSD-2-Clause
+eslint, prettier, stylelint, vite, vitest,
+typescript, typescript-eslint, jsdom          — MIT
+playwright                                    — Apache-2.0
+postcss-custom-media, stylelint-config-standard, globals, @vitejs/plugin-react,
+eslint-plugin-react-hooks, eslint-plugin-react-refresh, @eslint/js,
+@testing-library/dom, @testing-library/react, vite-plugin-pwa — MIT
+@types/* packages (node, diff, prismjs, react, react-dom)      — MIT
+
+================================================================================

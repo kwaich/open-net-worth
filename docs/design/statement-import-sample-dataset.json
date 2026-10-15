@@ -1,0 +1,253 @@
+{
+  "_about": {
+    "purpose": "A realistic sample dataset for designing the statement-import reconciliation UI. Modeled on a real Vietcombank (VND) XLSX statement + the user's ledger. Identifying details (account number, phone, third-party names) are masked. It is CURATED, not a raw dump: the 12 statement rows are chosen so that EVERY review state appears at least once (see reconciliation.rows[].design_note). Amounts are in Vietnamese Dong (₫); the ledger also has SGD accounts to show FX transfers.",
+    "how_to_read": "statement = what the parser extracted from the file. ledger_now = what's already in the user's ledger for this period. reconciliation = the computed review output the UI renders: per-row band + matched entry + suggested action + off-by + the 3-column projection, plus the not-on-statement panel, the two-question verdict, and the filter-chip counts.",
+    "currency_note": "₫ (VND) has no decimals. A card/transfer billed in another currency also carries original_amount/original_currency (see rows with a foreign leg).",
+    "states_covered": ["matched_strong", "matched_via_shared_reference", "needs_you_review", "weak_match_drift", "new", "transfer_routed_by_lucius", "transfer_leg_echo_already_booked", "fx_pair_cross_currency", "manual_link_candidate", "duplicate_already_imported", "foreign_charge", "not_on_statement_core", "not_on_statement_boundary", "off_by_drift", "lucius_provenance", "reconcile_ok"]
+  },
+
+  "accounts": [
+    { "id": "acc_vcb", "name": "Vietcombank", "currency": "VND", "kind": "asset", "color": "#3b82f6", "last_four": "1234" },
+    { "id": "acc_momo", "name": "MoMo Wallet", "currency": "VND", "kind": "asset", "color": "#e11d8f" },
+    { "id": "acc_wise", "name": "Wise SGD", "currency": "SGD", "kind": "asset", "color": "#22c55e" },
+    { "id": "acc_dbs", "name": "DBS Multiplier (SGD)", "currency": "SGD", "kind": "asset", "color": "#eab308" }
+  ],
+
+  "categories": [
+    { "id": "cat_meals", "label": "Daily Meals", "color": "#f59e0b" },
+    { "id": "cat_transport", "label": "Transport", "color": "#6366f1" },
+    { "id": "cat_drinks", "label": "Drinks & Nightlife", "color": "#a855f7" },
+    { "id": "cat_subs", "label": "Subscriptions", "color": "#8b5cf6" }
+  ],
+
+  "statement": {
+    "file": "lich-su-giao-dich-tai-khoan.xlsx",
+    "format": "xlsx",
+    "account_detected": { "account_id": "acc_vcb", "how": "printed account number ·1112 matched your Vietcombank account", "needs_account": false },
+    "meta": {
+      "currency": "VND",
+      "issuer": "Vietcombank",
+      "account_holder": "LE Q. M.",
+      "account_number_masked": "000000•••••9892",
+      "period_start": "2026-06-01",
+      "period_end": "2026-06-29",
+      "statement_date": "2026-06-30",
+      "opening_balance": 1715700,
+      "closing_balance": 653786
+    },
+    "reconcile": {
+      "status": "ok",
+      "method": "balance_chain",
+      "message": "Statement parses clean — reconciles with its own balances.",
+      "expected_net": -1061914,
+      "actual_net": -1061914
+    },
+    "instructions": {
+      "text": "Rows with MOMO.0300000000 (CashIn/CashOut) are internal transfers between this Vietcombank account and my MoMo Wallet — never expenses or income. CashIn = top-up from Vietcombank to MoMo; CashOut = MoMo returns money back to Vietcombank.",
+      "remembered": true
+    },
+    "cost": { "ai_read_usd": 0.0, "from_memory": true, "note": "This source was imported before — the format + account are remembered, so this re-import used no AI." },
+
+    "rows": [
+      { "index": 0, "date": "2026-06-01", "direction": "OUT", "amount": 200000, "currency": "VND", "description": "Ecom.EW00000000000002.MOMO.0300000000.CashIn.46afea4b2522", "balance": 1515700 },
+      { "index": 1, "date": "2026-06-01", "direction": "OUT", "amount": 800000, "currency": "VND", "description": "MBVCB.10000000002.857552.td thanh toan example restaurant.CT tu 000000•••892 LE Q. M. toi 70000001 TRAN T. B. tai ACB", "balance": 715700 },
+      { "index": 2, "date": "2026-06-01", "direction": "OUT", "amount": 98000, "currency": "VND", "description": "Ecom.EW00000000000001.MOMO.0300000000.CashIn.6625252b061b", "balance": 617700 },
+      { "index": 3, "date": "2026-06-01", "direction": "IN", "amount": 2000000, "currency": "VND", "description": "6172IBT1kCYE2DIP Wise transfer #1000000001 FROM DBS", "balance": 2617700 },
+      { "index": 4, "date": "2026-06-02", "direction": "OUT", "amount": 166000, "currency": "VND", "description": "Ecom.EW00000000000007.MOMO.0300000000.CashIn.dcc7156c0354", "balance": 2451700 },
+      { "index": 5, "date": "2026-06-02", "direction": "OUT", "amount": 400000, "currency": "VND", "description": "MBVCB.10000000003.AAAA1111BBBB2222.thanh toan cocktails.CT tu 000000•••892 LE Q. M. toi 70000000002 LE Q. C. tai TPBANK", "balance": 1787575 },
+      { "index": 6, "date": "2026-06-02", "direction": "OUT", "amount": 60360, "currency": "VND", "original_amount": 2.5, "original_currency": "USD", "description": "ANTHROPIC SAAS ANTHROPIC.COM CA USD 2.50", "balance": 1727215 },
+      { "index": 7, "date": "2026-06-04", "direction": "OUT", "amount": 280000, "currency": "VND", "description": "MBVCB.10000000004.6155BFTVG2N17SVU.td thanh toan green sm.CT tu 000000•••892 LE Q. M. toi 700000003 PHAM V. D. tai VPBANK", "balance": 1447215 },
+      { "index": 8, "date": "2026-06-14", "direction": "OUT", "amount": 150000, "currency": "VND", "description": "UHHT.866601.20260611.452404.8655.20260613.DG:example-subscription.com/help Tinde", "balance": 1187315 },
+      { "index": 9, "date": "2026-06-15", "direction": "OUT", "amount": 500000, "currency": "VND", "description": "Ecom.EW00000000000003.MOMO.0300000000.CashIn.1bd5b934582f", "balance": 687315 },
+      { "index": 10, "date": "2026-06-20", "direction": "OUT", "amount": 33529, "currency": "VND", "description": "Ecom.EW00000000000004.MOMO.0300000000.CashIn.ca76d6768ffe", "balance": 653786 },
+      { "index": 11, "date": "2026-05-31", "direction": "OUT", "amount": 149000, "currency": "VND", "description": "Ecom.EW00000000000005.MOMO.0300000000.CashIn.aa11bb22cc33", "balance": 1864700 }
+    ]
+  },
+
+  "ledger_now": [
+    { "id": "txn_alpha", "date": "2026-06-01", "kind": "expense", "description": "Thanh toan example restaurant (family food payment)", "from_account_id": "acc_vcb", "amount": -800000, "currency": "VND", "category": "cat_meals", "cleared": false, "source": "ai", "added_by": "Lucius" },
+    { "id": "txn_beta", "date": "2026-06-01", "kind": "transfer", "description": "MoMo top-up", "from_account_id": "acc_vcb", "to_account_id": "acc_momo", "from_amount": 98000, "to_amount": 98000, "currency": "VND", "category": null, "cleared": false, "source": "agent", "added_by": "Transaction Logger" },
+    { "id": "txn_gamma", "date": "2026-06-01", "kind": "transfer", "description": "Transfer to Vietcombank — Wise", "from_account_id": "acc_wise", "to_account_id": "acc_vcb", "from_amount": 99.51, "from_currency": "SGD", "to_amount": 2000000, "to_currency": "VND", "category": null, "cleared": false, "source": "ai", "added_by": "Lucius" },
+    { "id": "txn_delta", "date": "2026-06-02", "kind": "expense", "description": "Cocktails — Le Q. C. (TPBank)", "from_account_id": "acc_vcb", "amount": -400000, "currency": "VND", "category": "cat_drinks", "cleared": false, "source": "ai", "added_by": "Lucius" },
+    { "id": "txn_epsilon", "date": "2026-06-03", "kind": "expense", "description": "Grab GrabFood (2x)", "from_account_id": "acc_momo", "amount": -168000, "currency": "VND", "category": "cat_transport", "cleared": false, "source": "agent", "added_by": "Transaction Logger", "_note_for_design": "on MoMo, NOT the statement's VCB account → will appear in 'Not on statement'" },
+    { "id": "txn_zeta", "date": "2026-06-11", "kind": "expense", "description": "TD subscription renewal", "from_account_id": "acc_vcb", "amount": -250000, "currency": "VND", "category": "cat_subs", "cleared": false, "source": "agent", "added_by": "Transaction Logger", "_note_for_design": "the ExampleSub charge, booked from email as an estimate (−₫250,000, dated 06-11) — the statement's real figure is −₫150,000 on 06-14; 3 days + ₫9,900 apart → beyond auto-match → manual-link candidate" },
+    { "id": "txn_eta", "date": "2026-06-03", "kind": "adjustment", "description": "Balance adjustment — MoMo Wallet", "to_account_id": "acc_momo", "amount": 79000, "currency": "VND", "category": null, "cleared": true, "source": "ai", "added_by": "Lucius", "_note_for_design": "an adjustment on MoMo — appears in 'Not on statement' (not on the VCB statement)" },
+    { "id": "txn_theta", "date": "2026-06-30", "kind": "expense", "description": "Pho — near cut-off", "from_account_id": "acc_vcb", "amount": -45000, "currency": "VND", "category": "cat_meals", "cleared": false, "source": "manual", "added_by": "You", "_note_for_design": "dated 06-30, one day AFTER the period end (06-29) → the BOUNDARY bucket, likely next statement" }
+  ],
+
+  "reconciliation": {
+    "verdict": {
+      "coverage": {
+        "ok": true,
+        "headline": "Every statement transaction will be in your ledger",
+        "detail": "8 linked to entries you already had · 3 imported new · 1 already imported",
+        "linked": 8,
+        "imported_new": 3,
+        "already_imported": 1
+      },
+      "amounts": {
+        "ok": false,
+        "headline": "Off by ₫11,900",
+        "detail": "2 kept at your original figures (choose Merge to adopt the statement's settled amount)",
+        "kept_count": 2,
+        "delta_by_currency": { "VND": -11900 },
+        "drifted_row_indexes": [4, 8]
+      }
+    },
+
+    "chip_counts": { "all": 12, "matched": 6, "needs_you": 1, "weak_match": 1, "new": 3, "not_on_statement": 3 },
+
+    "rows": [
+      {
+        "row_index": 0, "band": "matched_strong", "suggested_action": "merge",
+        "design_note": "STATE: transfer routed by Lucius + already booked (leg echo). A CashIn row → reshaped to a two-leg transfer (VCB → MoMo) by the saved instructions, AND that transfer already exists in the ledger.",
+        "lucius": { "op": "route_transfer", "reason": "Books as transfer: Vietcombank → MoMo Wallet (per your saved instructions: CashIn = VCB→MoMo top-up)", "undoable": true },
+        "headline": "Already booked as a transfer",
+        "statement_side": { "label": "Transfer → MoMo Wallet", "amount": -200000, "currency": "VND" },
+        "ledger_now": null,
+        "note": "No matching booked transfer at exactly ₫200,000 — imports as a NEW transfer. (Shown to contrast with row 2 which DID match.)",
+        "off_by": null,
+        "resolved_action_default": "import_new_transfer"
+      },
+      {
+        "row_index": 1, "band": "matched_strong", "suggested_action": "merge",
+        "design_note": "STATE: matched_strong via word overlap. Bank string 'thanh toan example restaurant' vs ledger 'Thanh toan example restaurant (family food payment)' — same amount, same day, different source. Calm green 'will link'.",
+        "headline": "✓ Already recorded — will link",
+        "statement_side": { "category": "Unsorted", "description": "MBVCB…thanh toan example restaurant…", "amount": -800000, "currency": "VND" },
+        "ledger_now": { "id": "txn_alpha", "line": "— 06-01 · Vietcombank · Daily Meals · via Lucius · −₫800,000", "clickable": true },
+        "after_import": { "records": 1, "title": "Thanh toan example restaurant (family food payment)", "date": "06-01", "category": "Daily Meals", "amount": -800000, "badges": ["cleared ✓", "reference attached"] },
+        "off_by": null
+      },
+      {
+        "row_index": 2, "band": "matched_strong", "suggested_action": "merge",
+        "design_note": "STATE: transfer_leg_echo — the routed CashIn transfer (VCB → MoMo, ₫98,000) already exists in the ledger (booked by the agent). Merging LINKS the two; its legs stay as booked.",
+        "lucius": { "op": "route_transfer", "reason": "Books as transfer: Vietcombank → MoMo Wallet", "undoable": true },
+        "headline": "Already booked as a transfer",
+        "statement_side": { "label": "Transfer → MoMo Wallet", "amount": -98000, "currency": "VND" },
+        "ledger_now": { "id": "txn_beta", "line": "— 06-01 · Transfer · Vietcombank → MoMo Wallet · via agent · ₫98,000", "clickable": true },
+        "after_import": { "records": 1, "title": "MoMo top-up", "date": "06-01", "identity": "Transfer · Vietcombank → MoMo Wallet", "amount": 98000, "badges": ["linked ✓"] },
+        "off_by": null
+      },
+      {
+        "row_index": 3, "band": "matched_strong", "suggested_action": "merge",
+        "design_note": "STATE: fx_pair_cross_currency. A ₫2,000,000 credit into VCB is the landing leg of a Wise SGD→VCB transfer (S$99.51 → ₫2,000,000). Must compare/show the leg ON THE STATEMENT'S ACCOUNT (₫2,000,000), NOT the S$99.51 leg. No drift.",
+        "headline": "Already booked as a transfer",
+        "statement_side": { "label": "Transfer ← Wise SGD", "amount": 2000000, "currency": "VND" },
+        "ledger_now": { "id": "txn_gamma", "line": "— 06-01 · Transfer · Wise SGD → Vietcombank · via Lucius · ₫2,000,000", "clickable": true, "foreign_leg_hint": "S$99.51 on the Wise side" },
+        "after_import": { "records": 1, "title": "Transfer to Vietcombank — Wise", "identity": "Transfer · Wise SGD → Vietcombank", "amount": 2000000, "badges": ["linked ✓"] },
+        "off_by": null
+      },
+      {
+        "row_index": 4, "band": "needs_you", "suggested_action": "merge",
+        "design_note": "STATE: needs_you (review) WITH off-by drift. Statement Grab ₫166,000 (06-02) probably matches a ledger 'Grab GrabFood' ₫168,000 (06-02) — but the amounts differ by ₫2,000, so it's flagged. Default is Merge (adopt ₫166,000). Off-by chip visible.",
+        "headline": "Already in your account?",
+        "statement_side": { "category": "Unsorted", "description": "Ecom…MOMO…CashIn…", "amount": -166000, "currency": "VND" },
+        "ledger_now": { "id": "txn_epsilon", "line": "— 06-02 · MoMo Wallet · Transport · via agent · −₫168,000", "clickable": true, "note": "candidate — see match picker: 2 other Grab entries this day" },
+        "match_picker": { "has_alternatives": true, "candidates": ["txn_epsilon", "txn_grab2", "txn_grab3"] },
+        "after_import": { "records": 1, "title": "Grab GrabFood (2x)", "date": "06-02", "category": "Transport", "amount": -166000, "badges": ["cleared ✓", "reference attached"], "delta": { "amount": { "from": -168000, "to": -166000 } } },
+        "off_by": { "amount": 2000, "currency": "VND", "tooltip": "Statement settled −₫166,000 · yours says −₫168,000 — Merge adopts the settled figure." }
+      },
+      {
+        "row_index": 5, "band": "matched_strong", "suggested_action": "merge",
+        "design_note": "STATE: matched_via_shared_reference. The bank reference token AAAA1111BBBB2222 also appears on the ledger entry → high-confidence link even though wording differs.",
+        "headline": "✓ Already recorded — will link",
+        "statement_side": { "category": "Unsorted", "description": "MBVCB…thanh toan cocktails…", "amount": -400000, "currency": "VND" },
+        "ledger_now": { "id": "txn_delta", "line": "— 06-02 · Vietcombank · Drinks & Nightlife · via Lucius · −₫400,000", "clickable": true },
+        "after_import": { "records": 1, "title": "Cocktails — Le Q. C. (TPBank)", "date": "06-02", "category": "Drinks & Nightlife", "amount": -400000, "badges": ["cleared ✓", "reference attached"] },
+        "off_by": null
+      },
+      {
+        "row_index": 6, "band": "new", "suggested_action": "import_new",
+        "design_note": "STATE: new + foreign_charge. An Anthropic USD charge of $2.50, settled at ₫60,360. Shows the settled ₫ amount with the original foreign amount as a secondary line. No ledger match → imports new.",
+        "headline": null,
+        "statement_side": { "category": "Unsorted", "description": "ANTHROPIC SAAS…", "amount": -60360, "currency": "VND", "original": { "amount": -2.5, "currency": "USD" } },
+        "ledger_now": null,
+        "after_import": { "records": 1, "title": "ANTHROPIC SAAS", "amount": -60360, "original": "−$2.50", "badges": [] },
+        "off_by": null
+      },
+      {
+        "row_index": 7, "band": "new", "suggested_action": "import_new",
+        "design_note": "STATE: new (clean). A Example Ride ride on the VCB account with no ledger match → imports new. (There ARE Example Ride rides in the ledger, but on MoMo, not VCB — so this VCB one is genuinely new.)",
+        "statement_side": { "category": "Unsorted", "description": "MBVCB…td thanh toan green sm…", "amount": -280000, "currency": "VND" },
+        "ledger_now": null,
+        "after_import": { "records": 1, "title": "MBVCB…green sm…", "amount": -280000, "badges": [] },
+        "off_by": null
+      },
+      {
+        "row_index": 8, "band": "weak_match", "suggested_action": "import_new",
+        "design_note": "STATE: weak_match / manual_link_candidate WITH big off-by. The ExampleSub charge: statement 'gotinder…Tinde' −₫150,000 (06-14). The ledger has 'TD subscription renewal' −₫250,000 (06-11) — the SAME charge the agent booked from email as an estimate, but 3 days + ₫9,900 apart, beyond auto-match. Engine leaves it as NEW; user can MANUALLY LINK it (⇄ Link to an existing entry → pick TD subscription renewal). Once linked → Merge with Off-by ₫9,900.",
+        "headline": "≈ Possibly already recorded — settled amount differs",
+        "statement_side": { "category": "Unsorted", "description": "UHHT…example-subscription.com/help Tinde", "amount": -240100, "currency": "VND" },
+        "ledger_now": null,
+        "manual_link": { "available": true, "suggested_target": "txn_zeta", "picker_line": "TD subscription renewal — 06-11 · via agent · −₫250,000" },
+        "if_manually_linked": { "action": "merge", "after_import": { "records": 1, "title": "TD subscription renewal", "date": "06-14", "category": "Subscriptions", "amount": -240100, "badges": ["cleared ✓", "reference attached"], "delta": { "amount": { "from": -250000, "to": -240100 }, "date": { "from": "06-11", "to": "06-14" } } }, "off_by": { "amount": 9900, "currency": "VND", "tooltip": "Statement settled −₫240,100 · yours says −₫250,000 — Merge adopts the settled figure." } }
+      },
+      {
+        "row_index": 9, "band": "matched_strong", "suggested_action": "merge",
+        "design_note": "STATE: transfer routed by Lucius, imports new (no existing booked transfer). A ₫500,000 CashIn → routed to a transfer VCB → MoMo; no matching ledger transfer → books a NEW transfer. Shows the ✦ Lucius provenance chip.",
+        "lucius": { "op": "route_transfer", "reason": "Books as transfer: Vietcombank → MoMo Wallet", "undoable": true },
+        "headline": null,
+        "statement_side": { "label": "Transfer → MoMo Wallet", "amount": -500000, "currency": "VND" },
+        "ledger_now": null,
+        "after_import": { "records": 1, "identity": "Transfer · Vietcombank → MoMo Wallet", "amount": -500000, "badges": [] },
+        "off_by": null
+      },
+      {
+        "row_index": 10, "band": "matched_strong", "suggested_action": "merge",
+        "design_note": "STATE: transfer routed, imports new (a small odd amount ₫33,529 — realistic messy value).",
+        "lucius": { "op": "route_transfer", "reason": "Books as transfer: Vietcombank → MoMo Wallet", "undoable": true },
+        "statement_side": { "label": "Transfer → MoMo Wallet", "amount": -33529, "currency": "VND" },
+        "ledger_now": null,
+        "after_import": { "records": 1, "identity": "Transfer · Vietcombank → MoMo Wallet", "amount": -33529, "badges": [] },
+        "off_by": null
+      },
+      {
+        "row_index": 11, "band": "matched_strong", "suggested_action": "skip",
+        "design_note": "STATE: duplicate_already_imported. This exact row (by reference id) was booked by a PREVIOUS import of this file → it will NOT import again. Shown greyed with an 'Already imported' tag; the action is fixed to skip.",
+        "duplicate": true,
+        "headline": "Already imported",
+        "statement_side": { "description": "Ecom…MOMO…CashIn.aa11bb22cc33", "amount": -149000, "currency": "VND" },
+        "ledger_now": null,
+        "off_by": null
+      }
+    ],
+
+    "not_on_statement": {
+      "message": "In your ledger, not on this statement — 2",
+      "net": -89000,
+      "core": [
+        { "id": "txn_epsilon", "date": "2026-06-03", "line": "Grab GrabFood (2x) — MoMo Wallet · via agent · −₫168,000", "reason": "On MoMo Wallet, not the Vietcombank account this statement covers — expected.", "actions": ["Open", "Delete", "Link…"], "_design_note": "an entry on a DIFFERENT account — legitimately not on this statement" },
+        { "id": "txn_eta", "date": "2026-06-03", "line": "Balance adjustment — MoMo Wallet · via Lucius · +₫79,000", "reason": "An adjustment on MoMo — not a Vietcombank statement line.", "actions": ["Open", "Delete"], "_design_note": "an adjustment/opening-style row — don't force it into the expense/income template" }
+      ],
+      "boundary": {
+        "message": "1 entry sits near the cut-off — likely the previous/next statement",
+        "collapsible": true,
+        "rows": [
+          { "id": "txn_theta", "date": "2026-06-30", "line": "Pho — Vietcombank · added by you · −₫45,000", "reason": "Dated 06-30, one day after the period end (06-29) — probably on next month's statement.", "actions": ["Open"] }
+        ]
+      }
+    }
+  },
+
+  "_design_state_matrix": {
+    "note": "Quick index of which sample row demonstrates which state, so the designer can find a concrete example for each.",
+    "matched_strong_word_overlap": "row 1",
+    "matched_via_shared_reference": "row 5",
+    "needs_you_review_with_off_by": "row 4",
+    "weak_match_and_manual_link_candidate": "row 8",
+    "new_clean": "row 7",
+    "new_foreign_charge": "row 6",
+    "transfer_routed_and_already_booked": "row 2",
+    "transfer_routed_imports_new": "rows 9, 10",
+    "fx_pair_cross_currency": "row 3",
+    "duplicate_already_imported": "row 11",
+    "lucius_provenance_chip": "rows 0, 2, 9, 10",
+    "off_by_drift_chip": "rows 4, 8",
+    "match_picker_alternatives": "row 4",
+    "not_on_statement_core": "not_on_statement.core",
+    "not_on_statement_boundary": "not_on_statement.boundary",
+    "reconcile_ok_badge": "statement.reconcile",
+    "two_question_verdict": "reconciliation.verdict",
+    "filter_chips": "reconciliation.chip_counts"
+  }
+}

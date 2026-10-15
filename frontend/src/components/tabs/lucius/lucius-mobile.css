@@ -1,0 +1,304 @@
+/* lucius-mobile.css — the phone's full-screen Lucius tab.
+   .lucius-mobile-shell itself was never built to be a floating dock, so IT needs no override
+   — but ChatPanel's own root (.lx-side, rendered as a child of this shell) still carries the
+   floating dock's BASE shape (position:fixed, 396px wide, top-right — lucius.css), regardless
+   of what parent it's rendered inside. Both the desktop home tab (.lucius-home-main .lx-side,
+   lucius-home.css) and the old mobile hack (.app-layout--lucius .lx-side, since removed) reset
+   that; this shell needs the identical reset, just scoped to its own class. */
+/* --visual-viewport-top/--visual-viewport-height (published by useVisualViewportVars,
+   already running app-wide via RouterShell) — a MEASUREMENT of the ACTUAL visible area, the
+   same mechanism index.css's own .cmdk already uses for a fixed overlay with this exact
+   problem. A plain position:relative + 100dvh version was also tried; owner reported it as
+   worse on real-device testing, so back to this. */
+.lucius-mobile-shell {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--visual-viewport-top, 0px);
+  height: calc(var(--visual-viewport-height, 100dvh) - var(--mb-tabbar-h, 0px));
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+  /* Radix sets `pointer-events: none` on <body> while ANY modal is open, restoring it only
+     inside that modal's own Dialog.Content — ui/Modal.tsx's isOutsideExempt() list re-enables
+     it here too (same reasoning .lx-side has always carried: a workspace-sized modal, or the
+     one-render window before a route change actually unmounts this tab, can leave part of it
+     visible/tappable behind the modal). Without this explicit re-enable, a tap reaching this
+     far would still be swallowed by the inherited `none` before ever hitting a real handler. */
+  pointer-events: auto;
+}
+.lucius-mobile-shell .lx-side {
+  --lx-panel-bg: var(--bg);
+  position: relative;
+  width: 100%;
+  max-width: none;
+  transform: none;
+  border-left: none;
+  z-index: auto;
+  flex: 1;
+  min-height: 0;
+}
+/* Floating glass header (owner reference: the Claude app's own mobile header) — an overlay
+   ABOVE the content rather than a bar the content starts below, so scrolled-up messages pass
+   behind it, gradually blurring out instead of stopping at a hard opaque edge. Absolute (not
+   sticky like before): sticky still participates in the flex column's own layout/flow, which
+   is exactly the "solid bar pushing content down" shape this replaces. pointer-events:none on
+   the row + auto on just the buttons lets a tap in the empty middle reach the content below,
+   same technique .lx-dock uses for its own click-through dead zone (lucius.css). */
+.lucius-mobile-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* Owns the full top safe-area inset itself now (.topbar's own reservation was zeroed,
+     index.css) — the buttons sit below the status bar, while the blur ::before below still
+     covers the FULL box including this padding, so the status bar sits over continuous
+     blur/gradient instead of a separate opaque strip above it (owner report: visible seam). */
+  padding: calc(4px + var(--safe-t)) 12px 10px;
+  pointer-events: none;
+}
+/* A SINGLE backdrop-filter layer cannot fade its own blur strength — the radius is one fixed
+   number for the whole element, so wherever that element's box ends, the page behind it snaps
+   from blurred to sharp in one pixel no matter how the TINT color fades (tried: masking the
+   blur — WebKit doesn't cross-fade blur-through-mask either, same hard edge, just relocated;
+   tried: an unmasked box with only the tint gradient fading — the blur itself still stopped
+   dead at the box edge, invisible-but-still-a-line since bluriness and tint are independent
+   effects). Both read as a visible straight seam on a real device (owner report, twice).
+   The actual fix — the same "progressive blur" stack iOS's own apps (Photos, Maps, this app's
+   own Claude-header reference) use — is several overlapping layers at DECREASING blur
+   strength, each masked to fade out at a different point. No single layer's edge lines up
+   with another's, so the aggregate falloff reads as gradual even though every individual
+   layer still technically has a hard cutoff somewhere in the stack. `.lucius-mobile-head-fade`
+   (plain gradient, no backdrop-filter — composites perfectly smoothly on its own, this is
+   what makes it darkest right at the status bar) sits under three `-blur-N` layers, weakest
+   first in DOM (bottom of the stack) so the strongest blur accumulates only near the true
+   top, tapering as each layer's own mask fades out below it. The box outlives the button row
+   by ~45px so the LAST layer's edge lands in the transcript, past where its own mask has
+   already faded near to nothing.
+   Every stop is measured from the SAFE-AREA inset, not the box top: a flat 140px box with
+   %-stops spent its strongest zone behind the status bar on a notched phone, so the button
+   row and the conversation title sat over barely-blurred, fully readable text (owner report,
+   real device). The row spans safe-t+4…safe-t+44px. Tuned on a real device in two steps:
+   holding full strength THROUGH the row (8px, then 5px) read as a heavy frosted bar that
+   washed out the first visible message (owner: "too much", twice), so the strong layers now
+   taper ACROSS the row — only a little stronger than the original status-bar-anchored stack. */
+.lucius-mobile-head-fade,
+.lucius-mobile-head-blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--safe-t) + 90px);
+  z-index: -1;
+  pointer-events: none;
+}
+.lucius-mobile-head-fade {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bg) 82%, transparent) 0,
+    color-mix(in srgb, var(--bg) 65%, transparent) calc(var(--safe-t) + 30px),
+    transparent 100%
+  );
+}
+.lucius-mobile-head-blur-3 {
+  --lx-head-mask: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(var(--safe-t) + 35px),
+    transparent 100%
+  );
+  backdrop-filter: blur(0.7px);
+  -webkit-backdrop-filter: blur(0.7px);
+  mask-image: var(--lx-head-mask);
+  -webkit-mask-image: var(--lx-head-mask);
+}
+.lucius-mobile-head-blur-2 {
+  --lx-head-mask: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(var(--safe-t) + 20px),
+    transparent calc(var(--safe-t) + 50px)
+  );
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+  mask-image: var(--lx-head-mask);
+  -webkit-mask-image: var(--lx-head-mask);
+}
+.lucius-mobile-head-blur-1 {
+  --lx-head-mask: linear-gradient(
+    to bottom,
+    black 0,
+    black var(--safe-t),
+    transparent calc(var(--safe-t) + 30px)
+  );
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  mask-image: var(--lx-head-mask);
+  -webkit-mask-image: var(--lx-head-mask);
+}
+.lucius-mobile-head-btn {
+  pointer-events: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-pill);
+  /* Each button is its own floating glass circle (owner: "blur circle parent view"), not a
+     shared bar — .lucius-mobile-head above supplies the gradual page-level blur; this is the
+     button's OWN backdrop, same layering idea (an opaque color-mix over a blurred backdrop). */
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  cursor: pointer;
+}
+/* The right-hand pair (Vault + New) — the header's space-between keeps the menu button alone on
+   the left. */
+.lucius-mobile-head-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Centred on the SCREEN, not in the gap between the buttons — one button left, two right, so
+   a flex child would sit off-centre. The max-width reserves the wider (right) side on both
+   sides: 12px padding + 2×40px buttons + 8px gap + 8px breathing room. */
+.lucius-mobile-head-title {
+  pointer-events: auto;
+  position: absolute;
+  top: calc(4px + var(--safe-t));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 216px);
+  height: 40px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  animation: lucius-mobile-title-in 180ms ease-out;
+}
+@keyframes lucius-mobile-title-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lucius-mobile-head-title {
+    animation: none;
+  }
+}
+@media (hover: hover) {
+  .lucius-mobile-head-btn:hover {
+    background: var(--hover);
+  }
+}
+.lucius-mobile-head-btn svg {
+  display: block;
+  flex: none;
+}
+/* The header floats ABOVE the content (position:absolute, not a flex sibling reserving its
+   own row) for BOTH states — an actual conversation's messages need this same top clearance
+   as the empty greeting does, or they render starting from the true top, visually cut off
+   behind the floating buttons (owner report, real device: message text obscured under the
+   hamburger/New circles). The empty-state rule below additionally sets its own `padding`
+   shorthand (including top) for its own centering — this general rule is what the NORMAL,
+   non-empty transcript view relies on, since that one never matches `.lx-side--home-empty`. */
+/* Matches the header's OWN real box height (padding: calc(4px + safe-t) top/10px bottom
+   around a 40px button, lucius-mobile-head above) plus a little breathing room — a flat 64px
+   was silently too short (owner report, real device: first message rendered right under/behind
+   the buttons) once the topbar's double safe-area padding bug (below) stopped padding this
+   area out for free by accident. */
+.lucius-mobile-shell .lx-side-scroll {
+  padding-top: calc(var(--safe-t) + 66px);
+}
+
+/* Empty-state greeting: deliberately NOT mirroring the desktop home tab's treatment here
+   (.lucius-home-main .lx-side.lx-side--home-empty, lucius-home.css unpins .lx-side-foot to
+   `position: static` so composer+greeting can center as one group) — that unpinning broke the
+   composer's keyboard tracking on mobile. .lx-side-foot's DEFAULT rule (lucius.css) —
+   `position: absolute; bottom: 0` — is the proven, keyboard-safe anchor every mobile
+   interaction already relied on before homeMode existed; left untouched.
+   Centering itself is done explicitly here rather than relying on .lx-side-scroll's flex:1 to
+   propagate a definite height through the .lx-side → .lucius-mobile-shell chain (owner report,
+   real device: the greeting rendered near the very top instead of centered — flex:1 depends on
+   every ancestor in the chain resolving a definite height, and something in that chain wasn't).
+   position:absolute; inset:0 sizes directly and unconditionally to .lx-side's own box (its
+   nearest positioned ancestor), independent of any flex-height propagation question. */
+.lucius-mobile-shell .lx-side--home-empty .lx-side-scroll {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The Activity panel briefly rendered here too (it shares ChatPanel.tsx's isHomeEmpty
+     branch with the desktop home tab) and could grow this block taller than the phone
+     screen, needing overflow-y/scroll handling — that whole problem is now moot: ChatPanel's
+     `hideActivityPanel` prop (LuciusMobile.tsx) skips the panel on mobile entirely (owner:
+     "let's not show these at all, just show the greeting message as in the past"), so this
+     block is back to being exactly one short greeting, always shorter than the screen. Back
+     to the original plain fixed-box centering, no overflow handling needed. */
+  padding: calc(var(--safe-t) + 66px) 16px var(--lx-foot-h, 48px);
+}
+/* The same grid the desktop tab uses (lucius-home.css): the greeting in the middle row, the
+   "Needs attention" row in the lower flexible row — so the greeting stays put when the review
+   count loads a beat later instead of the centred pair shifting up (owner, 2026-09-21). */
+.lucius-mobile-shell .lx-side--home-empty .lx-side-scroll-inner--home {
+  display: grid;
+  grid-template-rows: 1fr auto minmax(0, 1fr);
+  width: 100%;
+  align-self: stretch;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding-bottom: 0;
+}
+.lucius-mobile-shell .lx-side--home-empty .lx-side-empty--home {
+  grid-row: 2;
+}
+.lucius-mobile-shell .lx-side--home-empty .lx-automation-activity {
+  grid-row: 3;
+  align-self: start;
+  margin-top: 28px;
+}
+/* Smaller than the desktop 28px (lucius.css) — a phone-width phrase like "Winding down for
+   the night" wrapped awkwardly at the desktop size (owner: "font size needs to be
+   scaled accordingly"). */
+.lucius-mobile-shell .lx-side-empty--home .lx-side-empty-t {
+  font-size: 22px;
+}
+
+/* ConversationMenu (chat.css, shared with the desktop dock/home tab) renders as
+   `.conv-menu { position: absolute; inset: 0 }` against `.lx-side` — on mobile that puts its
+   "Back to chat"/"New chat" row flush with the true top of the screen, with none of the
+   safe-area clearance .lucius-mobile-head gives the main view (owner report, real device: the
+   close button and its label sitting behind the status bar). Desktop's `.conv-menu-sticky`
+   (chat.css) is untouched — env(safe-area-inset-top) is 0px there anyway, but scoping this to
+   the mobile shell keeps the reasoning local instead of relying on that being a no-op. */
+.lucius-mobile-shell .conv-menu-sticky {
+  padding-top: calc(10px + var(--safe-t));
+}
+
+/* ConversationBrowser (the "view all" screen) is the OTHER full-screen overlay LuciusMobile
+   renders as a direct child of .lucius-mobile-shell (its own early-return branch, not nested
+   under .lx-side) — same unguarded-top-padding shape as .conv-menu-sticky above, so it gets
+   the identical fix pre-emptively rather than waiting for the same report a second time. */
+.lucius-mobile-shell .conv-browser-head {
+  padding-top: calc(14px + var(--safe-t));
+}

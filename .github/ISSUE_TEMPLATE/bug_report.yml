@@ -1,0 +1,69 @@
+name: Bug report
+description: Something in Open Net Worth is broken or produces a wrong number.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing this. A couple of things before you start:
+        - **Never paste real account numbers, statement text, screenshots with your real
+          balances, or anything else from your own financial data.** Reproduce the bug against
+          the built-in example data instead (`make seed`) and paste *that* — see
+          `docs/launch/BOARD.md`'s `make bug` convention for the internal shorthand this project
+          uses.
+        - If this is a **security** issue (an unauthorized read/write, an auth bypass, a way to
+          get the AI to do something a legitimate user couldn't), please **do not** file it here
+          — see [`SECURITY.md`](../../SECURITY.md) for private disclosure instead.
+        - Check [`KNOWN_ISSUES.md`](../../KNOWN_ISSUES.md) first. Some areas (intel, tax,
+          equity comp, FIRE, bank connectors) are deferred, so gaps there are expected, not bugs.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you actually see? Include the exact wrong
+        number/value if this is a calculation bug.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Ideally against the seeded example data (`make seed`) so it's reproducible
+        without your real numbers.
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit / version
+      description: Output of `git rev-parse HEAD`, or the release tag if you're on one.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows (via Docker)
+        - Windows (native — not supported, see README)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / stack trace
+      description: From `logs/` (under `LOGS_DIR`) or your terminal. Scrub anything personal
+        first.
+      render: shell
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?

@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cash-flow Sankey — UI mockup</title>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<style>
+  /* Tokens copied from frontend/src/index.tokens.generated.css (dark + warm-light themes) */
+  :root {
+    --bg:#0e1014; --panel:#171a21; --line:#1f242d; --line-strong:#2c323f;
+    --ink:#f3f5f9; --muted:#9aa3b2; --faint:#646c7c;
+    --good:#34b08a; --bad:#e2554f; --primary:#3b86dd; --hover:rgba(243,245,249,.06);
+    --income:#2ba39a;
+    --g1:#3b86dd; --g2:#c48526; --g3:#8f6fd6; --g4:#d4537e; --g-rest:#6b7484;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg:#edeae3; --panel:#f5f3ec; --line:#ddd8cc; --line-strong:#cfc9bb;
+    --ink:#2d2a24; --muted:#6d675c; --faint:#999387;
+    --good:#177a5c; --bad:#bc3a34; --primary:#2666b8; --hover:rgba(45,42,36,.06);
+    --income:#16857c;
+    --g1:#2666b8; --g2:#96690a; --g3:#7a5fbf; --g4:#b23a68; --g-rest:#8a8478;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font: 13px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  .money { font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 60px; }
+  .note { color:var(--muted); font-size:12px; margin: 0 0 18px; }
+  .note b { color: var(--ink); font-weight: 600; }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px; align-items:center; }
+  .chip { border:1px solid var(--line-strong); background:transparent; color:var(--muted);
+    border-radius:999px; padding:5px 12px; font:inherit; font-size:12px; cursor:pointer; }
+  .chip[aria-pressed="true"] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .section-label { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint);
+    margin: 30px 0 10px; }
+
+  /* ── Plan page chrome (approximation of the real Plan tab) ── */
+  .pl-title { font-size:22px; font-weight:600; margin:0; }
+  .pl-sub { color:var(--muted); margin:2px 0 14px; }
+  .pl-tabs { display:flex; gap:18px; border-bottom:1px solid var(--line); margin-bottom:16px; }
+  .pl-tabs span { padding:8px 0; color:var(--muted); }
+  .pl-tabs span.on { color:var(--ink); border-bottom:2px solid var(--ink); }
+  .ghost { border:1px dashed var(--line-strong); border-radius:14px; color:var(--faint);
+    padding:26px; text-align:center; margin-bottom:16px; font-size:12px; }
+
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; }
+  .cf-card { padding: 18px 20px 12px; margin-bottom:16px; }
+  .cf-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .eyebrow { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .cf-kpis { display:flex; gap:28px; margin-top:8px; flex-wrap:wrap; }
+  .kpi .v { font-size:22px; font-weight:600; }
+  .kpi .l { color:var(--muted); font-size:11px; }
+  .kpi.saved .v { color:var(--good); }
+  .kpi.short .v { color:var(--bad); }
+  .cf-ctrl { display:flex; gap:8px; align-items:center; }
+  .stepper { display:flex; align-items:center; border:1px solid var(--line-strong); border-radius:8px; }
+  .stepper button { background:none; border:0; color:var(--muted); font:inherit; width:30px; height:30px; cursor:pointer; }
+  .stepper span { min-width:78px; text-align:center; font-weight:500; }
+  .seg { display:flex; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; }
+  .seg button { background:none; border:0; color:var(--muted); font:inherit; font-size:12px; padding:0 12px; height:30px; cursor:pointer; }
+  .seg button.on { background:var(--hover); color:var(--ink); }
+  .cf-foot { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:var(--faint);
+    font-size:11px; border-top:1px solid var(--line); margin-top:6px; padding-top:10px; }
+  .key { display:flex; gap:14px; flex-wrap:wrap; }
+  .key i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+
+  /* ── SVG ── */
+  [id$="-chart"] svg { display:block; width:100%; height:auto; overflow:visible; }
+  .btn svg, .icon svg { flex:none; }
+  .lnk { fill:none; stroke-opacity:.34; transition: stroke-opacity .12s; }
+  .nd rect { rx:3; }
+  .lbl { font-size:12px; fill:var(--ink); paint-order:stroke; stroke:var(--panel); stroke-width:4px; stroke-linejoin:round; }
+  .lbl .amt { fill:var(--muted); font-size:11px; }
+  .dim .lnk { stroke-opacity:.07; }
+  .dim .nd { opacity:.35; }
+  .dim .lnk.hot { stroke-opacity:.55; }
+  .dim .nd.hot { opacity:1; }
+  .nd.click { cursor:pointer; }
+  .nd.click:hover .name { text-decoration: underline; }
+
+  .tip { position:fixed; pointer-events:none; background:var(--panel); border:1px solid var(--line-strong);
+    border-radius:8px; padding:8px 10px; font-size:12px; box-shadow:0 8px 24px rgba(0,0,0,.35);
+    opacity:0; transition:opacity .08s; z-index:10; max-width:260px; }
+  .tip .t { font-weight:600; margin-bottom:2px; }
+  .tip .s { color:var(--muted); }
+
+  table.tv { width:100%; border-collapse:collapse; margin:8px 0 4px; }
+  .tv th, .tv td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); }
+  .tv th { color:var(--muted); font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+  .tv td.n, .tv th.n { text-align:right; }
+  .tv tr.grp td { font-weight:600; }
+  .tv tr.cat td:first-child { padding-left:22px; color:var(--muted); }
+
+  /* ── Dashboard widget ── */
+  .dash-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap:14px; }
+  .w { padding:14px 16px 10px; min-height: 300px; display:flex; flex-direction:column; }
+  .w-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .w-title { font-weight:600; font-size:13px; }
+  .w-meta { color:var(--muted); font-size:11px; }
+  .w-link { color:var(--primary); font-size:11px; text-decoration:none; margin-top:auto; padding-top:6px; }
+  .w.ghostw { border-style:dashed; color:var(--faint); align-items:center; justify-content:center; font-size:12px; }
+  .phone { width: 390px; max-width:100%; }
+  .phone .cf-kpis { gap:16px; flex-wrap:nowrap; } .phone .kpi .v { font-size:17px; }
+
+
+  .hero { padding:18px 20px; margin-bottom:14px; }
+  .hero-top { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .big { font-size:26px; font-weight:600; margin-top:4px; } .big small { font-size:14px; color:var(--muted); font-weight:400; }
+  .hero-btns { display:flex; gap:8px; align-items:flex-start; }
+  .btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line-strong); background:transparent; color:var(--ink);
+    border-radius:8px; height:30px; padding:0 12px; font:inherit; font-size:12px; cursor:pointer; }
+  .btn:hover { background:var(--hover); }
+  .btn.primary-ghost { color:var(--primary); border-color:color-mix(in srgb, var(--primary) 45%, transparent); }
+  .hero-chart { height:120px; margin-top:14px; border:1px dashed var(--line-strong); border-radius:10px; display:grid; place-items:center; color:var(--faint); font-size:12px; }
+  .tbl { overflow:hidden; }
+  .tr { display:grid; grid-template-columns: 1.4fr 1fr 1fr 1fr 44px; align-items:center; padding:0 14px; height:42px; border-bottom:1px solid var(--line); }
+  .tr:last-child { border-bottom:0; }
+  .tr.th { height:34px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+  .tr .n { text-align:right; } .tr.muted { color:var(--muted); }
+  .pos { color:var(--good); }
+  .tag { font-style:normal; font-size:10px; border:1px solid var(--line-strong); border-radius:4px; padding:1px 5px; margin-left:6px; color:var(--muted); }
+  .rowact { text-align:right; }
+  .icon { width:28px; height:28px; border-radius:6px; border:0; background:transparent; color:var(--muted); cursor:pointer; opacity:0; }
+  .tr:hover .icon, .icon:focus-visible { opacity:1; } .icon:hover { background:var(--hover); color:var(--ink); }
+  @media (hover:none) { .icon { opacity:1; } }
+  .ov { position:fixed; inset:0; background:rgba(0,0,0,.55); display:grid; place-items:center; padding:24px; z-index:5; }
+  .ov[hidden] { display:none; }
+  .modal { width:min(1180px, 100%); max-height:calc(100vh - 48px); overflow:auto; box-shadow:0 24px 60px -18px rgba(0,0,0,.75); padding:16px 20px 12px; }
+  .m-head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .m-title { font-size:16px; font-weight:600; }
+  .m-body { margin-top:10px; }
+  .x { width:30px; height:30px; border:0; background:transparent; color:var(--muted); border-radius:8px; cursor:pointer; font-size:14px; }
+  .x:hover { background:var(--hover); color:var(--ink); }
+  .phone-frame { width:390px; max-width:100%; height:720px; border:1px solid var(--line-strong); border-radius:28px; background:rgba(0,0,0,.45);
+    display:flex; align-items:flex-end; overflow:hidden; }
+  .sheet { width:100%; background:var(--panel); border-radius:18px 18px 0 0; padding:8px 16px 20px; border-top:1px solid var(--line); }
+  .grab { width:36px; height:4px; border-radius:2px; background:var(--line-strong); margin:0 auto 10px; }
+  .stepper.sm span { min-width:64px; font-size:12px; } .stepper.sm button { width:26px; height:26px; }
+  .sheet .cf-kpis { gap:16px; flex-wrap:nowrap; } .sheet .kpi .v { font-size:17px; }
+  @media (max-width: 640px) { .kpi .v { font-size:18px; } .cf-kpis { gap:18px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="note"><b>Mockup:</b> synthetic data, real app tokens. Click <b>Money flow</b> (or the flow icon on a month row) to open the modal. Inside it: hover to trace a flow, click a spending category to open its transactions.</p>
+
+  <div class="toolbar" role="group" aria-label="Mockup controls">
+    <button class="chip" data-theme-btn="dark" aria-pressed="true">Dark</button>
+    <button class="chip" data-theme-btn="light" aria-pressed="false">Light</button>
+    <span style="width:12px"></span>
+    <button class="chip" data-case="normal" aria-pressed="true">Saved money (normal month)</button>
+    <button class="chip" data-case="short" aria-pressed="false">Overspent (shortfall month)</button>
+  </div>
+
+  <!-- ═══════════ 1. Plan › Cash Flow ═══════════ -->
+  <div class="section-label">1 · Plan › Cash Flow: two ways in, one modal (CashFlowSankey inside PlanningModal)</div>
+  <h1 class="pl-title">Plan</h1>
+  <p class="pl-sub">Budget your month, project your wealth, and chart your path to financial independence</p>
+  <div class="pl-tabs"><span>Budget</span><span class="on">Cash Flow</span><span>Outlook</span></div>
+
+  <section class="card hero">
+    <div class="hero-top">
+      <div style="display:flex;gap:40px">
+        <div><div class="eyebrow">Cash on hand · today</div><div class="big money">S$49,642.23</div></div>
+        <div><div class="eyebrow">Financial runway</div><div class="big">2.6 <small>mo</small></div></div>
+      </div>
+      <div class="hero-btns">
+        <button class="btn primary-ghost" data-open="Sep 2026"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3c5 0 6 5 12 5M2 13c5 0 6-5 12-5M2 8h12"/></svg>Money flow</button>
+        <button class="btn">What-if</button>
+      </div>
+    </div>
+    <div class="hero-chart">existing balance projection chart (unchanged)</div>
+  </section>
+
+  <div class="tbl card">
+    <div class="tr th"><span>Month</span><span class="n">In</span><span class="n">Out</span><span class="n">Net</span><span></span></div>
+    <div class="tr"><span>Jul ’26 <em class="tag">Actual</em></span><span class="n money pos">+S$24.72K</span><span class="n money">−S$21.58K</span><span class="n money pos">+S$3.14K</span><span class="rowact"><button class="icon" title="See money flow for Jul 2026" data-open="Jul 2026"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3c5 0 6 5 12 5M2 13c5 0 6-5 12-5M2 8h12"/></svg></button></span></div>
+    <div class="tr"><span>Aug ’26 <em class="tag">Actual</em></span><span class="n money pos">+S$10.21K</span><span class="n money">−S$7.21K</span><span class="n money pos">+S$3.00K</span><span class="rowact"><button class="icon" title="See money flow for Aug 2026" data-open="Aug 2026"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3c5 0 6 5 12 5M2 13c5 0 6-5 12-5M2 8h12"/></svg></button></span></div>
+    <div class="tr"><span>Sep ’26 <em class="tag">Actual</em></span><span class="n money pos">+S$10.21K</span><span class="n money">−S$7.21K</span><span class="n money pos">+S$3.00K</span><span class="rowact"><button class="icon" title="See money flow for Sep 2026" data-open="Sep 2026"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3c5 0 6 5 12 5M2 13c5 0 6-5 12-5M2 8h12"/></svg></button></span></div>
+    <div class="tr muted"><span>Oct ’26 <em class="tag">Projected</em></span><span class="n money">+S$9.80K</span><span class="n money">−S$7.40K</span><span class="n money">+S$2.40K</span><span class="rowact"></span></div>
+  </div>
+  <p class="note" style="margin-top:8px">↑ The flow icon appears on hover (always visible on touch) for <b>actual</b> months only. Projected months have no transactions to trace.</p>
+
+  <div class="ov" id="ov" hidden>
+    <section class="modal card" role="dialog" aria-modal="true" aria-labelledby="cf-title">
+      <div class="m-head">
+        <div class="m-title" id="cf-title">Money flow</div>
+        <div class="cf-ctrl">
+          <div class="stepper"><button aria-label="Previous month" data-step="-1">‹</button><span id="month">Sep 2026</span><button aria-label="Next month" data-step="1">›</button></div>
+          <div class="seg" role="tablist"><button class="on" data-view="flow">Flow</button><button data-view="table">Table</button></div>
+          <button class="x" aria-label="Close" id="close">✕</button>
+        </div>
+      </div>
+      <div class="m-body">
+        <div class="cf-kpis" id="kpis"></div>
+        <div id="plan-chart" style="margin-top:10px"></div>
+        <div id="plan-table" hidden></div>
+      </div>
+      <div class="cf-foot">
+        <div class="key" id="key"></div>
+        <div>Categories under 2% fold into “Other” · Transfers between your own accounts are excluded</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ═══════════ 2. Dashboard widget ═══════════ -->
+  <div class="section-label">2 · Dashboard: compact widget (CashFlowSankeyCard)</div>
+  <div class="dash-grid">
+    <section class="card w" aria-labelledby="w-title">
+      <div class="w-head"><span class="w-title" id="w-title">Cash flow</span><span class="w-meta money" id="w-meta"></span></div>
+      <div id="dash-chart" style="margin-top:8px"></div>
+      <a class="w-link" href="#plan-chart">See full breakdown in Plan →</a>
+    </section>
+    <section class="card w ghostw">other widget</section>
+    <section class="card w ghostw">other widget</section>
+  </div>
+
+  <!-- ═══════════ 3. Phone ═══════════ -->
+  <div class="section-label">3 · Phone: same modal becomes a bottom sheet (3 columns, drag to dismiss)</div>
+  <div class="phone-frame">
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="m-head"><div class="m-title">Money flow</div><div class="stepper sm"><button>‹</button><span>Sep 2026</span><button>›</button></div></div>
+      <div class="cf-kpis" id="kpis-phone"></div>
+      <div id="phone-chart" style="margin-top:10px"></div>
+      <div class="seg" style="margin-top:8px;width:max-content"><button class="on">Flow</button><button>Table</button></div>
+    </div>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const fmt = n => 'S$' + Math.round(n).toLocaleString('en-US');
+const pct = (n, t) => (n / t * 100).toFixed(1) + '%';
+
+// ── synthetic month (what the backend's flow payload would carry, pre-aggregated) ──
+const CASES = {
+  normal: {
+    income: [
+      { g: 'Active income',  cats: [['Salary', 8400], ['Bonus', 1200]] },
+      { g: 'Passive income', cats: [['Dividends', 380], ['Interest', 140], ['Cashback', 90]] },
+    ],
+    spend: [
+      { g: 'Housing',           cats: [['Rent', 2600], ['Utilities', 300], ['Internet', 200]] },
+      { g: 'Everyday living',   cats: [['Groceries', 900], ['Dining out', 620], ['Transport', 380], ['Other', 150]] },
+      { g: 'Bills & insurance', cats: [['Insurance', 520], ['Income tax', 400], ['Subscriptions', 170], ['Phone', 90]] },
+      { g: 'Lifestyle',         cats: [['Shopping', 410], ['Travel', 300], ['Hobbies', 170]] },
+    ],
+  },
+  short: {
+    income: [
+      { g: 'Active income',  cats: [['Salary', 6400]] },
+      { g: 'Passive income', cats: [['Dividends', 260], ['Interest', 140]] },
+    ],
+    spend: [
+      { g: 'Housing',           cats: [['Rent', 2600], ['Utilities', 300], ['Internet', 200]] },
+      { g: 'Everyday living',   cats: [['Groceries', 900], ['Dining out', 620], ['Transport', 380], ['Other', 150]] },
+      { g: 'Bills & insurance', cats: [['Insurance', 520], ['Income tax', 400], ['Subscriptions', 170], ['Phone', 90]] },
+      { g: 'Lifestyle',         cats: [['Shopping', 410], ['Travel', 1300], ['Hobbies', 170]] },
+    ],
+  },
+};
+const GROUP_VARS = ['--g1', '--g2', '--g3', '--g4'];
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function totals(c) {
+  const inc = d3.sum(c.income.flatMap(g => g.cats), d => d[1]);
+  const out = d3.sum(c.spend.flatMap(g => g.cats), d => d[1]);
+  return { inc, out, saved: Math.max(inc - out, 0), short: Math.max(out - inc, 0), flow: Math.max(inc, out) };
+}
+
+// Backend rule, mirrored here for the mock: within each group, categories under 2% of total fold into "Other";
+// compact views also cap each side to the top N.
+function fold(c, maxPer) {
+  const flow = totals(c).flow;
+  const f = groups => groups.map(g => {
+    const cats = [...g.cats].sort((a, b) => b[1] - a[1]);
+    const keep = [], rest = [];
+    cats.forEach((d, i) => (d[1] / flow >= 0.02 && i < maxPer ? keep : rest).push(d));
+    const other = d3.sum(rest, d => d[1]) + d3.sum(keep.filter(d => d[0] === 'Other'), d => d[1]);
+    const out = keep.filter(d => d[0] !== 'Other');
+    if (other) out.push(['Other', other]);
+    return { g: g.g, cats: out };
+  });
+  return { income: f(c.income), spend: f(c.spend) };
+}
+
+// Build nodes/links for a given column depth. cols = 5 (full) or 3 (compact/phone)
+function buildGraph(c, cols) {
+  const t = totals(c), nodes = [], links = [];
+  const add = (id, name, col, color, extra = {}) => { nodes.push({ id, name, col, color, ...extra }); return id; };
+  const total = add('total', 'Total', cols === 5 ? 2 : 1, css('--income'), { kind: 'total' });
+  // income side
+  c.income.forEach(g => {
+    const gsum = d3.sum(g.cats, d => d[1]);
+    if (cols === 5) {
+      const gid = add('ig:' + g.g, g.g, 1, css('--income'));
+      g.cats.forEach(([n, v]) => { const id = 'ic:' + g.g + n; add(id, n === 'Other' ? 'Other ' + g.g.split(' ')[0].toLowerCase() : n, 0, css('--income')); links.push({ source: id, target: gid, value: v }); });
+      links.push({ source: gid, target: total, value: gsum });
+    } else {
+      g.cats.forEach(([n, v]) => { add('ic:' + n, n, 0, css('--income')); links.push({ source: 'ic:' + n, target: total, value: v }); });
+    }
+  });
+  if (t.short) {
+    const sid = add('shortfall', 'From savings', 0, css('--bad'), { kind: 'short' });
+    if (cols === 5) { const g = add('ig:short', 'Shortfall', 1, css('--bad'), { kind: 'short' }); links.push({ source: sid, target: g, value: t.short }); links.push({ source: g, target: total, value: t.short }); }
+    else links.push({ source: sid, target: total, value: t.short });
+  }
+  // spending side
+  c.spend.forEach((g, i) => {
+    const color = css(GROUP_VARS[i] || '--g-rest');
+    const gsum = d3.sum(g.cats, d => d[1]);
+    const gid = add('sg:' + g.g, g.g, cols === 5 ? 3 : 2, color);
+    links.push({ source: total, target: gid, value: gsum });
+    if (cols === 5) g.cats.forEach(([n, v]) => { add('sc:' + g.g + n, n === 'Other' ? 'Other ' + g.g.toLowerCase() : n, 4, color, { click: true }); links.push({ source: gid, target: 'sc:' + g.g + n, value: v }); });
+  });
+  if (t.saved) {
+    const s = add('saved', 'Saved', cols === 5 ? 3 : 2, css('--good'), { kind: 'saved' });
+    links.push({ source: total, target: s, value: t.saved });
+  }
+  return { nodes, links, t };
+}
+
+const tip = document.getElementById('tip');
+function showTip(e, title, sub) { tip.innerHTML = `<div class="t">${title}</div><div class="s">${sub}</div>`; tip.style.opacity = 1; moveTip(e); }
+function moveTip(e) { const w = tip.offsetWidth; tip.style.left = Math.min(e.clientX + 14, innerWidth - w - 8) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; }
+function hideTip() { tip.style.opacity = 0; }
+
+function draw(el, c, { cols, width, height, labelL, labelR, compact }) {
+  el.innerHTML = '';
+  const { nodes, links, t } = buildGraph(fold(c, compact ? 3 : 6), cols);
+  const flowTotal = t.flow;
+  const sk = d3.sankey().nodeId(d => d.id).nodeAlign(d => d.col).nodeSort(null)
+    .nodeWidth(compact ? 8 : 10).nodePadding(compact ? 8 : 14)
+    .extent([[labelL, 8], [width - labelR, height - 8]]);
+  const g = sk({ nodes: nodes.map(d => ({ ...d })), links: links.map(d => ({ ...d })) });
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('role', 'img').attr('aria-label', `Cash flow: ${fmt(t.inc)} income, ${fmt(t.out)} spending`);
+  const defs = svg.append('defs');
+  defs.append('pattern').attr('id', 'hatch-' + el.id).attr('width', 6).attr('height', 6)
+    .attr('patternUnits', 'userSpaceOnUse').attr('patternTransform', 'rotate(45)')
+    .append('rect').attr('width', 2).attr('height', 6).attr('fill', css('--bad'));
+  const root = svg.append('g');
+
+  const colorOf = l => (l.target.kind === 'saved' || l.source.kind === 'saved') ? css('--good')
+    : l.source.kind === 'short' ? css('--bad')
+    : l.target.col <= (cols === 5 ? 2 : 1) ? css('--income') : l.target.color;
+
+  const lk = root.append('g').selectAll('path').data(g.links).join('path')
+    .attr('class', 'lnk').attr('d', d3.sankeyLinkHorizontal())
+    .attr('stroke', colorOf).attr('stroke-width', d => Math.max(1, d.width))
+    .attr('stroke-dasharray', d => d.source.kind === 'short' ? '4 3' : null)
+    .on('mouseenter', (e, d) => { focus(new Set([d.source, d.target]), new Set([d])); showTip(e, `${d.source.name} → ${d.target.name}`, `${fmt(d.value)} · ${pct(d.value, flowTotal)} of total`); })
+    .on('mousemove', moveTip).on('mouseleave', () => { unfocus(); hideTip(); });
+
+  const nd = root.append('g').selectAll('g').data(g.nodes).join('g')
+    .attr('class', d => 'nd' + (d.click ? ' click' : ''))
+    .attr('tabindex', 0).attr('role', d => d.click ? 'link' : null)
+    .attr('aria-label', d => `${d.name}: ${fmt(d.value)}, ${pct(d.value, flowTotal)}`);
+  nd.append('rect').attr('x', d => d.x0).attr('y', d => d.y0)
+    .attr('width', d => d.x1 - d.x0).attr('height', d => Math.max(2, d.y1 - d.y0))
+    .attr('fill', d => d.kind === 'short' ? `url(#hatch-${el.id})` : d.color)
+    .attr('stroke', d => d.kind === 'short' ? css('--bad') : null);
+
+  // Labels: two lines (name / amount · share), pushed apart per column so they never collide.
+  const gap = compact ? 25 : 28;
+  d3.groups(g.nodes, d => d.col).forEach(([, col]) => {
+    col.sort((a, b) => a.y0 - b.y0);
+    col.forEach((d, i) => { d.ly = (d.y0 + d.y1) / 2; if (i) d.ly = Math.max(d.ly, col[i - 1].ly + gap); });
+    const over = col.length ? col[col.length - 1].ly - (height - 10) : 0;
+    if (over > 0) for (let i = col.length - 1; i >= 0; i--) { col[i].ly -= over; if (i && col[i - 1].ly > col[i].ly - gap) col[i - 1].ly = col[i].ly - gap; else break; }
+  });
+  const lx = d => d.col === 0 ? d.x0 - 8 : d.x1 + 8;
+  nd.filter(d => Math.abs(d.ly - (d.y0 + d.y1) / 2) > (d.y1 - d.y0) / 2 + 2).append('path')
+    .attr('d', d => `M${d.col === 0 ? d.x0 : d.x1},${(d.y0 + d.y1) / 2} L${lx(d) - (d.col === 0 ? -4 : 4)},${d.ly}`)
+    .attr('stroke', css('--faint')).attr('fill', 'none').attr('stroke-width', 1);
+  const lbl = nd.filter(d => !(compact && d.kind === 'total')).append('text').attr('class', 'lbl').attr('text-anchor', d => d.col === 0 ? 'end' : 'start');
+  lbl.append('tspan').attr('class', 'name').attr('x', lx).attr('y', d => d.ly - 2)
+    .text(d => d.kind === 'total' ? (t.short ? 'Spent' : 'Income') : d.name);
+  lbl.append('tspan').attr('class', 'amt money').attr('x', lx).attr('dy', 13)
+    .text(d => compact ? fmt(d.value) : `${fmt(d.value)} · ${pct(d.value, flowTotal)}`);
+
+  nd.on('mouseenter', (e, d) => {
+      const ns = new Set([d]), ls = new Set();
+      const up = n => n.targetLinks.forEach(l => { ls.add(l); ns.add(l.source); up(l.source); });
+      const dn = n => n.sourceLinks.forEach(l => { ls.add(l); ns.add(l.target); dn(l.target); });
+      if (d.kind !== 'total') { up(d); dn(d); } else { g.nodes.forEach(n => ns.add(n)); g.links.forEach(l => ls.add(l)); }
+      focus(ns, ls);
+      showTip(e, d.name === 'Total' ? 'Total' : d.name, `${fmt(d.value)} · ${pct(d.value, flowTotal)}${d.click ? '<br>Click to see transactions' : ''}`);
+    })
+    .on('mousemove', moveTip).on('mouseleave', () => { unfocus(); hideTip(); })
+    .on('click', (e, d) => { if (d.click) alert(`In the app: opens ${d.name} transactions for ${document.getElementById('month').textContent}`); });
+
+  function focus(ns, ls) { root.classed('dim', true); nd.classed('hot', d => ns.has(d)); lk.classed('hot', d => ls.has(d)); }
+  function unfocus() { root.classed('dim', false); nd.classed('hot', false); lk.classed('hot', false); }
+  return t;
+}
+
+function kpis(el, t) {
+  const rate = t.inc ? Math.round(t.saved / t.inc * 100) : 0;
+  el.innerHTML = `
+    <div class="kpi"><div class="v money">${fmt(t.inc)}</div><div class="l">Income</div></div>
+    <div class="kpi"><div class="v money">${fmt(t.out)}</div><div class="l">Spending</div></div>
+    ${t.short
+      ? `<div class="kpi short"><div class="v money">−${fmt(t.short)}</div><div class="l">Covered from savings</div></div>`
+      : `<div class="kpi saved"><div class="v money">${fmt(t.saved)}</div><div class="l">Saved · ${rate}% of income</div></div>`}`;
+}
+
+function table(el, c) {
+  const t = totals(c);
+  let rows = '<tr class="grp"><td>Income</td><td class="n money">' + fmt(t.inc) + '</td><td class="n">100%</td></tr>';
+  c.income.forEach(g => g.cats.forEach(([n, v]) => rows += `<tr class="cat"><td>${n}</td><td class="n money">${fmt(v)}</td><td class="n">${pct(v, t.inc)}</td></tr>`));
+  c.spend.forEach(g => {
+    const s = d3.sum(g.cats, d => d[1]);
+    rows += `<tr class="grp"><td>${g.g}</td><td class="n money">${fmt(s)}</td><td class="n">${pct(s, t.flow)}</td></tr>`;
+    g.cats.forEach(([n, v]) => rows += `<tr class="cat"><td>${n}</td><td class="n money">${fmt(v)}</td><td class="n">${pct(v, t.flow)}</td></tr>`);
+  });
+  rows += t.short
+    ? `<tr class="grp"><td style="color:var(--bad)">Covered from savings</td><td class="n money">${fmt(t.short)}</td><td class="n">${pct(t.short, t.flow)}</td></tr>`
+    : `<tr class="grp"><td style="color:var(--good)">Saved</td><td class="n money">${fmt(t.saved)}</td><td class="n">${pct(t.saved, t.flow)}</td></tr>`;
+  el.innerHTML = `<table class="tv"><thead><tr><th>Category</th><th class="n">Amount</th><th class="n">Share</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function keyRow(t) {
+  document.getElementById('key').innerHTML =
+    `<span><i style="background:var(--income)"></i>Income</span>` +
+    `<span><i style="background:var(--g1)"></i><i style="background:var(--g2)"></i><i style="background:var(--g3)"></i><i style="background:var(--g4)"></i>Spending groups</span>` +
+    (t.short ? `<span><i style="background:repeating-linear-gradient(45deg,var(--bad) 0 2px,transparent 2px 4px);outline:1px solid var(--bad)"></i>Covered from savings</span>`
+             : `<span><i style="background:var(--good)"></i>Saved</span>`);
+}
+
+let current = 'normal';
+function render() {
+  const c = CASES[current];
+  const t = draw(document.getElementById('plan-chart'), c, { cols: 5, width: 1120, height: 500, labelL: 120, labelR: 170 });
+  kpis(document.getElementById('kpis'), t); keyRow(t); table(document.getElementById('plan-table'), c);
+  draw(document.getElementById('dash-chart'), c, { cols: 3, width: 420, height: 240, labelL: 84, labelR: 120, compact: true });
+  document.getElementById('w-meta').textContent = `Sep · ${fmt(t.inc)} in · ${fmt(t.out)} out`;
+  draw(document.getElementById('phone-chart'), c, { cols: 3, width: 360, height: 340, labelL: 80, labelR: 112, compact: true });
+  kpis(document.getElementById('kpis-phone'), t);
+}
+
+document.querySelectorAll('[data-theme-btn]').forEach(b => b.onclick = () => {
+  document.documentElement.dataset.theme = b.dataset.themeBtn;
+  document.querySelectorAll('[data-theme-btn]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  render();
+});
+document.querySelectorAll('[data-case]').forEach(b => b.onclick = () => {
+  current = b.dataset.case;
+  document.querySelectorAll('[data-case]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  render();
+});
+const ov = document.getElementById('ov');
+const MONTHS = ['Jul 2026', 'Aug 2026', 'Sep 2026'];
+function openModal(m) { document.getElementById('month').textContent = m; current = m === 'Jul 2026' ? 'short' : current; ov.hidden = false; render(); document.getElementById('close').focus(); }
+document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openModal(b.dataset.open));
+document.getElementById('close').onclick = () => { ov.hidden = true; };
+ov.onclick = e => { if (e.target === ov) ov.hidden = true; };
+addEventListener('keydown', e => { if (e.key === 'Escape') ov.hidden = true; });
+document.querySelectorAll('[data-step]').forEach(b => b.onclick = () => {
+  const i = Math.max(0, Math.min(MONTHS.length - 1, MONTHS.indexOf(document.getElementById('month').textContent) + +b.dataset.step));
+  document.getElementById('month').textContent = MONTHS[i]; render();
+});
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => {
+  const ov = document.getElementById('ov');
+const MONTHS = ['Jul 2026', 'Aug 2026', 'Sep 2026'];
+function openModal(m) { document.getElementById('month').textContent = m; current = m === 'Jul 2026' ? 'short' : current; ov.hidden = false; render(); document.getElementById('close').focus(); }
+document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openModal(b.dataset.open));
+document.getElementById('close').onclick = () => { ov.hidden = true; };
+ov.onclick = e => { if (e.target === ov) ov.hidden = true; };
+addEventListener('keydown', e => { if (e.key === 'Escape') ov.hidden = true; });
+document.querySelectorAll('[data-step]').forEach(b => b.onclick = () => {
+  const i = Math.max(0, Math.min(MONTHS.length - 1, MONTHS.indexOf(document.getElementById('month').textContent) + +b.dataset.step));
+  document.getElementById('month').textContent = MONTHS[i]; render();
+});
+document.querySelectorAll('[data-view]').forEach(x => x.classList.toggle('on', x === b));
+  document.getElementById('plan-chart').hidden = b.dataset.view !== 'flow';
+  document.getElementById('plan-table').hidden = b.dataset.view !== 'table';
+});
+render();
+</script>
+</body>
+</html>

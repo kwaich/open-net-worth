@@ -1,0 +1,446 @@
+{
+  "activeViewId": "view_674ee2d992e9",
+  "views": [
+    {
+      "name": "Overview",
+      "widgets": [
+        {
+          "instanceId": "widg_6dd177f70000",
+          "defId": "hero",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 224,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {
+            "chart": "Trend",
+            "range": "3M"
+          }
+        },
+        {
+          "instanceId": "widg_f51596c30000",
+          "defId": "attention",
+          "x": 0,
+          "y": 224,
+          "w": 12,
+          "h": 196,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_9acc2ebc0000",
+          "defId": "briefing",
+          "x": 0,
+          "y": 420,
+          "w": 12,
+          "h": 576,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": "violet",
+          "alert": null,
+          "config": {
+            "prompt": "Give me my morning money briefing"
+          }
+        },
+        {
+          "instanceId": "widg_ec08777e0000",
+          "defId": "upcoming",
+          "x": 0,
+          "y": 1374,
+          "w": 12,
+          "h": 425,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_50a9ee260000",
+          "defId": "alloc",
+          "x": 0,
+          "y": 996,
+          "w": 7,
+          "h": 378,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {
+            "viz": "pie"
+          }
+        },
+        {
+          "instanceId": "widg_260d415b0000",
+          "defId": "reach",
+          "x": 7,
+          "y": 996,
+          "w": 5,
+          "h": 378,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {
+            "viz": "bar"
+          }
+        },
+        {
+          "instanceId": "widg_2f7dc8490000",
+          "defId": "venues",
+          "x": 0,
+          "y": 1799,
+          "w": 12,
+          "h": 378,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {
+            "viz": "pie"
+          }
+        },
+        {
+          "instanceId": "rep-sankey-local-mt6rove3-1",
+          "defId": "rep-sankey",
+          "x": 0,
+          "y": 2177,
+          "w": 6,
+          "h": 300,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "cashflow-local-mt6rpdy2-2",
+          "defId": "cashflow",
+          "x": 0,
+          "y": 2477,
+          "w": 4,
+          "h": 112,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        }
+      ],
+      "viewId": "view_102c5378c676"
+    },
+    {
+      "name": "Investing",
+      "widgets": [
+        {
+          "instanceId": "widg_22a452260000",
+          "defId": "movers",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 224,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_f448af260000",
+          "defId": "inv-perf",
+          "x": 0,
+          "y": 861,
+          "w": 12,
+          "h": 461,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {
+            "range": "1Y"
+          }
+        },
+        {
+          "instanceId": "widg_2a13c6db0000",
+          "defId": "inv-drift",
+          "x": 0,
+          "y": 224,
+          "w": 8,
+          "h": 450,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_dfd4d8900000",
+          "defId": "dividends",
+          "x": 8,
+          "y": 224,
+          "w": 4,
+          "h": 461,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_846d02d80000",
+          "defId": "fx",
+          "x": 0,
+          "y": 685,
+          "w": 12,
+          "h": 176,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {
+            "pairs": []
+          }
+        }
+      ],
+      "viewId": "view_6d91407bf7c8"
+    },
+    {
+      "name": "Cash flow",
+      "widgets": [
+        {
+          "instanceId": "widg_1d930bc70000",
+          "defId": "spending",
+          "x": 0,
+          "y": 0,
+          "w": 8,
+          "h": 690,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_98fd3e9a0000",
+          "defId": "cashflow",
+          "x": 8,
+          "y": 0,
+          "w": 4,
+          "h": 241,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_c37a31910000",
+          "defId": "calendar",
+          "x": 0,
+          "y": 777,
+          "w": 12,
+          "h": 414,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_141d4c100000",
+          "defId": "bud-vsactual",
+          "x": 8,
+          "y": 241,
+          "w": 4,
+          "h": 536,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_b3d5ff0e0000",
+          "defId": "bud-recurring",
+          "x": 0,
+          "y": 1191,
+          "w": 12,
+          "h": 196,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        }
+      ],
+      "viewId": "view_674ee2d992e9"
+    },
+    {
+      "name": "Plan",
+      "widgets": [
+        {
+          "instanceId": "widg_dd7922d60000",
+          "defId": "goals",
+          "x": 0,
+          "y": 280,
+          "w": 12,
+          "h": 192,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_3f92fea10000",
+          "defId": "plan-fire",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 280,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_557b7d500000",
+          "defId": "crossover",
+          "x": 0,
+          "y": 700,
+          "w": 12,
+          "h": 228,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_c8a5afb60000",
+          "defId": "ins-debt",
+          "x": 0,
+          "y": 472,
+          "w": 12,
+          "h": 228,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        }
+      ],
+      "viewId": "view_3f2d175be508"
+    },
+    {
+      "name": "Reports",
+      "widgets": [
+        {
+          "instanceId": "widg_6e1d4e700000",
+          "defId": "rep-spendcat",
+          "x": 0,
+          "y": 528,
+          "w": 12,
+          "h": 499,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {
+            "viz": "pie"
+          }
+        },
+        {
+          "instanceId": "widg_5b1b2ee40000",
+          "defId": "rep-trends",
+          "x": 0,
+          "y": 1027,
+          "w": 12,
+          "h": 240,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_ebf1a8cd0000",
+          "defId": "rep-incexp",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 528,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {
+            "detail": "By category"
+          }
+        },
+        {
+          "instanceId": "widg_b5c119480000",
+          "defId": "rep-savings",
+          "x": 0,
+          "y": 1267,
+          "w": 6,
+          "h": 508,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        },
+        {
+          "instanceId": "widg_847a84e30000",
+          "defId": "rep-merchants",
+          "x": 6,
+          "y": 1267,
+          "w": 6,
+          "h": 307,
+          "collapsed": false,
+          "hideTitle": false,
+          "limit": null,
+          "accent": null,
+          "alert": null,
+          "config": {}
+        }
+      ],
+      "viewId": "view_bbbe34e85cec"
+    }
+  ]
+}

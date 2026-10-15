@@ -1,0 +1,65 @@
+# Spec: AO-DETAIL-NO-PRIMARY-ACTION — Always-on connector shows no primary action
+# Covers: ConnectorDetail.tsx — always_on connectors render without Pause/Connect/Resume
+# IDs: AO-DETAIL-NO-PRIMARY-ACTION, AO-DETAIL-KEBAB-INTACT, AO-DETAIL-DESCRIPTION
+id: CONN-AO-01
+acceptance_ids:
+  - AO-DETAIL-NO-PRIMARY-ACTION
+  - AO-DETAIL-KEBAB-INTACT
+  - AO-DETAIL-DESCRIPTION
+title: "Always-on connector detail modal shows no primary action button"
+description: >
+  Always-on connectors (status-only data sources like Yahoo Finance, CoinGecko)
+  are displayed in the Connectors tab but without the primary actions
+  (Pause/Connect/Resume/Reconnect) that normal connectors have. Their detail
+  page shows a status badge and kebab menu only. This spec verifies the
+  primary action area is truly absent for always-on connectors.
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1 — Open the Connectors tab.
+  In the left sidebar, find and click "Connectors". Wait up to 5 seconds for
+  the tab to load.
+
+  Step 2 — Identify an always-on connector.
+  Scan the connector cards on the grid. Look for a connector card that appears
+  to be "status-only" (typically Yahoo Finance, CoinGecko, or similar).
+  These may be grouped in a special section or marked as "always-on".
+  If you cannot find one after scrolling:
+    return "SKIP: No always-on connectors found in this environment"
+
+  Step 3 — Open the connector's detail page.
+  Click on the always-on connector card to open its detail modal. Wait up to
+  4 seconds for the modal to open.
+
+  Step 4 — Verify NO primary action button exists.
+  Look at the top right area of the modal header where action buttons appear
+  (above the content area). On normal connectors this is where "Pause",
+  "Connect", "Resume", or "Reconnect" appears. On always-on connectors:
+  - There should be NO large primary action button in that position
+  - Only the kebab menu icon (three dots) should appear
+  Record: PRIMARY_ACTION = "absent" or "present"
+
+  Step 5 — Verify status badge is visible.
+  Look for a status badge/label showing the connector's health
+  (e.g. "Active", "Error", "Not configured"). Record: STATUS_BADGE = "present" or "absent".
+
+  Step 6 — Verify kebab menu works.
+  Click the kebab menu (three dots). A dropdown should appear showing menu items
+  like "View details", "Edit configuration", "Remove connector".
+  Record: KEBAB_WORKS = "yes" or "no".
+
+  Decision:
+  - If no always-on connectors found: SKIP
+  - If PRIMARY_ACTION = "present": return "FAIL: Always-on connector has a primary action button (should not)"
+  - If STATUS_BADGE = "absent": return "FAIL: Status badge missing from always-on connector detail"
+  - If KEBAB_WORKS = "no": return "FAIL: Kebab menu does not open or shows no items"
+  - If all checks pass: return "PASS: Always-on connector shows no primary action, has status badge, kebab menu works"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "AO-DETAIL-always-on-connector.png"
+  note: >
+    Always-on connectors are status-only and do not require the user-initiated
+    Pause/Connect/Resume flow that interactive connectors have. If the environment
+    has no always-on connectors yet, this spec returns SKIP.

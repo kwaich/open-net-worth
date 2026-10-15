@@ -1,0 +1,111 @@
+"""`onw` — the command line of an installed Open Net Worth.
+
+`uv tool install open-net-worth` (or `make setup` in a checkout, which installs the package in
+editable mode) puts this on the PATH. It sits at the very top of the import stack: it may import
+anything below it (backend.main included); nothing below may import it.
+
+    onw start [--open]                   run the app — API + built frontend, one process
+    onw autostart install|stop|status    start at login/boot and restart on crash
+    onw reset-password                   set a new password when the old one is forgotten
+    onw mcp                              stdio MCP bridge for Claude Desktop, Cursor, …
+    onw upgrade                          update a `uv tool` install to the newest release
+    onw version                          print the installed version
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from collections.abc import Sequence
+
+
+def build_parser() -> argparse.ArgumentParser:
+    from backend.core.version import APP_VERSION
+
+    parser = argparse.ArgumentParser(
+        prog="onw",
+        description="Open Net Worth — self-hosted personal finance with an AI assistant.",
+    )
+    parser.add_argument("--version", action="version", version=f"open-net-worth {APP_VERSION}")
+    sub = parser.add_subparsers(dest="command", metavar="<command>")
+
+    start = sub.add_parser("start", help="run the app (API + built frontend in one process)")
+    start.add_argument("--host", help="bind address (default: HOST env, else 127.0.0.1)")
+    start.add_argument("--port", type=int, help="port (default: PORT env, else 8080)")
+    start.add_argument(
+        "--open", action="store_true", help="open the app in your browser once it is up"
+    )
+
+    auto = sub.add_parser("autostart", help="run at login/boot and restart on crash")
+    auto.add_argument("action", choices=("install", "stop", "status"))
+
+    sub.add_parser("autostart-run", help=argparse.SUPPRESS)  # what the Windows task executes
+    reset = sub.add_parser(
+        "reset-password",
+        help="set a new password for this book (run on the machine that holds it)",
+    )
+    reset.add_argument(
+        "--password-stdin",
+        action="store_true",
+        help="read the new password from one line of stdin instead of prompting",
+    )
+    mcp = sub.add_parser(
+        "mcp",
+        help="stdio MCP bridge an AI app spawns (token from ONW_API_TOKEN, never a flag)",
+    )
+    mcp.add_argument(
+        "--base-url",
+        help="this instance's address (default: ONW_BASE_URL, else the running instance's port)",
+    )
+    sub.add_parser("upgrade", help="update a `uv tool` install to the newest release")
+    sub.add_parser("version", help="print the installed version")
+    return parser
+
+
+def _use_utf8_stdio() -> None:
+    """Windows consoles and pipes default to a legacy code page, and a windowless ``pythonw``
+    has no stdio at all: print and logging must work with either."""
+    for name in ("stdout", "stderr"):
+        stream = getattr(sys, name)
+        if stream is None:
+            setattr(sys, name, open(os.devnull, "w", encoding="utf-8"))  # noqa: SIM115
+        elif hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    _use_utf8_stdio()
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.command is None:
+        parser.print_help()
+        return 0
+    if args.command == "version":
+        from backend.core.version import APP_VERSION
+
+        print(f"open-net-worth {APP_VERSION}")
+        return 0
+    if args.command == "start":
+        from backend.cli.serve import run_server
+
+        return run_server(host=args.host, port=args.port, open_browser=args.open)
+    if args.command == "autostart-run":
+        from backend.cli.autostart_windows import run_service
+
+        return run_service()
+    if args.command == "reset-password":
+        from backend.cli.reset_password import run_reset_password
+
+        return run_reset_password(password_stdin=args.password_stdin)
+    if args.command == "mcp":
+        from backend.cli.mcp import run_mcp
+
+        return run_mcp(base_url=args.base_url)
+    if args.command == "upgrade":
+        from backend.cli.serve import upgrade
+
+        return upgrade()
+    from backend.cli.autostart import run_autostart
+
+    return run_autostart(args.action)

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <link rel="icon" href="/favicon.ico?v=point-top" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=point-top" />
+    <title>Open Net Worth</title>
+
+    <!-- PWA: installable + offline app-shell -->
+    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
+    <meta name="theme-color" content="#0e1014" />
+    <!-- Pre-paint background. The theme stamp below sets data-theme before paint, but the
+         actual background colour lives in the CSS BUNDLE, which arrives later — so the very
+         first paint used the browser default (WHITE) and every cold start flashed white
+         before going dark. Invisible on desktop; on an iOS standalone PWA, where the app is
+         destroyed on backgrounding and every reopen is a cold start, it read as "the app
+         flashes white and refreshes itself" (2026-07-27).
+         Inline so it needs no network. Literals mirror src/theme.ts's --bg — keep in sync
+         with the theme-color values in the script below. -->
+    <style>
+      html {
+        background: #0e1014;
+      }
+      html[data-theme='warm'] {
+        background: #edeae3;
+      }
+      html[data-theme='light'] {
+        background: #ffffff;
+      }
+      body {
+        background: inherit;
+      }
+    </style>
+    <!-- Pre-paint theme stamp: resolve the persisted palette preference
+         before any stylesheet applies, so a reload never flashes the wrong theme.
+         Mirrors src/theme.ts (storage key + the three --bg literals) — keep in sync.
+         An external file, not inline: the page's CSP allows no inline script. -->
+    <script src="/theme-stamp.js"></script>
+    <!-- iOS standalone (add-to-home-screen) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Net Worth" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=point-top" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

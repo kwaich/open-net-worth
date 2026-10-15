@@ -1,0 +1,86 @@
+# Pre-commit guardrails for Open Net Worth (P0-E2).
+# Mirrors the CI lint/format gates so issues are caught before they reach CI.
+#
+#   Install the hook (NOT run by automation):  make install-hooks
+#   Run on the whole tree once:                 pre-commit run --all-files
+#
+# The ruff / mypy / pytest configuration lives in pyproject.toml; prettier reads
+# frontend/.prettierrc.json + frontend/.prettierignore. Keep tool versions in
+# sync with requirements-dev.txt (ruff) and frontend/package.json (prettier).
+default_install_hook_types: [pre-commit, commit-msg]
+fail_fast: false
+
+repos:
+  # --- ruff: lint + format (replaces black/isort/flake8) ---
+  # rev pinned to the ruff version in requirements-dev.txt.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.15
+    hooks:
+      - id: ruff
+        name: ruff (lint)
+        args: [--fix]
+      - id: ruff-format
+        name: ruff (format)
+
+  # --- prettier: frontend formatter ---
+  # Local hook so it uses the project's own prettier (frontend/node_modules) and
+  # the existing frontend/.prettierrc.json + frontend/.prettierignore — no second
+  # source of formatting truth. Scoped to frontend sources only.
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier (frontend)
+        entry: npx --prefix frontend prettier --write --ignore-unknown
+        language: system
+        files: ^frontend/src/.*\.(ts|tsx|css|json)$
+        pass_filenames: true
+
+  # --- gitleaks: secret scanning ---
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  # --- pii-lint: refuse a real name/NRIC/phone/bank-account/card number, staged-only ---
+  # Local hook (stdlib-only script, no extra deps to install) so it runs against exactly what
+  # `git commit` is about to record. Checks SHAPE, never a label (backend/scripts/pii_lint.py
+  # docstring) — a value trips it for looking like an NRIC or a bank account number regardless
+  # of what the surrounding comment calls it. `make lint` runs the same script whole-tree.
+  - repo: local
+    hooks:
+      - id: pii-lint
+        name: pii-lint (staged files)
+        entry: .venv/bin/python3 -m backend.scripts.pii_lint --staged
+        language: system
+        pass_filenames: false
+      - id: privacy-guard
+        name: "privacy-guard (data files, screenshots, local paths, private denylist; staged)"
+        entry: .venv/bin/python3 -m backend.scripts.privacy_guard --staged
+        language: system
+        pass_filenames: false
+      - id: docs-impact
+        name: "docs-impact (user-facing change needs product docs or a Docs trailer)"
+        entry: python3 scripts/docs_impact.py
+        language: system
+        stages: [commit-msg]
+      - id: docs-lint
+        name: "docs-lint (product docs corpus contract — a bad page breaks Lucius's search_docs)"
+        entry: .venv/bin/python3 -m backend.scripts.docs_lint
+        language: system
+        files: ^docs/product/
+        pass_filenames: false
+
+  # --- generic hygiene ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+        # Data/cache files are runtime-written; don't fight them.
+        exclude: ^(backend/data/|backend/dev-data/|frontend/dist/|.*\.lock$)
+      - id: trailing-whitespace
+        exclude: ^(backend/data/|backend/dev-data/|frontend/dist/)
+        args: [--markdown-linebreak-ext=md]
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]

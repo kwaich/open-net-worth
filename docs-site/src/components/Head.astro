@@ -1,0 +1,38 @@
+---
+// Starlight Head override, solely to install Astro's ClientRouter.
+//
+// Without it every in-site click is a full document load: the whole page
+// repaints, the theme script re-runs, and the font re-resolves — which reads
+// as a flash on every navigation. Prefetch alone does NOT fix this; it only
+// makes the reload faster. ClientRouter swaps the document instead of
+// replacing it, so the header, sidebar and scroll position survive.
+import Default from '@astrojs/starlight/components/Head.astro';
+import { ClientRouter } from 'astro:transitions';
+---
+
+<Default><slot /></Default>
+<ClientRouter />
+
+{/*
+  One constant tab title (owner, 2026-08-23). Starlight emits "<page> - <site>"
+  per page; a second <title> tag would be ignored (the browser takes the first),
+  so this sets it at runtime instead — including after a view transition, which
+  swaps the document without a page load.
+
+  Deliberate consequence: the HTML still ships Starlight's per-page title, so
+  crawlers and link previews keep useful distinct titles. Only the visible tab
+  is constant, which is what was asked for.
+
+  Trade-off, recorded so it can be reversed knowingly: with several docs tabs
+  open they all read the same, and so does browser history. Delete this block to
+  restore per-page titles.
+*/}
+<script is:inline>
+  (() => {
+    const TITLE = 'Documentation – Open Net Worth';
+    const set = () => { if (document.title !== TITLE) document.title = TITLE; };
+    set();
+    document.addEventListener('astro:page-load', set);
+    document.addEventListener('astro:after-swap', set);
+  })();
+</script>

@@ -1,0 +1,60 @@
+---
+// Overrides Starlight's default PageTitle to add a visible status badge next to
+// the H1 whenever a corpus page is not `status: stable` — the docs must never
+// oversell a feature that isn't trusted yet (CLAUDE.md: "status is earned by
+// evidence"). The matching sidebar badge is set in astro.config.mjs's
+// buildSidebar(); this is the on-page half of the same signal.
+import { Badge } from '@astrojs/starlight/components';
+
+// Starlight's own PAGE_TITLE_ID constant ('_top') isn't part of its public
+// export map (only `./components`, `./schema`, `./loaders`, etc. are) — this
+// literal mirrors it so the "skip to content" link still lands here.
+const PAGE_TITLE_ID = '_top';
+
+const { entry } = Astro.locals.starlightRoute;
+const status = 'status' in entry.data ? entry.data.status : undefined;
+
+const badge =
+  status === 'coming-soon'
+    ? { text: 'Coming soon', variant: 'caution' as const }
+    : status === 'beta'
+      ? { text: 'Experimental', variant: 'note' as const }
+      : undefined;
+---
+
+<h1 id={PAGE_TITLE_ID}>
+  {entry.data.title}
+  {badge && (
+    // data-pagefind-ignore: Pagefind indexes this H1's text as the page's
+    // search-result title. Without this, "Experimental"/"Coming soon" gets glued
+    // onto the title with no separator (e.g. "ConnectorsExperimental"). The badge
+    // stays fully visible on the page — this only opts it out of Pagefind's
+    // indexing, not out of rendering.
+    <Badge
+      text={badge.text}
+      variant={badge.variant}
+      size="large"
+      class="page-title-badge"
+      data-pagefind-ignore
+    />
+  )}
+</h1>
+
+<style>
+  @layer starlight.core {
+    h1 {
+      margin-top: 1rem;
+      font-size: var(--sl-text-h1);
+      line-height: var(--sl-line-height-headings);
+      font-weight: 600;
+      color: var(--sl-color-white);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .page-title-badge {
+      vertical-align: middle;
+    }
+  }
+</style>

@@ -1,0 +1,109 @@
+# Spec: EXT-PANEL — Settings → Developer → Extensions panel renders list without error
+# Covers: SETTINGS-EXT-EMPTY-STATE, SETTINGS-EXT-LIST-BADGES — Extensions panel loads and lists
+# Verifies: GET /api/extensions response succeeds, no "Could not load extensions" error, and
+#           (2026-08-05 redesign) each row carries an ALWAYS-VISIBLE enable toggle.
+#
+# UPDATED for the Settings overlay redesign: Developer is now a SECTION of the Settings
+# overlay, not a sub-tab; a row shows name · version · description with a toggle + Uninstall
+# rather than domain/author chips; and the empty state reads "Nothing installed — extension
+# packs you install will be listed here." The pack_dir leak check is unchanged and still
+# load-bearing.
+id: EXT-PANEL
+acceptance_ids:
+  - SETTINGS-EXT-PHASE-NOTICE
+  - SETTINGS-EXT-EMPTY-STATE
+  - SETTINGS-EXT-LIST-BADGES
+title: "Settings → Developer → Extensions panel loads, lists packs, and can disable one"
+description: >
+  The Extensions panel (Settings → Developer → Extensions) must:
+    - Load without a "Could not load extensions" error
+    - Call GET /api/extensions successfully (backend fix from commit 2e7718c)
+    - Display domain chips from the response (populated from manifest)
+    - Show author and description for each extension (not blank)
+    - Handle both empty-state (no extensions) and populated list
+    - Project domain/author/description; strip pack_dir (was leaked before the fix)
+
+acceptance_criteria:
+  - AC1: Settings → Developer page loads without JS error
+  - AC2: Extensions panel is present and not hidden
+  - AC3: GET /api/extensions API call succeeds (200 response)
+  - AC4: No error message visible saying Could not load extensions
+  - AC5: If extensions exist, each row shows a name, a version, and a description line
+  - AC6: Each row has an enable toggle that is visible AT REST (not revealed on hover)
+  - AC7: Toggling a row off reports that it is no longer consulted
+  - AC8: If no extensions, the "Nothing installed" empty state is shown, not a spinner or error
+  - AC9: No pack_dir or internal paths leak in the UI
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  1. Ensure it has loaded fully.
+
+  2. Go to Settings (sidebar → Settings). A dialog opens over the page.
+
+  3. Click "Developer" in the Settings section rail on the left.
+     Record: DEVELOPER_TAB_VISIBLE = yes/no
+
+  4. Within Developer settings, locate the "Extensions" section/panel.
+     Record: EXTENSIONS_SECTION_VISIBLE = yes/no
+
+  5. Check if there is a "Could not load extensions" error message visible. (AC4)
+     Record: ERROR_MESSAGE_VISIBLE = yes/no, ERROR_TEXT = text if visible
+
+  6. Open the browser DevTools Network tab. Trigger a refresh of the Extensions
+     panel (or reload the page). Look for a GET /api/extensions request. (AC3)
+     - Did the request return a 200 status? (AC3)
+     - Did it return with valid JSON (not an error)?
+     Record: API_SUCCESS = yes/no, API_STATUS = HTTP code if captured
+
+  7. In the Extensions panel, check the current state:
+     - Are there extension rows listed? Or is an empty state shown?
+     Record: EXTENSIONS_COUNT = "0 (empty)" or "N rows"
+
+  8. If EXTENSIONS_COUNT = "0 (empty)", is a "Nothing installed" empty state visible? (AC8)
+     Record: EMPTY_STATE_TEXT = text shown (or "not visible")
+
+  9. If EXTENSIONS_COUNT > 0, inspect one extension row: (AC5, AC6, AC7)
+     - Is there a name/title visible, with a version next to it (e.g. "v1.4.2")?
+     - Is a description or type line shown under it (not "undefined", not blank)?
+     - Is there an on/off toggle visible WITHOUT hovering the row? A toggle that only
+       appears on hover is unfindable, so it must be visible at rest.
+     Record: NAME_VISIBLE = yes/no, NAME_VALUE = the name
+     Record: VERSION_VISIBLE = yes/no, VERSION_VALUE = the version
+     Record: DESCRIPTION_POPULATED = yes/no, DESCRIPTION_VALUE = (first 50 chars)
+     Record: TOGGLE_VISIBLE_AT_REST = yes/no
+     Now click that toggle to switch the extension OFF. Wait 2 seconds.
+     Record: TOGGLE_OFF_TOAST = the toast text (or "none")
+     Click it again to switch it back ON, and confirm it returns to its original state.
+     Record: TOGGLE_RESTORED = yes/no
+
+  10. Check the HTML/DOM for any exposed pack_dir or internal paths. (AC9)
+      (This is a security check: the backend should not leak pack_dir in the API response.)
+      Record: PACK_DIR_LEAKED = yes/no
+
+  11. Check for any JS errors in the DevTools console. (AC1)
+      Record: JS_ERROR = yes/no
+
+  Decision:
+  - If DEVELOPER_TAB_VISIBLE = no or EXTENSIONS_SECTION_VISIBLE = no: FAIL "Extensions panel not found"
+  - If ERROR_MESSAGE_VISIBLE = yes: FAIL f"Error message visible: {ERROR_TEXT}"
+  - If API_SUCCESS = no: FAIL f"GET /api/extensions failed: {API_STATUS}"
+  - If EXTENSIONS_COUNT > 0 and (NAME_VISIBLE = no or VERSION_VISIBLE = no): FAIL "Extension row missing name/version"
+  - If EXTENSIONS_COUNT > 0 and (DESCRIPTION_POPULATED = no): FAIL "Description field undefined/blank"
+  - If EXTENSIONS_COUNT > 0 and (TOGGLE_VISIBLE_AT_REST = no): FAIL "Enable toggle is hover-only; it must be visible at rest"
+  - If EXTENSIONS_COUNT > 0 and (TOGGLE_RESTORED = no): FAIL "Could not restore the extension's original enabled state"
+  - If EXTENSIONS_COUNT = 0 and EMPTY_STATE_TEXT = "not visible": FAIL "Empty state not shown when no extensions"
+  - If PACK_DIR_LEAKED = yes: FAIL "pack_dir exposed in API response (security issue)"
+  - If JS_ERROR = yes: FAIL "JavaScript error in Extensions panel"
+  - Otherwise: PASS f"Extensions panel loads successfully — {EXTENSIONS_COUNT}, API OK, no leaks"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "EXT-PANEL-extensions-list.png"
+  note: >
+    This spec validates the Extensions panel backend fix (commit 2e7718c).
+    The fix ensures GET /api/extensions projects domain/author/description correctly
+    and strips pack_dir (which was previously exposed as a security leak).
+    Domain chips should display the manifest's domain field(s).
+    The spec can pass with either an empty-state (no extensions) or populated list,
+    as long as the API succeeds and no error messages appear.

@@ -1,0 +1,311 @@
+/* Overview v2 — Reports widget group (YNAB Reflect / Monarch-style report
+   widgets). `rep-spendcat` reuses the shared Breakdown renderer, so its
+   `.ov-breakdown-*` classes already live in netWorth.css — this file only
+   carries classes specific to the other six widgets. */
+
+.ov-rep-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* "September. Nothing spent in October yet." above a widget showing the month before. */
+.ov-rep-note {
+  margin: 0 0 var(--space-3);
+}
+
+.ov-rep-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 6px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (hover: hover) {
+  .ov-rep-link:hover {
+    text-decoration: underline;
+  }
+}
+
+/* ── Series legend (seriesLegend.tsx — Spending trends, Income vs expense) ─────────────
+   One labelled row per side. A wide card shows every entry (wrapping if it must); a narrow one
+   keeps the first few on one line and folds the rest behind "+N more". */
+
+.ov-sleg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: none;
+  padding-bottom: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ov-sleg-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  min-width: 0;
+}
+
+.ov-sleg-title {
+  flex: none;
+  min-width: 58px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.ov-sleg-group.in .ov-sleg-title {
+  color: var(--good);
+}
+
+.ov-sleg-group.out .ov-sleg-title {
+  color: var(--bad);
+}
+
+.ov-sleg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Its own box, so a long name ends in "…" — text-overflow does nothing to bare text in a flex
+   container, which clipped "Home & Utilities" to "Home & Utilit". */
+.ov-sleg-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-sleg-item i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.ov-sleg-more {
+  display: none;
+  flex: none;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Folding is two tiers: mid-width cards keep three entries (`c3`), phone-width ones two (`c2`). */
+@container ovcard (max-width: 720px) {
+  .ov-sleg-group:not(.open) {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .ov-sleg-group:not(.open) .ov-sleg-item.x3 {
+    display: none;
+  }
+
+  .ov-sleg-more.c3 {
+    display: inline-flex;
+  }
+}
+
+@container ovcard (max-width: 480px) {
+  .ov-sleg-group:not(.open) .ov-sleg-item.x2 {
+    display: none;
+  }
+
+  .ov-sleg-more.c3 {
+    display: none;
+  }
+
+  .ov-sleg-more.c2 {
+    display: inline-flex;
+  }
+}
+
+/* ── Savings-rate gauge ───────────────────────────────────────────────── */
+
+.ov-savings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.ov-savings-gauge-wrap {
+  position: relative;
+  width: min(100%, 170px);
+}
+
+.ov-savings-pct {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ov-savings-sub {
+  text-align: center;
+}
+
+/* ── Income & expense table (rep-table) ──────────────────────────────────
+   Simplified 2-level hierarchy — Income / Spending groups, each with a flat
+   list of category rows (no group→subgroup→category tree; see reports.tsx
+   header note on the scope this trades off). */
+
+.ov-iet {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+
+.ov-iet-head,
+.ov-iet-row {
+  display: grid;
+  grid-template-columns: 1fr 84px 84px 90px;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-iet-head {
+  color: var(--faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ov-iet-row {
+  padding: 5px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+
+.ov-iet-row.grp {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ov-iet-row.ind1 .ov-iet-lab {
+  padding-left: 16px;
+}
+
+.ov-iet-row.net {
+  border-bottom: none;
+  border-top: 2px solid var(--line);
+  font-weight: 700;
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+.ov-iet-lab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-iet-lab i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+.ov-iet-chev {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(-45deg);
+  margin-right: 2px;
+  flex: 0 0 auto;
+}
+
+.ov-iet-chev.open {
+  transform: rotate(45deg);
+}
+
+.ov-iet-n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-iet-cur {
+  color: var(--ink);
+}
+
+.ov-iet-avg,
+.ov-iet-tot {
+  color: var(--muted);
+}
+
+/* Narrow cards drop the Avg column so This-month/Total stay legible. */
+@container ovcard (max-width: 340px) {
+  .ov-iet-head,
+  .ov-iet-row {
+    grid-template-columns: 1fr 74px 84px;
+  }
+
+  .ov-iet-avg {
+    display: none;
+  }
+}
+
+/* ── Cash flow (rep-sankey — cashFlowCard.tsx). Marks/tokens are the shared .mf-* rules in
+   index.css; the card only sizes the plot and re-strokes labels against its own surface. ── */
+
+.ov-mf {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 180px;
+  overflow: hidden;
+}
+
+.ov-mf-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+}
+
+.ov-mf-svg {
+  position: absolute;
+  inset: 0;
+}
+
+.ov-mf-lbl {
+  font-size: 11px;
+  stroke: var(--surface2);
+}

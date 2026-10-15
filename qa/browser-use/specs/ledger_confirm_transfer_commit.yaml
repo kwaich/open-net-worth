@@ -1,0 +1,80 @@
+# Spec: LCG-02 — a transfer card shows BOTH legs + the base amount, and ✓ commits exactly one row
+# Covers: preview_create for kind=transfer (both legs, direction, base block) and the confirm
+#         redemption path (PendingPlanStore.pop_for_tool -> execute the STORED args).
+# Requires ANTHROPIC_API_KEY; SKIP otherwise.
+#
+# THIS SPEC MUTATES DATA — it taps ✓. It is safe because make qa-e2e boots against a
+# throwaway clone of the data dir (make qa-data), never the live tree.
+id: LCG-02
+# Budgets 90s + 45s + 45s of waiting plus a commit round trip; the runner's 120s default
+# made a timeout the only possible outcome.
+timeout_seconds: 540
+acceptance_ids:
+  - LCG-CARD-SHOWS-TRANSFER-LEGS-AND-BASE
+  - LCG-CONFIRM-COMMITS-EXACTLY-ONE
+title: "A transfer card shows both legs and the base amount; ✓ commits exactly one matching row"
+description: >
+  A transfer moves money between two of the user's own accounts, so the card must show BOTH
+  legs — showing one is how a user confirms a transfer into the wrong account. The base
+  amount that will be stamped must be shown as formatted money. Tapping ✓ redeems the token
+  and commits the STORED args, so exactly one row must appear, matching the card.
+
+acceptance_criteria:
+  - AC1: A transfer request produces a confirm card
+  - AC2: The card names BOTH accounts (source and destination)
+  - AC3: The card shows a base-currency amount, formatted as money (not raw JSON)
+  - AC4: Tapping ✓ commits exactly ONE transaction matching the card
+  - AC5: The register shows that one new row afterwards
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Learn TWO real account names.
+  Open the "Cash" or "Accounts" tab. Note the exact NAMES of two DIFFERENT asset accounts
+  (for example "DBS Savings" and "OCBC Checking"). Remember both.
+
+  Step 2 — Record the current transaction count.
+  Open the transactions register (the "Cash" tab's transaction list, or a "Transactions"
+  view). Note how many rows are listed, or note the description + amount of the TOP row so
+  you can tell later whether exactly one new row was added.
+
+  Step 3 — Open chat and check for an API key.
+  Open the chat panel. If it shows an "API key" / "not configured" / Settings notice, return
+  "SKIP: AI not configured — cannot test the ledger confirm card".
+
+  Step 4 — Ask for a transfer.
+  Type exactly, substituting your two account names:
+    transfer 250 from <ACCOUNT A> to <ACCOUNT B> today
+  Press Enter. Wait up to 90 seconds for a confirm card. If Lucius asks a clarifying
+  question, answer briefly and wait another 45 seconds.
+
+  Step 5 — Read the card and record what it shows.
+  Report: the heading; the text shown for the FROM leg; the text shown for the TO leg; any
+  base-currency amount shown (e.g. "SGD 250.00"); and the two button labels.
+
+  Step 6 — Confirm.
+  Click the confirm button (✓ / "Confirm" / "Apply"). Wait up to 45 seconds.
+
+  Step 7 — Verify exactly one row landed.
+  Go back to the transactions register and refresh the view. Compare against what you
+  recorded in Step 2: there must be exactly ONE new transaction, and its amount must be 250
+  moving between the two accounts you named.
+
+  Decision — return ONE line starting with PASS, FAIL or SKIP:
+  - PASS if the card named BOTH accounts, showed a base amount, and after ✓ exactly one new
+    250 transaction between those accounts is present. Format:
+    "PASS: from=<text> to=<text> base=<text> | after confirm: <what you saw in the register>"
+  - FAIL if the card showed only one leg, or showed no base amount. Format:
+    "FAIL: card incomplete — <what was missing> — card showed <what you saw>"
+  - FAIL if after ✓ there are zero new rows, or more than one. Format:
+    "FAIL: expected exactly 1 new row, saw <n> — <describe>"
+  - FAIL if an error appeared. Format: "FAIL: error — <error text>"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "LCG-02-transfer-card-and-commit.png"
+  note: >
+    SKIP is acceptable when ANTHROPIC_API_KEY is not set. The ✓ re-calls add_transactions
+    with confirm_token; _confirm_gate.redeem pops the staged plan and the tool executes the
+    STORED args, discarding every other argument on the confirming call — so the committed
+    row must match the card regardless of what the model restates.

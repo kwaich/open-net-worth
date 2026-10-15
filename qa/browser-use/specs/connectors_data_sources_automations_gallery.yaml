@@ -1,0 +1,76 @@
+# Spec: CDS-AUTOMATIONS-01 — the Automations gallery's "Sync a connector" section and the
+# ?template= deep link.
+# Covers: AutomationList.tsx's CONNECTOR_SYNC_TEMPLATES, Automations.tsx's deep-link opener,
+#         router.tsx's `template` search param.
+id: CDS-AUTOMATIONS-01
+acceptance_ids:
+  - CDS-UI-9
+  - CDS-UI-10
+  - CDS-UI-11
+  - CDS-UI-12
+title: "Automations gallery shows 8 connector-sync templates; a deep link opens one prefilled"
+description: >
+  Below "Start from a template", a second "Sync a connector" section lists 8 template
+  cards (no Yodlee). Clicking one opens the automation editor prefilled with a schedule
+  trigger. Visiting /automations?template=sync_<provider> opens the same editor with no
+  click, then clears the URL param; an unknown template key is a silent no-op.
+
+acceptance_criteria:
+  - "AC1: A Sync a connector section is visible below Start from a template"
+  - "AC2: It contains exactly 8 cards — SimpleFIN, Plaid, Lunch Money, Lunch Flow, YNAB, Enable Banking, Alpaca, Interactive Brokers — and no Yodlee card"
+  - "AC3: Clicking a card opens the automation editor with its name/instructions/schedule already filled in"
+  - "AC4: Visiting the tab with template=sync_plaid in the URL opens the editor automatically, prefilled for Plaid, and the URL's template param disappears afterward"
+  - "AC5: Visiting with an unrecognized template value shows the gallery normally, editor closed, no visible error"
+
+browser_use_task: |
+  Navigate to {app_url}/automations and wait for the page to load fully.
+
+  Step 1 — Find the "Sync a connector" section.
+  Scroll down past any existing automations and past the "Start from a template" section.
+  Look for a section titled "Sync a connector".
+  If not found: return "FAIL: 'Sync a connector' section not found on the Automations tab"
+
+  Step 2 — Count its cards.
+  Count the template cards inside that section. List their visible titles.
+  Record CARD_COUNT = <number>.
+  Record HAS_YODLEE = "yes" if any card mentions "Yodlee", else "no".
+
+  Step 3 — Open one card.
+  Click the "Sync Plaid" card (or the first one visible in that section if differently
+  named). Wait up to 3 seconds.
+  Check: did a dialog/editor open with a name field already containing text (not empty)?
+  Record EDITOR_OPENED = "yes" or "no".
+  Close the editor (Cancel or the X) before continuing.
+
+  Step 4 — Deep link.
+  Navigate directly to {app_url}/automations?template=sync_plaid (type the full URL).
+  Wait up to 3 seconds.
+  Check: did the editor open automatically, with no click needed?
+  Record DEEPLINK_OPENED = "yes" or "no".
+  Check the browser's address bar / URL: does it still contain "template=sync_plaid"?
+  Record PARAM_CLEARED = "yes" (gone) or "no" (still present).
+  Close the editor.
+
+  Step 5 — Unknown template key.
+  Navigate to {app_url}/automations?template=totally_unknown_key_xyz. Wait 3 seconds.
+  Check: is the gallery showing normally with NO dialog open, and no visible error banner
+  or red text?
+  Record UNKNOWN_KEY_RESULT = "silent_noop" or "error_shown" or "editor_opened".
+
+  Decision:
+  - If CARD_COUNT != 8 or HAS_YODLEE = "yes":
+    return "FAIL: expected exactly 8 non-Yodlee cards, got CARD_COUNT with Yodlee=HAS_YODLEE"
+  - If EDITOR_OPENED = "no":
+    return "FAIL: clicking a template card did not open a prefilled editor"
+  - If DEEPLINK_OPENED = "no":
+    return "FAIL: ?template=sync_plaid did not auto-open the editor"
+  - If PARAM_CLEARED = "no":
+    return "FAIL: the template URL param was not cleared after the editor opened"
+  - If UNKNOWN_KEY_RESULT != "silent_noop":
+    return "FAIL: an unknown template key did not silently no-op (UNKNOWN_KEY_RESULT)"
+  - Otherwise:
+    return "PASS: Sync-a-connector gallery and template deep link behave per spec"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CDS-AUTOMATIONS-01-sync-a-connector.png"

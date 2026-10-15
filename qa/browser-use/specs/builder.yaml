@@ -1,0 +1,42 @@
+# Spec: BUILDER-01 — Build workspace navigation, readiness, and authority copy
+# This intentionally does not launch a real coding-engine run.
+id: BUILDER-01
+acceptance_ids:
+  - BUILDER-NAV
+  - BUILDER-READINESS
+  - BUILDER-PLAIN-LANGUAGE
+  - BUILDER-AUTHORITY
+title: "Build workspace is discoverable and explains local coding-engine authority"
+description: >
+  The Build destination must load, report the actual local Codex and Claude Code readiness,
+  accept a plain-language starter, and distinguish read-only Plan from repository-writing Build.
+
+acceptance_criteria:
+  - AC1: Build is reachable and the page title is visible without a blank screen or JS error
+  - AC2: Codex, Claude Code, and the fixed workspace are visible with honest readiness states
+  - AC3: A plain-language starter fills the request field
+  - AC4: Plan and Build explain different authority, including the no Git/deploy boundary
+  - AC5: No real coding-engine run is started by this spec
+
+browser_use_task: |
+  Navigate directly to {app_url}/#/build and wait for readiness to finish.
+
+  1. Confirm the page title starts with "Build" and that the page is not blank or showing an error.
+  2. Confirm both "Codex" and "Claude Code" appear with either "Ready" or "Not installed".
+     Confirm a workspace path is visible.
+  3. Confirm Plan is selected and the explanation says it reads code but cannot change files.
+  4. Click "Build" in the Authority control. Confirm the explanation says it can edit the checkout
+     and run local commands. Confirm the page says it cannot commit, push, open a pull request,
+     or deploy.
+  5. Click "Add something new". Confirm the change request field contains a non-empty example.
+  6. Do NOT click "Build this change" or "Plan this change". This is a non-paid readiness check.
+
+  Return "PASS: Build workspace is ready and authority is clear" if all checks pass.
+  Otherwise return "FAIL: <what was missing or incorrect>".
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "BUILDER-01-workspace.png"
+  note: >
+    This spec is safe to run without consuming Codex or Claude usage. Installed/not-installed
+    states both pass when they accurately reflect the host.

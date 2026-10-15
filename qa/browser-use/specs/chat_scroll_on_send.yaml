@@ -1,0 +1,51 @@
+# Spec: CH-02 — Chat panel scrolls to show sent message
+# Covers: ChatPanel scroll-to-bottom on send (useLayoutEffect + isNearBottomRef)
+# The composer is pinned at the bottom of the panel; a tall message history must
+# not leave the newly-sent bubble cut off behind the composer.
+id: CH-02
+acceptance_ids:
+  - CHAT-SCROLL-ON-SEND
+title: "Chat panel scrolls so the sent message is fully visible after send"
+description: >
+  When the user sends a message, the ChatPanel should automatically scroll
+  so the sent message bubble is fully visible and NOT occluded by the input
+  composer at the bottom of the panel. This validates the on-send scroll snap
+  (useLayoutEffect keyed on messages.length, isNearBottomRef=true).
+
+acceptance_criteria:
+  - AC1: The chat panel can be opened
+  - AC2: Typing and sending a message does not leave the sent bubble hidden below the fold
+  - AC3: The sent message text is readable — not covered by the composer or clipped
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open the chat panel.
+  Find the chat button in the top-right or bottom-right of the page (a speech
+  bubble icon, or a button labelled "Ask Lucius" or similar). Click it to open
+  the chat panel. Wait for the panel to slide in from the right.
+
+  Step 2 — Send a message.
+  Find the text input area at the bottom of the chat panel.
+  Type: hello, can you see this message?
+  Press Enter to send.
+
+  Step 3 — Check visibility immediately after send.
+  Look at the chat message area. Is the message you just sent ("hello, can you
+  see this message?") visible on screen? Or is it hidden below the fold, behind
+  the input composer?
+
+  Decision:
+  - If the sent message bubble is clearly visible (you can read the text):
+    return "PASS: sent message is visible after send"
+  - If the sent message is not visible (cut off or hidden behind the composer):
+    return "FAIL: sent message is not visible after send — scroll did not snap to bottom"
+  - If the chat panel could not be opened:
+    return "FAIL: chat panel did not open"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CH-02-chat-scroll-on-send.png"
+  note: >
+    This spec does NOT require a real LLM reply. It only tests that the user's
+    own outbound message is scrolled into view. No ANTHROPIC_API_KEY required.

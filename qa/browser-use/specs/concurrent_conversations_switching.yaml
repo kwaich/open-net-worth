@@ -1,0 +1,81 @@
+# Spec: CC-02 — switching and starting are never blocked
+# Covers: acceptance B1, B2, B4 in docs/qa/acceptance/concurrent-conversations.md
+#
+# The product complaint that started this work: a ninety-second turn blocked the
+# whole assistant. You could not switch, could not start a new chat, could not
+# even go READ an old thread. ChatPanel.tsx and LuciusDock.tsx both hard-returned
+# on `streaming`. Those guards are gone.
+id: CC-02
+acceptance_ids:
+  - CONC-SWITCH-UNBLOCKED
+  - CONC-SECOND-TURN
+  - CONC-NEW-CHAT-MIDSTREAM
+title: "Concurrent conversations: switching, new chat, and a second turn all work mid-stream"
+timeout_seconds: 600
+max_steps: 80
+
+description: >
+  With a turn streaming, the conversation list stays interactive, "New chat"
+  still works, and a second turn can be started and completed in another
+  conversation while the first is still running. Both answers must land in their
+  own conversation.
+
+acceptance_criteria:
+  - AC1: The conversation list is interactive while a turn streams (B1)
+  - AC2: New chat works mid-stream and does not disturb the running turn (B4)
+  - AC3: A second turn can be started while the first runs (B2)
+  - AC4: Both turns complete, each in its own conversation (B2)
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the app to finish loading.
+  Open Lucius (a chat/spark button on a wide viewport, or the Lucius slot in the
+  bottom tab bar on a narrow one).
+
+  STEP 1 — start a slow turn in CONVERSATION A.
+  Click "New chat" in the conversation sidebar.
+  Type exactly:
+  list all of my accounts and their balances
+  Press Enter. Do NOT wait for it to finish.
+
+  STEP 2 — B1: is the list interactive while streaming?
+  While the reply is still streaming, open the conversation list.
+  If it is greyed out, unclickable, or absent, return
+  "FAIL: B1 - conversation list is not interactive while streaming".
+
+  STEP 3 — B4: new chat mid-stream.
+  Still while A is streaming, click "New chat".
+  If it is disabled or does nothing, return
+  "FAIL: B4 - New chat is blocked while streaming".
+  A new empty conversation should open and take focus. Call it CONVERSATION B.
+
+  STEP 4 — B2: a second turn, concurrently.
+  In CONVERSATION B type exactly:
+  what were my three largest expenses last month
+  Press Enter.
+  Both conversations are now working at the same time.
+  Wait up to 90 seconds for B's reply to appear and finish.
+
+  STEP 5 — check both landed correctly.
+  Read B's reply and note roughly what it says. It should be about expenses.
+  Then open the conversation list and click CONVERSATION A.
+  Wait up to 60 seconds for A to finish if it has not.
+  Read A's reply. It should be about accounts and net worth.
+
+  Evaluate:
+  - If BOTH conversations show complete replies AND each reply matches its own
+    question (A about accounts/net worth, B about expenses), return
+    "PASS: both turns completed in their own conversation"
+  - If B's answer appears inside A, or A's inside B, return
+    "FAIL: answers landed in the wrong conversation - <what you saw>"
+  - If either reply is missing or truncated mid-sentence, return
+    "FAIL: a concurrent turn did not complete - <what you saw>"
+  - If an error mentioning API key, model, or configuration appears, return
+    "SKIP: AI not configured - <error text>"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CC-02-switching.png"
+  note: >
+    Steps 2 and 3 (B1, B4) are meaningful even without ANTHROPIC_API_KEY, since
+    they test whether the UI permits the actions at all — which is exactly what
+    the removed guards used to prevent.

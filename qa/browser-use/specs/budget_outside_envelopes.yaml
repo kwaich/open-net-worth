@@ -1,0 +1,47 @@
+# Spec: BUD-OUTSIDE-1..3 — spending outside envelopes, and the one displayed "available"
+# The banner naming spending that belongs to no envelope (uncategorized + unlinked categories),
+# its per-category "Add X to an envelope →" action, and the Summary "Total available" stat
+# agreeing with the table's Total row.
+# ADR: docs/adr/2026-09-07-budget-available-is-the-display-total.md
+id: BUD-OUTSIDE
+title: "Budget — spending outside envelopes, and the one displayed available"
+timeout_seconds: 360
+acceptance_ids:
+  - BUD-OUTSIDE-1
+  - BUD-OUTSIDE-2
+  - BUD-OUTSIDE-3
+acceptance_criteria:
+  - AC1: A warn-tinted banner (.pl-uncat) sits between the Ready-to-Assign card and the toolbar. With BOTH kinds of outside spending it headlines the combined figure ("... of spending isn't in any envelope — it already came out of Ready to Assign."), then a .pl-uncat-list breakdown reading "{amt} has no category · {amt} in {Category}, a category with no envelope", naming at most three categories and appending "+N more" beyond that. Amounts show cents when fractional.
+  - AC2: Each named category carries an inline "Add {Category} to an envelope →" button. Clicking it OPENS the existing add-to-envelope picker and writes nothing; cancelling leaves the banner unchanged. "Review with Lucius" is still present. With only uncategorized spending the banner reads "... of spending has no category — it already came out of Ready to Assign; give it a category any time to sort it in reports." and shows no link buttons.
+  - AC3: The Summary's "Total available" stat, the mini "... available" line and the table's Total row Available cell all show the SAME amount, and it IS the plain sum of the envelope rows' Available (negatives included) — spending outside envelopes is NOT folded in. Neither the stat nor the mini line carries a tooltip. The banner is informational — it names that spending and says the money ALREADY came out of Ready to Assign; it never claims that categorizing or linking it will move Ready to Assign back.
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1: Open Plan → Budget.
+  Click "Plan" in the navigation and confirm the Budget sub-tab is showing, with the
+  Ready-to-Assign card at the top. Take a screenshot of the top of the page.
+
+  Step 2: Verify the outside-envelopes banner (AC1).
+  Directly below the Ready-to-Assign card, look for a warn-tinted banner beginning with a "!"
+  badge. Record its EXACT text. If it names both uncategorized spending and one or more
+  categories, confirm the headline amount equals the sum of the amounts in the breakdown line
+  beneath it, and that at most three categories are named (with "+N more" if there are more).
+  Confirm any fractional amount shows cents. Take a screenshot of the banner.
+  If no banner is present, report AC1 as N/A and state that this book has no spending outside
+  envelopes this month.
+
+  Step 3: Verify the per-category action (AC2).
+  In the banner, click a button labelled "Add <Category> to an envelope →". An envelope picker
+  should open. Take a screenshot of it. Cancel or press Escape WITHOUT choosing an envelope,
+  then confirm the banner still lists that same category (nothing was written). Confirm a
+  "Review with Lucius" button is also present in the banner.
+
+  Step 4: Verify the one displayed "available" (AC3).
+  In the Ready-to-Assign card, read the "Total available" stat and the small "... available"
+  line below it. Then scroll to the bottom of the envelope table and read the Total row's
+  Available cell. State all three values. They must be identical.
+  Take screenshots of the summary stats and of the Total row.
+
+  Report PASS/FAIL per AC with what you observed, quoting the exact banner text and the exact
+  values from Step 4.

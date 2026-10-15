@@ -1,0 +1,750 @@
+@layer legacy {
+  /*
+ * Skills tab — master-detail workspace layout + tree/detail pane styles.
+ * All values use design-system tokens (--space-*, --text-*, --radius-*, color tokens).
+ * No raw hex or px font-size values here.
+ */
+
+  /* ── Workspace shell ──────────────────────────────────────────────────────── */
+
+  .skills-workspace {
+    display: flex;
+    flex-direction: row;
+    height: calc(100vh - 120px);
+    min-height: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  /* ── Left tree panel ─────────────────────────────────────────────────────── */
+
+  .skills-tree {
+    width: 280px;
+    flex-shrink: 0;
+    min-height: 0; /* flex child of the workspace — must be shrinkable or it clips instead of scrolling */
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .tree-search-bar {
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .tree-body {
+    flex: 1;
+    min-height: 0; /* the ONE scroll surface of the tree — long lists scroll here, never the page */
+    overflow-y: auto;
+    padding: var(--space-2) 0;
+  }
+
+  /* ── Skill tree row ──────────────────────────────────────────────────────── */
+
+  .skill-tree-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    height: 36px;
+    padding: 0 var(--space-4);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: var(--ink);
+    font-size: var(--text-sm);
+    line-height: 1;
+    border-radius: 0;
+    transition: background 0.1s;
+    min-width: 0;
+  }
+
+  @media (hover: hover) {
+    .skill-tree-row:hover {
+      background: var(--hover);
+    }
+  }
+
+  .skill-tree-row--selected {
+    background: var(--surface2);
+  }
+
+  .skill-tree-row--selected .skill-tree-row__name {
+    font-weight: 600;
+  }
+
+  .skill-tree-row__chevron {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .skill-tree-row__chevron--open {
+    transform: rotate(90deg);
+  }
+
+  .skill-tree-row__chevron--placeholder {
+    /* empty space to align prompt-skill rows with script-skill rows */
+    visibility: hidden;
+  }
+
+  .skill-tree-row__name {
+    flex: 1;
+    min-width: 0;
+    /* overflow:hidden clips to the line box — the row's line-height:1 would crop descenders */
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .skill-tree-row__badge {
+    flex-shrink: 0;
+  }
+
+  /* ── File tree nodes (under a script skill) ─────────────────────────────── */
+
+  .file-tree {
+    /* indented under the skill row */
+  }
+
+  .file-node {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    height: 30px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    line-height: 1;
+    border-radius: 0;
+    transition: background 0.1s;
+    min-width: 0;
+  }
+
+  @media (hover: hover) {
+    .file-node:hover {
+      background: var(--hover);
+    }
+  }
+
+  .file-node--selected {
+    background: var(--surface2);
+    color: var(--ink);
+  }
+
+  .file-node--dir {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  @media (hover: hover) {
+    .file-node--dir:hover {
+      background: var(--hover);
+    }
+  }
+
+  .file-node__icon {
+    flex-shrink: 0;
+    font-size: var(--text-xs);
+  }
+
+  .file-node__name {
+    flex: 1;
+    min-width: 0;
+    /* overflow:hidden clips to the line box — the row's line-height:1 would crop descenders */
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Right detail pane ───────────────────────────────────────────────────── */
+
+  .skill-detail-pane {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .skill-detail-pane__empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-10);
+  }
+
+  .skill-detail-pane__content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  /* ── Detail pane header ──────────────────────────────────────────────────── */
+
+  .skill-detail-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .skill-detail-header__title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .skill-detail-header__controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-shrink: 0;
+  }
+
+  .skill-compat-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .skill-compat-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-5);
+  }
+
+  .skill-compat-panel > .ui-panel__head {
+    padding: 0;
+  }
+
+  .skill-dependency-row {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--line);
+  }
+
+  .skill-dependency-row > .ui-grid {
+    flex: 1;
+  }
+
+  @media (max-width: 640px) {
+    .skill-dependency-row {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+
+  /* Enable/Disable toggle — styled after the pre-redesign ScriptSkillsPanel */
+  .skill-enable-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+  }
+
+  .skill-enable-toggle__track {
+    position: relative;
+    display: inline-flex;
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+    padding: 0;
+    outline: 1px solid var(--line);
+  }
+
+  .skill-enable-toggle__track:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .skill-enable-toggle__thumb {
+    position: absolute;
+    top: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    transition: left 0.15s ease;
+  }
+
+  .skill-enable-toggle__label {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Prose styles for the ReactMarkdown preview (inside skill-file-viewer) */
+  .skill-body-preview {
+    font-size: var(--text-sm);
+    line-height: 1.65;
+    color: var(--muted);
+    padding: var(--space-5) var(--space-5);
+    background: var(--surface2);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .skill-body-preview h1,
+  .skill-body-preview h2,
+  .skill-body-preview h3,
+  .skill-body-preview h4 {
+    color: var(--ink);
+    margin-top: var(--space-5);
+    margin-bottom: var(--space-2);
+    font-weight: 700;
+  }
+
+  .skill-body-preview h1 {
+    font-size: var(--text-lg);
+  }
+  .skill-body-preview h2 {
+    font-size: var(--text-base);
+  }
+  .skill-body-preview h3 {
+    font-size: var(--text-sm);
+  }
+
+  .skill-body-preview p {
+    margin: var(--space-3) 0;
+  }
+
+  .skill-body-preview ul,
+  .skill-body-preview ol {
+    padding-left: var(--space-7);
+    margin: var(--space-3) 0;
+  }
+
+  .skill-body-preview li {
+    margin: var(--space-1) 0;
+  }
+
+  .skill-body-preview code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: var(--text-xs);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+    padding: 1px 5px;
+    color: var(--ink);
+  }
+
+  .skill-body-preview pre {
+    margin: var(--space-3) 0;
+    padding: var(--space-3);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+  }
+
+  .skill-body-preview pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: var(--text-xs);
+  }
+
+  .skill-body-preview table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: var(--text-xs);
+    margin: var(--space-3) 0;
+  }
+
+  .skill-body-preview th,
+  .skill-body-preview td {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--line);
+  }
+
+  .skill-body-preview blockquote {
+    border-left: 3px solid var(--line);
+    padding-left: var(--space-4);
+    margin: var(--space-3) 0;
+    color: var(--faint);
+  }
+
+  /* ── Meta grid (Added by / Trigger / Category) ───────────────────────────── */
+
+  .skill-meta-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+  }
+
+  .skill-meta-cell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 80px;
+  }
+
+  .skill-meta-cell__label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+  }
+
+  .skill-meta-cell__value {
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  .skill-meta-cell__readonly {
+    font-size: var(--text-xs);
+    color: var(--faint);
+    font-weight: 400;
+  }
+
+  /* ── Description block ───────────────────────────────────────────────────── */
+
+  .skill-description-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .skill-description-block__label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+  }
+
+  .skill-description-block__info {
+    font-size: var(--text-xs);
+    color: var(--faint);
+    cursor: default;
+  }
+
+  /* ── File viewer (primary content surface) ───────────────────────────────── */
+
+  .skill-file-viewer {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+    /* The viewer fills the remaining pane height; ONLY its content scrolls
+     (the detail view itself is fixed — the other scroll surface is the tree). */
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .skill-file-viewer__header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .skill-file-viewer__view-btns {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  /* ── Icon button (preview / code toggle) ─────────────────────────────────── */
+
+  .skill-viewer-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--faint);
+    cursor: pointer;
+    transition:
+      color 0.1s,
+      background 0.1s,
+      border-color 0.1s;
+  }
+
+  @media (hover: hover) {
+    .skill-viewer-icon-btn:hover {
+      color: var(--muted);
+      background: var(--hover);
+      border-color: var(--line);
+    }
+  }
+
+  .skill-viewer-icon-btn--active {
+    color: var(--ink);
+    background: var(--surface2);
+    border-color: var(--line);
+  }
+
+  /* ── Code view with line-number gutter ───────────────────────────────────── */
+
+  .skill-code-viewer {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--space-3) 0;
+    background: var(--surface2);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+  }
+
+  /* One row per source line: the number hugs the first visual row, the text WRAPS. */
+  .skill-code-viewer__row {
+    display: flex;
+    align-items: baseline;
+  }
+
+  .skill-code-viewer__line-num {
+    flex-shrink: 0;
+    width: 48px;
+    padding-right: var(--space-3);
+    text-align: right;
+    user-select: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: var(--text-xs);
+    line-height: 1.5;
+    color: var(--faint);
+  }
+
+  .skill-code-viewer__line {
+    flex: 1;
+    min-width: 0;
+    padding-right: var(--space-4);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: var(--text-xs);
+    line-height: 1.5;
+    color: var(--muted);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── Detail footer (Run button) ──────────────────────────────────────────── */
+
+  .skill-detail-footer {
+    padding: var(--space-4) var(--space-6);
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  /* ── Create menu dropdown ────────────────────────────────────────────────── */
+
+  .create-menu-wrap {
+    position: relative;
+  }
+
+  .create-menu-dropdown {
+    position: absolute;
+    top: calc(100% + var(--space-2));
+    right: 0;
+    min-width: 280px;
+    background: var(--surface2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-modal);
+    z-index: var(--z-dropdown);
+    overflow: hidden;
+    padding: var(--space-1) 0;
+  }
+
+  .create-menu-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: var(--ink);
+    transition: background 0.1s;
+  }
+
+  @media (hover: hover) {
+    .create-menu-item:hover {
+      background: var(--hover);
+    }
+  }
+
+  .create-menu-item__label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .create-menu-item__subtitle {
+    font-size: var(--text-xs);
+    color: var(--faint);
+    line-height: 1.3;
+  }
+
+  /* ── Upload dropzone ─────────────────────────────────────────────────────── */
+
+  .upload-dropzone {
+    border: 2px dashed var(--line);
+    border-radius: var(--radius-md);
+    padding: var(--space-8) var(--space-6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    cursor: pointer;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+    text-align: center;
+    background: var(--surface2);
+  }
+
+  .upload-dropzone--drag-over {
+    border-color: var(--accent);
+    background: var(--hover-surface);
+  }
+
+  @media (hover: hover) {
+    .upload-dropzone:hover {
+      border-color: var(--accent);
+      background: var(--hover-surface);
+    }
+  }
+
+  .upload-dropzone__input {
+    display: none;
+  }
+
+  .upload-installed-banner {
+    border: 1px solid color-mix(in srgb, var(--warn) 32%, var(--line));
+    background: color-mix(in srgb, var(--warn) 8%, var(--surface2));
+    border-radius: var(--radius-sm);
+    padding: var(--space-4);
+  }
+
+  /* ── Browse starters modal ───────────────────────────────────────────────── */
+
+  .starter-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .starter-row:last-child {
+    border-bottom: none;
+  }
+
+  .starter-row__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Mobile responsive (<640px): detail slides in over tree ─────────────── */
+
+  @media (max-width: 639px) {
+    .skills-workspace {
+      position: relative;
+      overflow: hidden;
+      height: calc(100vh - 100px);
+    }
+
+    .skills-tree {
+      width: 100%;
+      flex-shrink: 0;
+      border-right: none;
+    }
+
+    .skill-detail-pane {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      transform: translateX(100%);
+      transition: transform 0.22s ease;
+      z-index: var(--z-base);
+      background: var(--bg);
+    }
+
+    .skill-detail-pane--mobile-active {
+      transform: translateX(0);
+    }
+
+    .skill-detail-back {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+  }
+
+  /* On non-mobile, hide the back button */
+  @media (min-width: 640px) {
+    .skill-detail-back {
+      display: none;
+    }
+  }
+
+  /* Tablet (640–1023): slightly narrower tree */
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .skills-tree {
+      width: 220px;
+    }
+  }
+
+  /* Respect reduced motion for the slide animation */
+  @media (prefers-reduced-motion: reduce) {
+    .skill-detail-pane {
+      transition: none;
+    }
+  }
+} /* end @layer legacy */

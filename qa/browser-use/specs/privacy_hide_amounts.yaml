@@ -1,0 +1,65 @@
+# Spec: PRIV-01 — Hide amounts toggle masks and reveals monetary values
+# Covers: body.hide-amounts CSS class toggle; privacy button in topbar;
+#         .sumcard .sv / .money / table cells masked with ••••
+id: PRIV-01
+# NOTE: No acceptance criterion exists yet for the privacy/hide-amounts feature.
+# This spec has no acceptance_ids until a criterion is added to docs/qa/acceptance/.
+acceptance_ids: []
+title: "Hide amounts toggle masks monetary values and reveal restores them"
+description: >
+  The topbar contains a "Hide amounts" button (or keyboard shortcut H).
+  Clicking it adds the `hide-amounts` class to <body>, which replaces all
+  monetary values across Overview (net-worth hero, SummaryBar cards) with
+  masked placeholders (••••). Clicking "Show amounts" removes the class and
+  the real values reappear. This spec verifies both directions of the toggle.
+
+acceptance_criteria:
+  - AC1: The Overview tab shows a non-zero, non-masked net-worth figure before toggling
+  - AC2: After clicking "Hide amounts" the same value is masked (shows •••• or blank/redacted)
+  - AC3: After clicking "Show amounts" the original figure is visible again
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+  Make sure you are on the Overview tab (it should be selected by default).
+
+  Step 1 — Read the current net-worth figure.
+  Find the large net-worth number on the Overview tab (the main hero figure or
+  the "Net Worth" summary card). Record the text you see (e.g. "$123,456").
+  Call this ORIGINAL_VALUE.
+  If the value is "$0", "—", blank, or an error, return "FAIL: net-worth value is not meaningful before test: <value>".
+
+  Step 2 — Click "Hide amounts".
+  Find the "Hide amounts" button. It is typically in the top bar of the page,
+  near the right side. Click it.
+  Wait 1 second for the UI to update.
+
+  Step 3 — Verify amounts are masked.
+  Look at the area where ORIGINAL_VALUE was displayed.
+  Is the monetary value now hidden — replaced by "••••", "****", dashes, blank, or
+  similar masked placeholder? (It should NOT show the original number.)
+  If the original number is still visible: return "FAIL: amounts not masked after Hide amounts — still showing <value>".
+
+  Step 4 — Click "Show amounts".
+  The button text should now say "Show amounts". Click it.
+  Wait 1 second for the UI to update.
+
+  Step 5 — Verify amounts are revealed.
+  Look at the net-worth area again. Is the original numerical value (or a value
+  very similar to ORIGINAL_VALUE) now visible again?
+
+  Decision:
+  - If Step 3 confirmed masking AND Step 5 confirmed reveal:
+    return "PASS: hide/show amounts toggle works — original value was <ORIGINAL_VALUE>"
+  - If Step 3 failed (amount still visible after hiding):
+    return "FAIL: amounts not masked after clicking Hide amounts"
+  - If Step 5 failed (amount still masked after revealing):
+    return "FAIL: amounts not revealed after clicking Show amounts"
+  - If the Hide amounts button could not be found:
+    return "FAIL: could not find the Hide amounts button"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "PRIV-01-hide-amounts.png"
+  note: >
+    This spec requires demo data with a non-zero net worth. The harness seeds
+    QA data via `make qa-data` before running. No API key needed.

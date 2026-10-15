@@ -1,0 +1,690 @@
+{
+  "text": [
+    {
+      "name": "currency symbol amount",
+      "input": "Created transaction for $1,234.56 at the store",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "Created transaction for [amount] at the store"
+    },
+    {
+      "name": "currency codes both sides",
+      "input": "paid USD 50 and 12.5 EUR and €9.99 total",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "paid [amount] and [amount] and [amount] total"
+    },
+    {
+      "name": "money-named keys",
+      "input": "balance=1500.25 base_amount: 42 amount=7 quantity=3",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "balance=[amount] base_amount: [amount] amount=[amount] quantity=[amount]"
+    },
+    {
+      "name": "grouped and negative numbers",
+      "input": "-1,234,567.89 and (2,500) and 1,000",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "[amount] and ([amount]) and [amount]"
+    },
+    {
+      "name": "timings named like money survive",
+      "input": "PERF-REQ GET /api/x total=309ms db=0ms(0q) compute=12.5% retries=3",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "PERF-REQ GET /api/x total=309ms db=0ms(0q) compute=12.5% retries=3"
+    },
+    {
+      "name": "two-decimal number",
+      "input": "fee 12.50 charged",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "fee [amount] charged"
+    },
+    {
+      "name": "versions timings and addresses survive",
+      "input": "python 3.12.1 took 0.15s at 10:04:05.12 host 192.168.1.10 v1.25 rate 12.34ms",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "python 3.12.1 took 0.15s at 10:04:05.12 host 192.168.1.10 v1.25 rate 12.34ms"
+    },
+    {
+      "name": "counts and ids survive",
+      "input": "input=13038 cached=0 output=73 id=7d0fd163-40dc-44f1-9d55-9e9e5f6036f1 2026-10-04T01:21:44",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "input=13038 cached=0 output=73 id=7d0fd163-40dc-44f1-9d55-9e9e5f6036f1 2026-10-04T01:21:44"
+    },
+    {
+      "name": "known book folder",
+      "input": "opened /Users/alice/Documents/Book/onw.db ok",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "opened <book>/onw.db ok"
+    },
+    {
+      "name": "home folder",
+      "input": "cache at /Users/alice/.cache and /home/carol/.open-net-worth/logs",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "cache at ~/.cache and ~/.open-net-worth/logs"
+    },
+    {
+      "name": "windows home folder",
+      "input": "C:\\Users\\Bob\\AppData\\Roaming\\x and d:/Users/Dee/y",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "~\\AppData\\Roaming\\x and ~/y"
+    },
+    {
+      "name": "windows folder inside json",
+      "input": "{\"path\": \"C:\\\\Users\\\\Bob\\\\Book\"}",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "{\"path\": \"~\\\\Book\"}"
+    },
+    {
+      "name": "email address",
+      "input": "reply to jane.doe+tax@example.co.uk please",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "reply to [email] please"
+    },
+    {
+      "name": "bearer and api key",
+      "input": "Authorization: Bearer abcdef1234567890ZZ api_key=sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUV",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "Authorization: [redacted] [redacted] api_key=[redacted]"
+    },
+    {
+      "name": "credentialed url and query",
+      "input": "fetch https://user:hunter2@example.com/path?token=abc&x=1#frag ok",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "fetch https://[redacted]@example.com/path?[redacted] ok"
+    },
+    {
+      "name": "plain url keeps its path",
+      "input": "GET https://docs.opennetworth.ai/docs/logs 200",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "GET https://docs.opennetworth.ai/docs/logs 200"
+    },
+    {
+      "name": "secret keys keep short counts",
+      "input": "token=abc max_tokens=4096 password: 'p@ss word' secret=\"two words\"",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "token=[redacted] max_tokens=4096 password: [redacted] secret=[redacted]"
+    },
+    {
+      "name": "long hex and uuid",
+      "input": "hex deadbeefdeadbeefdeadbeefdeadbeef12345678 uuid 7d0fd163-40dc-44f1-9d55-9e9e5f6036f1",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "hex [token] uuid 7d0fd163-40dc-44f1-9d55-9e9e5f6036f1"
+    },
+    {
+      "name": "jwt",
+      "input": "jwt eyJhbGciOiJIUzI1NiJ9.c2lnbmVkcGF5bG9hZA.dBjftJeZ4CVPmB92K27uhbUJU1p1r",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "jwt [token]"
+    },
+    {
+      "name": "telegram bot token",
+      "input": "bot 123456789:AAEhBOweik6ad9r_QXMENQjcrGbqCr4K-eRTY ready",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "bot [token] ready"
+    },
+    {
+      "name": "account and payee names",
+      "input": "Chase Checking paid whole foods market and NETFLIX, not Netflixer",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "[account] paid [payee] and [payee], not Netflixer"
+    },
+    {
+      "name": "short names are left alone",
+      "input": "Ally and cash stay",
+      "context": {
+        "accounts": [
+          "Ally"
+        ],
+        "payees": [
+          "cash"
+        ],
+        "paths": []
+      },
+      "expected": "[account] and [payee] stay"
+    },
+    {
+      "name": "nothing to redact",
+      "input": "backend.main startup complete in 1.2s",
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": "backend.main startup complete in 1.2s"
+    }
+  ],
+  "logs": [
+    {
+      "name": "continuation lines",
+      "input": [
+        "2026-10-04T01:21:44 INFO     backend.ai complete_done  source=news  cost_usd=0.00000",
+        "--- content (first 8000 chars) ---",
+        "{\"results\":[{\"index\":0,\"reason\":\"Moved $9,000 from Chase Checking\"}]}",
+        "2026-10-04T01:21:45 ERROR    backend.services.ledger create failed for Netflix",
+        "Traceback (most recent call last):",
+        "  File \"/Users/alice/app/ledger.py\", line 10, in create",
+        "    raise ValueError(account)",
+        "ValueError: unknown account 'Chase Checking'",
+        "",
+        "free text from a model",
+        "2026-10-04T01:21:46 INFO     backend.main alive"
+      ],
+      "limit": 200,
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": [
+        "2026-10-04T01:21:44 INFO     backend.ai complete_done  source=news  cost_usd=[amount]",
+        "[2 free-text lines omitted]",
+        "2026-10-04T01:21:45 ERROR    backend.services.ledger create failed for [payee]",
+        "Traceback (most recent call last):",
+        "  File \"~/app/ledger.py\", line 10, in create",
+        "    raise ValueError(account)",
+        "ValueError: unknown account '[account]'",
+        "[1 free-text line omitted]",
+        "2026-10-04T01:21:46 INFO     backend.main alive"
+      ]
+    },
+    {
+      "name": "newest lines win",
+      "input": [
+        "2026-10-04T01:21:44 INFO     backend.ai complete_done  source=news  cost_usd=0.00000",
+        "--- content (first 8000 chars) ---",
+        "{\"results\":[{\"index\":0,\"reason\":\"Moved $9,000 from Chase Checking\"}]}",
+        "2026-10-04T01:21:45 ERROR    backend.services.ledger create failed for Netflix",
+        "Traceback (most recent call last):",
+        "  File \"/Users/alice/app/ledger.py\", line 10, in create",
+        "    raise ValueError(account)",
+        "ValueError: unknown account 'Chase Checking'",
+        "",
+        "free text from a model",
+        "2026-10-04T01:21:46 INFO     backend.main alive"
+      ],
+      "limit": 3,
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": [
+        "ValueError: unknown account '[account]'",
+        "[1 free-text line omitted]",
+        "2026-10-04T01:21:46 INFO     backend.main alive"
+      ]
+    },
+    {
+      "name": "long line is capped",
+      "input": [
+        "2026-10-04T01:21:47 INFO     backend.x a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b "
+      ],
+      "limit": 200,
+      "context": {
+        "accounts": [
+          "Chase Checking",
+          "Vanguard Roth IRA"
+        ],
+        "payees": [
+          "Whole Foods Market",
+          "Netflix"
+        ],
+        "paths": [
+          [
+            "/Users/alice/Documents/Book",
+            "<book>"
+          ],
+          [
+            "/Users/alice",
+            "~"
+          ]
+        ]
+      },
+      "expected": [
+        "2026-10-04T01:21:47 INFO     backend.x a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a …"
+      ]
+    }
+  ]
+}

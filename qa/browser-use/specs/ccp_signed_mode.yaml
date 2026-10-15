@@ -1,0 +1,24 @@
+id: CCP-03
+title: "Default signed mode - no Credit Card Payments group"
+description: >
+  Verify that in the default signed mode (credit_card_mode: null),
+  the Credit Card Payments group does NOT appear in Plan › Budget.
+
+acceptance_criteria:
+  - CCP-NO-GROUP: No "Credit Card Payments" group is visible
+  - CCP-REGULAR-BUDGET: Regular category/envelope rows are present
+
+browser_use_task: |
+  Navigate to {app_url}.
+  Click on the "Plan" tab in the sidebar.
+  You should see the Planning interface with the Budget section.
+  Scroll down through the entire budget view.
+  Look carefully for any "Credit Card Payments" group or section.
+  In the default signed mode, there should be NO dedicated Credit Card Payments group.
+  The budget should only show regular category or envelope rows, organized by groups like "Food", "Transport", etc.
+  Take a screenshot showing a representative section of the budget, confirming the absence of a Credit Card Payments group.
+  Return "PASS: Confirmed - no Credit Card Payments group visible in default signed mode" when done.
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "ccp-signed-mode.png"

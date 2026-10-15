@@ -1,0 +1,132 @@
+# Spec: MB-01 — Mobile bottom tab bar (6 slots incl. inline Lucius tab)
+# Covers: docs/qa/acceptance/mobile-shell.md — MB1 (tab bar replaces the hamburger
+#         drawer), MB2 (More sheet), MB3 (Lucius is an ordinary in-flow tab).
+#
+# NOTE (2026-07-22, follow-up review lane): docs/qa/acceptance/mobile-shell.md's
+# criteria are written as one compact "GIVEN...WHEN...THEN..." bullet per ID
+# (e.g. "- **MB1.1** GIVEN ... THEN ..."), not the "### ID" + separate GIVEN/WHEN/THEN
+# bullet convention every other docs/qa/acceptance/*.md file uses — so
+# acceptance_parser.py's heading regex cannot see them at all (verified: parsing
+# the file today yields ZERO AcceptanceCriterion objects) and `make
+# qa-acceptance-check` has never been able to report coverage for this feature.
+# Reformatting the whole file to the parseable convention is a bigger, separate
+# change (30 criteria across MB1-MB6) — out of scope for this lane, which only
+# needed to close MB1/MB3/MB4. Filed as a follow-up; the acceptance_ids below are
+# the doc's own IDs verbatim so a human can still cross-reference them by eye.
+#
+# ALSO NOTE: this is the first spec in the catalog that needs the app's own
+# `@media (max-width: 640px)` mobile chrome — every prior spec ran at the
+# BrowserProfile default (desktop) size, so `runner.py` gained an optional
+# per-spec `viewport:` override (threaded into BrowserProfile) to make this
+# spec possible at all.
+id: MB-01
+acceptance_ids:
+  - MB1.1
+  - MB1.2
+  - MB1.3
+  - MB1.4
+  - MB1.6
+  - MB3.1
+  - MB3.2
+  - MB3.3
+  - MB3.4
+  - MB3.6
+  - MB3.8
+viewport:
+  width: 390
+  height: 844
+title: "Mobile bottom tab bar (6 slots) + inline Lucius tab"
+description: >
+  At a 390x844 phone viewport, the sidebar/hamburger must be replaced by a
+  fixed 6-slot bottom tab bar (Overview, Accounts, Plan, Lucius, Investments,
+  More). The Lucius slot opens the SAME chat as an ordinary in-flow tab with no
+  popup or bottom-sheet chrome and closes cleanly when another destination is
+  tapped.
+
+acceptance_criteria:
+  - AC1: Exactly 6 tappable slots render in a bar fixed to the bottom of the
+      viewport; no hamburger/menu icon anywhere in the header.
+  - AC2: Tapping "Accounts" (or any primary slot) navigates there and that
+      slot visually becomes the active one (the previously active slot is no
+      longer highlighted).
+  - AC3: The tab bar is still visible after navigating — it never disappears.
+  - AC4: Tapping the fourth slot ("Lucius") replaces the page content with an
+      inline chat tab — no popup scrim, rounded sheet, or drag handle — with a
+      text input visible for typing a message.
+  - AC4b: Opening Lucius autofocuses that input. The 6-slot bottom bar MUST
+      still be visible with the input focused and no software keyboard raised —
+      focus alone must never remove the navigation (MB3.8).
+  - AC5: While that Lucius panel is open, tapping "Overview" (or another
+      primary slot) closes the Lucius panel AND navigates to that tab in one
+      action.
+  - AC6: Scrolling any tab with a long page (e.g. Investments) does NOT make
+      the bottom tab bar disappear, shrink, or visibly detach/float away from
+      the bottom edge.
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load. The browser window is
+  already sized to a phone (390x844) — do not resize it.
+
+  Step 1 — Tab bar shape.
+  Look at the bottom of the screen. Count the tappable icons/labels in the bar
+  fixed there. There should be exactly 6 in this order: Overview, Accounts,
+  Plan, Lucius, Investments, More. Also check the very top of the screen —
+  there should be NO hamburger/menu (☰) icon. Record STEP1=ok if both hold,
+  else STEP1=fail with what you actually saw.
+
+  Step 2 — Navigate via a primary slot.
+  Tap the second slot in the bar (Accounts/Cash). Wait 2 seconds. The page
+  content should change to an accounts/cash view, and that slot should now
+  look visually different (highlighted/colored) compared to the others.
+  Record STEP2=ok or STEP2=fail with what happened.
+
+  Step 3 — Tab bar persists.
+  After that navigation, confirm the SAME 6-slot bar is still visible at the
+  bottom of the screen (it must never disappear). STEP3=ok or STEP3=fail.
+
+  Step 4 — Open Lucius as a tab.
+  Tap the FOURTH slot in the bar (labelled "Lucius" or showing a spark/star
+  icon). Wait 2 seconds. The content area should become the chat tab with a
+  text input near the bottom. It must have no scrim, drag handle, rounded
+  bottom-sheet corners, or floating popup chrome. The fourth slot should now
+  look active/highlighted, and no other slot should look active. Record
+  STEP4=ok or STEP4=fail with what you saw.
+
+  Step 4b — The bar SURVIVES opening Lucius (regression, owner 2026-07-30:
+  "when lucius tap open, the nav bar is disappearing").
+  Opening Lucius puts the text cursor in the composer automatically. With that
+  input focused, look at the bottom of the screen again: the SAME 6-slot bar
+  must still be there. This browser has no software keyboard, so there is
+  nothing for the bar to hide behind — if the bar is gone, missing, or the
+  content now runs to the bottom edge where the bar used to be, that is a
+  FAIL. Then click once into the chat text input to focus it deliberately and
+  check the bar one more time. Record STEP4B=ok or STEP4B=fail with what you
+  saw.
+
+  Step 5 — Switching tabs closes Lucius.
+  While that Lucius panel is open, tap the FIRST slot in the bar (Overview).
+  Wait 2 seconds. Two things must both be true: (a) the Lucius panel is gone
+  (you can see the Overview page underneath, not chat), and (b) you are now on
+  the Overview page. Record STEP5=ok or STEP5=fail.
+
+  Step 6 — Bar survives scrolling.
+  Navigate to "Investments" via the bar. Scroll the page down as far as it
+  will go, then back up, using mouse wheel / touch scroll a few times. At every
+  point, the SAME bottom tab bar should stay fixed at the bottom of the
+  screen — it must never disappear, shrink to nothing, or show a visible gap
+  of a different background color between the bar and the screen's bottom
+  edge. Record STEP6=ok or STEP6=fail with what you observed.
+
+  Decision:
+  - If ALL SEVEN steps are "ok": return "PASS: all 7 checks ok — STEP1..STEP6 and STEP4B=ok"
+  - If ANY step is "fail": return "FAIL: <which step(s)> — <what you saw instead>"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "MB-01-mobile-shell.png"
+  note: >
+    No API key needed for the app itself, but the browser-use AGENT that
+    drives the browser is itself LLM-powered (ChatAnthropic) — every spec in
+    this harness, not just chat-feature specs, requires ANTHROPIC_API_KEY to
+    run at all; without it this spec (like all others) reports SKIP, not a
+    live PASS. Seed data is the standard qa-e2e demo dataset.

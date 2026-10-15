@@ -1,0 +1,45 @@
+id: CASH-01
+title: "Cash/Accounts tab renders with live account data"
+description: >
+  Verify the Accounts/Cash tab loads and displays live account names,
+  balances, and the transaction table with real data from the API.
+acceptance_criteria:
+  - AC1: At least one account row is visible with an account name
+  - AC2: Account balance shows a numeric value (not loading/blank)
+  - AC3: At least one transaction is visible in the transaction table
+  - AC4: Account names match actual seeded data
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+  
+  Step 1 — Click the "Accounts" or "Cash" tab in the sidebar.
+  Wait 3 seconds for the content to load.
+  
+  Step 2 — Check for account rows.
+  Look for account names (e.g., "SGD Checking", "EUR Checking", "Brokerage").
+  Is at least one account row visible?
+  Record: ACCOUNT_ROWS = "yes" or "no"
+  
+  Step 3 — Check account balance.
+  For the first visible account, is there a numeric balance displayed?
+  (Not a loading spinner, not blank, not "—")
+  Record: BALANCE_VISIBLE = "yes" or "no"
+  
+  Step 4 — Check transaction table.
+  Scroll down to see the transaction table. Is at least one transaction
+  visible with a description and amount?
+  Record: TXNS_VISIBLE = "yes" or "no"
+  
+  Decision:
+  - If ACCOUNT_ROWS = "no":
+    return "FAIL: No account rows visible"
+  - If BALANCE_VISIBLE = "no":
+    return "FAIL: Account balance not displaying numeric value"
+  - If TXNS_VISIBLE = "no":
+    return "FAIL: No transactions visible in the table"
+  - Else:
+    return "PASS: Cash tab renders with live account data and transactions"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CASH-01-accounts-live.png"

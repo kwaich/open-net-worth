@@ -1,0 +1,95 @@
+# Spec: CDS-DRAWER-01 — the transaction drawer's generalized "Source" section
+# (email unchanged, connector new).
+# Covers: TxnDetail.tsx (Region 4).
+id: CDS-DRAWER-01
+acceptance_ids:
+  - CDS-UI-16
+  - CDS-UI-17
+  - CDS-UI-18
+  - CDS-UI-22
+title: "Transaction drawer 'Source' section: connector rows + raw-fields toggle, email unchanged"
+description: >
+  A transaction booked from a connector shows a "Source" section (not "Source email") with
+  Provider / Provider account / Fetched rows and a "Show raw fields" disclosure. A
+  transaction booked from email renders identically to before. An unavailable snapshot of
+  either kind shows a generic message. Every available entry (either kind) can be unlinked
+  in one tap, no confirm dialog (CDS-6, ADR 2026-09-07).
+
+acceptance_criteria:
+  - "AC1: A connector-booked transaction's drawer shows a Source heading (never Source email) with Provider, Provider account, and Fetched rows"
+  - "AC2: A Show raw fields toggle reveals one row per raw field, Title-Cased"
+  - "AC3: The Provider account row shows a real account name, never a raw provider account id string"
+  - "AC4: An email-booked transaction's drawer still shows Subject/From/Received rows and a Show full email toggle, unchanged"
+  - "AC5: An unavailable snapshot shows a Snapshot unavailable message, never a blank area"
+  - "AC6: An 'Unlink source' action is present on every available entry and removes it from the drawer with no page reload and no confirm dialog"
+
+browser_use_task: |
+  Navigate to {app_url}/accounts and wait for the page to load.
+
+  Step 1 — Open a connector-sourced transaction.
+  Find a transaction whose description looks like a real purchase (e.g. "WHOLE FOODS
+  MARKET") rather than a manual entry, and open its drawer by clicking the row.
+  If no such transaction is findable, open any transaction's drawer instead and note that
+  in your final answer.
+
+  Step 2 — Check the Source heading.
+  Scroll down in the drawer past "Provenance". Look for a section heading reading exactly
+  "Source" (or "Source (N)" if there are multiple entries) — NOT "Source email".
+  Record HEADING = "Source", "Source email", or "absent".
+
+  Step 3 — Check for Provider/Provider account/Fetched rows.
+  Under that heading, look for rows labelled "Provider", "Provider account", and "Fetched".
+  Record CONNECTOR_ROWS = "present" or "absent".
+  Check the "Provider account" row's VALUE — is it a readable account name (e.g. "Chase
+  Checking"), or does it look like an opaque id/code (e.g. "plaid_acct_9f3d...")?
+  Record PROVIDER_ACCOUNT_VALUE = "readable_name" or "raw_id" or "n/a".
+
+  Step 4 — Expand raw fields.
+  Look for a "Show raw fields ▾" button. Click it.
+  Check: does it reveal a list of rows, each with a Title-Cased label (e.g. "Amount",
+  "Description", "Pending") and a value?
+  Record RAW_FIELDS = "present" or "absent" or "n/a".
+
+  Step 5 — Check an email-sourced transaction still works (if one exists).
+  Close this drawer. Look for a transaction that might be email-sourced (try a few others).
+  If you find one showing "Source" with Subject/From/Received rows and a "Show full email"
+  toggle, record EMAIL_STILL_WORKS = "yes". If you cannot find an email-sourced transaction
+  at all in this seeded data, record EMAIL_STILL_WORKS = "not_testable".
+
+  Step 6 — Unlink a source entry (CDS-UI-22).
+  Reopen a transaction drawer showing an available (not "Snapshot unavailable") Source entry
+  of either kind. Look for a small "Unlink source" action near that entry. Click it.
+  Check: does the click show any confirm/dialog prompt first? Record UNLINK_CONFIRM = "yes"
+  or "no". After clicking, does that entry disappear from the drawer WITHOUT the page
+  reloading (URL/tab state unchanged)? Record UNLINK_REMOVED = "yes" or "no". If no
+  available Source entry exists to test, record UNLINK_REMOVED = "not_testable".
+
+  Decision:
+  - If HEADING = "Source email":
+    return "FAIL: heading still reads 'Source email' instead of the generalized 'Source'"
+  - If HEADING = "absent":
+    return "FAIL: no Source section found on the opened transaction at all"
+  - If CONNECTOR_ROWS = "absent" (and the opened transaction was connector-sourced):
+    return "FAIL: Provider/Provider account/Fetched rows missing for a connector-sourced entry"
+  - If PROVIDER_ACCOUNT_VALUE = "raw_id":
+    return "FAIL: Provider account row shows a raw provider account id instead of a readable name"
+  - If RAW_FIELDS = "absent":
+    return "FAIL: 'Show raw fields' toggle did not reveal any rows"
+  - If EMAIL_STILL_WORKS = "no":
+    return "FAIL: an email-sourced transaction no longer shows its Subject/From/Received rows"
+  - If UNLINK_CONFIRM = "yes":
+    return "FAIL: 'Unlink source' showed a confirm dialog — it must be a single tap, no confirm"
+  - If UNLINK_REMOVED = "no":
+    return "FAIL: 'Unlink source' did not remove the entry from the drawer"
+  - Otherwise:
+    return "PASS: drawer Source section generalizes correctly for connector entries, leaves email entries unchanged, and Unlink source works with no confirm"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CDS-DRAWER-01-source-connector-raw-expanded.png"
+  note: >
+    Requires at least one transaction with a connector external_ref AND a stashed
+    connector_snapshots row to see the populated "ok" state — a freshly-seeded demo book
+    has neither. See docs/qa/screenshots/connectors-data-sources/ for the populated-state
+    screenshot taken against a manually-seeded instance
+    (backend.services.connector_snapshots.stash_rows + a booked transaction referencing it).

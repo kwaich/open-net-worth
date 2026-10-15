@@ -1,0 +1,71 @@
+# Spec: PAR-01 — Price alerts: manage + create modal (design port)
+# Covers: docs/qa/acceptance/price-alerts-redesign.md
+id: PAR-01
+acceptance_ids:
+  - PAR-MANAGE-LIST
+  - PAR-MANAGE-EMPTY
+  - PAR-ROW-TOGGLE
+  - PAR-NEW-FORM
+  - PAR-CREATE
+  - PAR-ALREADY-PAST
+  - PAR-MOVE
+  - PAR-EDIT
+  - PAR-DELETE
+  - PAR-BACK
+title: "Intel — Price alerts modal: manage list, per-row switch, create/edit/delete form"
+description: >
+  Verifies the redesigned per-ticker Price Alerts modal end to end: the manage view lists
+  every alert with a per-row on/off switch and no Save button, New alert opens a single-alert
+  form (name, criteria, cooldown, notifications), Create returns to the list with the new row,
+  clicking a row edits it, Delete removes it, and Back closes the modal.
+
+acceptance_criteria:
+  - AC1: Opening a ticker's alerts shows "<TICKER> · <Name>" with an Alerts panel or the "No alerts on <TICKER> yet" empty state
+  - AC2: New alert opens a form with Name, Alert criteria (Target price / % move), Cooldown, Notifications, Default query, Additional instructions
+  - AC3: Create alert adds a row to the manage list without a separate Save step
+  - AC4: A Rises-above target below the live price is flagged "already above this level"
+  - AC5: Clicking a row opens "Edit alert · <TICKER>" with an Active/Paused switch; Save alert returns to the list
+  - AC6: Delete alert removes the row
+  - AC7: The row switch turns an alert off in place (row dims, "N of M on" badge drops)
+  - AC8: Back to watchlist / Close dismisses the modal
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the app to finish loading. Open the Intel tab
+  (hash route #/intel). In the right-hand Watchlists rail pick any ticker row and click its
+  edit chevron at the row end (or open All monitors → Price alerts and click a ticker row).
+
+  A modal opens titled "<TICKER> · <Name>". Record OPEN=pass if it shows either an "Alerts"
+  panel with a "N of M on" badge, or the empty state "No alerts on <TICKER> yet". Confirm
+  there is NO "Save" button in the footer — only a back link on the left and "New alert" on
+  the right.
+
+  Click "New alert". Confirm the form shows fields: Ticker (disabled), Name (optional), Alert
+  criteria with "Target price" and "% move" segments, a Cooldown select, a Notifications
+  select, a "Default query" block, and "Additional instructions (optional)". Record FORM=pass.
+
+  Click the "Rises above" arrow button and type a target clearly BELOW the live price shown
+  in the Target price label. Confirm the help text "<TICKER> is already above this level — it
+  would alert right away" appears. Record PAST=pass. Then click "Falls below" and type a
+  target about 5% BELOW the live price. Type the name "QA stop". Click "Create alert".
+
+  Confirm the modal returns to the manage view and a row "QA stop" is listed. Record
+  CREATE=pass. Flip that row's switch off; confirm the badge count of alerts "on" dropped by
+  one. Record TOGGLE=pass.
+
+  Click the "QA stop" row. Confirm the title reads "Edit alert · <TICKER>" and a switch labelled
+  Active/Paused is shown. Click "Delete alert". Confirm the manage view returns and "QA stop"
+  is gone. Record DELETE=pass.
+
+  Click "Back to watchlist" (or "Close"). Confirm the modal is dismissed. Record BACK=pass.
+
+  Return exactly one of:
+  - "PASS: PAR-01 — OPEN=<summary>; FORM=<summary>; PAST=<summary>; CREATE=<summary>; TOGGLE=<summary>; DELETE=<summary>; BACK=<summary>"
+  - "FAIL: PAR-01 — <specific failed check>" for a missing view, a Save button in the footer,
+    a row that did not appear/disappear, or a visible JavaScript error.
+
+max_steps: 45
+timeout_seconds: 300
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "PAR-01-price-alerts-modal.png"

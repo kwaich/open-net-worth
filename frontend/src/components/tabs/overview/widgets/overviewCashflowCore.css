@@ -1,0 +1,443 @@
+/* Overview v2 — Overview + Cash-flow-core widget group (needs attention, Ask
+   Lucius, summary, next-30-days, today's movers — briefing/movers route
+   through WidgetShell like every other widget here, and embed the shared
+   WealthBriefing/TopDailyMovers components with their OWN header chrome
+   suppressed via `hideTitle`/`hideHeader`, so those two still ship the rest
+   of their styling from shared/WealthBriefing.css + shared/TopDailyMovers'
+   index.css rules). */
+
+.ov-risks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* A dedicated actions COLUMN (not a second row below the text, and not
+   inline at the end of the description either — both tried first: a full
+   row doubled every flag's height, and inline links wrapped inconsistently
+   depending on description length, so some flags were 1 line and some were
+   2 for no meaningful reason). `.ov-risk-tx` is clamped to exactly 2 lines
+   so every flag has the SAME height regardless of description length, and
+   `align-items: center` centers the icon/actions/dismiss against that fixed
+   2-line block. */
+.ov-risk {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  grid-template-areas: 'ic tx actions';
+  gap: 8px 10px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ov-risk:last-child {
+  border-bottom: none;
+}
+
+.ov-risk-ic {
+  grid-area: ic;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2, rgba(255, 255, 255, 0.06));
+}
+
+.ov-risk--hi .ov-risk-ic {
+  color: var(--bad);
+}
+
+.ov-risk--md .ov-risk-ic {
+  color: var(--warn);
+}
+
+.ov-risk-tx {
+  grid-area: tx;
+  font-size: 13px;
+  line-height: 1.5;
+  /* Fixed 2-line height regardless of description length — the row's own
+     height (and everything else's vertical centering within it) is
+     otherwise at the mercy of whichever flag has the longest text. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* The actions column: always on the right, vertically centered against the
+   (now fixed-height) text via the row's own `align-items: center` — never
+   wraps under the text, never competes with it for space. */
+.ov-risk-actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ov-risk-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .ov-risk-link:hover {
+    text-decoration: underline;
+  }
+}
+
+.ov-risk-link--ask {
+  display: inline-flex;
+  align-items: center;
+  color: var(--lucius);
+}
+
+@media (hover: hover) {
+  .ov-risk-link--ask:hover {
+    text-decoration: none;
+    opacity: 0.8;
+  }
+}
+
+/* The flag's title, made clickable in place of a separate "Review" link —
+   reads exactly like the plain <b> title it replaces (same weight/color),
+   only picking up an underline on hover as its one affordance hint. */
+.ov-risk-title-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .ov-risk-title-link:hover {
+    text-decoration: underline;
+  }
+}
+
+.ov-allclear {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 6px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.ov-allclear-ic {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--good) 13%, transparent);
+  color: var(--good);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ov-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  justify-content: center;
+}
+
+.ov-upcoming {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Past-due items, summarised in one line above the list (Next 30 days). */
+.ov-upcoming-overdue {
+  align-self: flex-start;
+  margin-bottom: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bad);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Going out, coming in and overdue: one group above the list. */
+.ov-upcoming-totals {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.ov-upcoming-totals > * {
+  margin: 0;
+}
+.ov-upcoming-totals:empty {
+  display: none;
+}
+
+/* Everything going out in the window (commitments, recurring bills, card statements). */
+.ov-upcoming-out {
+  margin: 0 0 2px;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* Recurring income expected inside the same window, kept apart from the "going out" figure. */
+.ov-upcoming-income {
+  margin: 0 0 6px;
+  color: var(--good);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ov-upcoming-overdue:disabled {
+  cursor: default;
+}
+
+.ov-upcoming-overdue:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ov-upcoming-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.ov-upcoming-row:last-child {
+  border-bottom: none;
+}
+
+.ov-upcoming-date {
+  color: var(--faint);
+  min-width: 68px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ov-upcoming-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  align-self: center;
+}
+
+.ov-upcoming-label {
+  flex: 1;
+  min-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-upcoming-sub {
+  color: var(--faint);
+}
+
+.ov-upcoming-amt {
+  font-size: 12px;
+  color: var(--faint);
+  white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-lux-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ov-lux-ask-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ov-lux-ask-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ov-lux-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .ov-lux-chip:hover {
+    border-color: var(--hover-line);
+    color: var(--ink);
+  }
+}
+
+/* ── Today's movers (variant="row") ───────────────────────────────────────
+   Ported verbatim from the design handoff's `.ov-mv-*` block — a dedicated
+   46px ticker-badge column + separate $/% columns, distinct from
+   TopDailyMovers' own default 3-column layout (index.css's `.top-movers-*`,
+   still used unmodified by Gallery.tsx and every other caller). */
+
+.ov-mv {
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-mv-row {
+  display: grid;
+  grid-template-columns: 46px minmax(120px, 260px) minmax(48px, 1fr) 88px 62px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+@media (hover: hover) {
+  .ov-mv-row:hover .ov-mv-nm {
+    color: var(--accent);
+  }
+}
+
+.ov-sym {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 6px);
+  padding: 2px 4px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-mv-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ov-mv-nm {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.12s;
+  flex: 0 1 auto;
+}
+
+.ov-mv-price {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex: none;
+}
+
+.ov-mv-ccy {
+  margin-left: 5px;
+  letter-spacing: 0.03em;
+}
+
+.ov-mv-bar {
+  height: 8px;
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+
+.ov-mv-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: var(--radius-pill, 999px);
+  min-width: 6px;
+}
+
+.ov-mv-fill--pos {
+  background: var(--good);
+}
+
+.ov-mv-fill--neg {
+  background: var(--bad);
+}
+
+.ov-mv-amt {
+  text-align: right;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-mv-amt.pos {
+  color: var(--good);
+}
+
+.ov-mv-amt.neg {
+  color: var(--bad);
+}
+
+.ov-mv-pct {
+  text-align: right;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-mv-div {
+  height: 1px;
+  background: var(--line-strong);
+  margin: 7px 0;
+  opacity: 0.8;
+}
+
+@media (max-width: 640px) {
+  .ov-mv-row {
+    grid-template-columns: 46px minmax(0, 1fr) 88px 62px;
+  }
+
+  .ov-mv-bar {
+    display: none;
+  }
+}

@@ -1,0 +1,39 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   EMBED-ONLY overrides — loaded only when EMBED_IN_APP=1 (astro.config.mjs).
+   This build is served by the app at /docs and shown inside the Help modal's
+   iframe. Everything here removes chrome the MODAL already provides, or that
+   makes no sense inside an app that owns its own theme. Nothing here changes
+   type, colour or layout — those stay identical to the published site, which
+   is the entire point of having one build instead of two readers.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Theme is the APP's to decide. The parent writes `data-theme` onto this
+   document (HelpDocsFrame.tsx) so the docs follow the app's palette; leaving a
+   second, independent switch here would let the two disagree on screen. */
+header.header starlight-theme-select {
+  display: none;
+}
+
+/* Social links point outward, off the app entirely — not what a Help overlay is for. */
+header.header .social-icons {
+  display: none;
+}
+
+/* The wordmark STAYS, and so does the header's own layout.
+   It was hidden here at first, on the reasoning that the modal's head already says "Help"
+   inside an app already called Open Net Worth. That was taste, not a constraint, and it cost
+   more than it bought: Starlight's bar is `.title-wrapper` plus a second flex column, so
+   removing the title left the search pill pinned to the far-left edge, lined up with neither
+   the sidebar nor the prose column. Restoring it restores a header the site already balances,
+   and keeps this file to the ONE thing that has a real reason — the theme control above.
+   (Owner, 2026-08-25: "the help bar is now left here, weird".) */
+
+/* No trailing padding here.
+   An earlier version added `padding-block-end: 60vh` so every "On this page" link could
+   scroll its heading to the top. That was written for the app's OWN docs reader, whose
+   scroller was a short pane inside the modal. This build is the real site: it has its own
+   Previous/Next footer below the prose, and the frame is nearly the full modal height, so
+   the room is already there. Adding 60vh on top of it just left a screen of emptiness under
+   every page — visible as a page that "opens at the bottom" with nothing on it
+   (owner, 2026-08-25). */
+

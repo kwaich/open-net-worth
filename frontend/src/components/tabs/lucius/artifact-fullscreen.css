@@ -1,0 +1,48 @@
+/* artifact-fullscreen.css — the true edge-to-edge artifact takeover (ArtifactFullscreen.tsx).
+   No card/backdrop/shadow/rounded corners on desktop — this covers the ENTIRE viewport,
+   ArtifactViewer's own header/body fill it completely. */
+
+.artifact-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* On a phone it is a real bottom sheet: a dimmed backdrop over the app (tap it to close), a
+   handle, rounded top corners, and the shared drag-to-dismiss (useSheetDragToDismiss — it
+   writes the live transform and `--sheet-scrim-alpha`). Inset from the true top, safe-t-aware,
+   so the dimmed app shows above it on a notched phone. `touch-action: none` on the sheet root
+   only: the gesture's contract — content scrollers and the iframe keep native scroll. */
+@media (max-width: 640px) {
+  .artifact-fullscreen-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    background: rgba(6, 9, 16, calc(0.6 * var(--sheet-scrim-alpha, 1)));
+    animation: mb-sheet-scrim-in 0.2s ease;
+  }
+  .artifact-fullscreen {
+    top: calc(var(--safe-t, 0px) + 44px);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    overflow: hidden;
+    touch-action: none;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.28);
+    animation: mb-sheet-in 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .artifact-fullscreen-handle {
+    display: flex;
+    flex: none;
+    justify-content: center;
+    padding: 8px 0 2px;
+  }
+  .artifact-fullscreen-handle span {
+    width: 32px;
+    height: var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--line-strong);
+  }
+}

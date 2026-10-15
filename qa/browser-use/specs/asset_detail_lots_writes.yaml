@@ -1,0 +1,62 @@
+# Spec: ADPOS-LOT-01 — manual lots and sales on the quote Position tab
+# Covers: docs/qa/acceptance/asset-detail-position.md
+id: ADPOS-LOT-01
+acceptance_ids:
+  - ADPOS-LOT-ADD
+  - ADPOS-LOT-EDIT-BUY
+  - ADPOS-LOT-EDIT-SALE
+  - ADPOS-LOT-REMOVE
+  - ADPOS-LOT-FIRST-HOLD
+  - ADPOS-LOT-SKIP-CASH
+  - ADPOS-LOT-MULTI-ACCOUNT
+title: "Quote Position tab — add, edit, and remove lots and sales"
+description: >
+  Verifies the Position-tab lots box is a write surface: header Add lot / Record sale,
+  click-to-edit buy and sale rows, skip-cash warning, never-held first hold, and
+  multi-account Add lot using an inline Account selector (not a separate Which-account step).
+
+acceptance_criteria:
+  - AC1: + Add lot records a new acquisition row
+  - AC2: Clicking a fully-open buy row opens Edit lot and saving updates qty
+  - AC3: Clicking a sale row opens Edit sale and saving updates realized
+  - AC4: Remove lot on a fully-open lot deletes it
+  - AC5: Never-held empty state Add lot creates the first holding
+  - AC6: Skip-cash warning is visible when no funding/proceeds account is chosen
+  - AC7: Multi-account Add lot uses an inline Account selector (including + New account…), not a separate Which account? step
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the app to finish loading.
+
+  Open a held equity from Investments (or search) so the quote page loads, then open the
+  Position tab. Confirm Acquisition lots has a "+ Add lot" header button and Realized history
+  has "+ Record sale". Click + Add lot. Confirm the funding picker warning appears while no
+  account is chosen ("Funding not linked" or "cash balance won't change"). Cancel without
+  saving if the book already has lots you should not mutate; if the fixture allows a write,
+  add a small lot dated today and confirm the new row appears.
+  Record ADD=pass only if the form opened with the skip-cash warning.
+
+  Click an existing fully-open buy row (remaining equals original). Confirm the modal title
+  contains "Edit lot". Cancel unless a disposable fixture lot exists.
+  Record EDIT_BUY=pass if the edit modal opened from the row click.
+
+  If Realized history has a sale row, click it. Confirm the modal title contains "Edit sale".
+  Record EDIT_SALE=pass if the edit modal opened; SKIP if there are no sales.
+
+  On a ticker with no position (search a well-known symbol you do not hold, open Position),
+  confirm "No position in this asset" and an Add lot button. Click Add lot and confirm the
+  form shows Symbol and Account on the same screen (Account is required; + New account… is
+  offered). No separate "Which account?" step.
+  Record FIRST_HOLD=pass if that empty-state CTA opened the add-lot form.
+
+  Return exactly one of:
+  - "PASS: ADPOS-LOT-01 — ADD=<summary>; EDIT_BUY=<summary>; EDIT_SALE=<summary>; FIRST_HOLD=<summary>"
+    when the applicable checks pass (EDIT_SALE may be SKIP).
+  - "FAIL: ADPOS-LOT-01 — <specific failed check>" for a missing button, missing modal, missing
+    skip-cash warning, or visible JavaScript error.
+
+max_steps: 40
+timeout_seconds: 240
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "ADPOS-LOT-01-quote-lots-writes.png"

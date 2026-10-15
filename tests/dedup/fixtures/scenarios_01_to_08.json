@@ -1,0 +1,543 @@
+[
+  {
+    "id": "scenario-01-email-then-statement",
+    "label": "scenario #1 — email receipt + later statement line, same charge",
+    "must": "merge",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "GRAB SG",
+        "from_account_id": "dbs",
+        "from_amount": 25.5,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-abc123"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-1",
+        "kind": "expense",
+        "date": "2026-03-02",
+        "description": "GRAB* SG 491",
+        "from_account_id": "dbs",
+        "from_amount": 25.5,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-march-stmt",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-grab-0302"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "near_duplicate",
+      "engine_action": "review",
+      "canonical": "dbs-1",
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-02-usd-email-vs-sgd-statement",
+    "label": "scenario #2 — FX charge: USD email receipt vs SGD statement line",
+    "must": "merge",
+    "decided_by": "L3",
+    "accounts": [
+      {
+        "id": "cc",
+        "name": "AMEX",
+        "kind": "liability",
+        "type": "credit",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "cc-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Anthropic",
+        "from_account_id": "cc",
+        "from_amount": 15.0,
+        "from_currency": "USD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-anthropic"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-2",
+        "kind": "expense",
+        "date": "2026-03-02",
+        "description": "ANTHROPIC INC",
+        "from_account_id": "cc",
+        "from_amount": 20.25,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-amex-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-anthropic-sgd"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "near_duplicate",
+      "engine_action": "create",
+      "engine_action_note": "deterministic engine cannot resolve USD vs SGD base amounts without real FX rates; L3 (LLM) would reason about FX equivalence",
+      "canonical": null,
+      "become_transfer": false,
+      "pending_l3": true
+    }
+  },
+  {
+    "id": "scenario-03-fx-capture-settle-drift",
+    "label": "scenario #3 — FX capture-vs-settle: USD email receipt vs SGD statement settlement",
+    "must": "merge",
+    "decided_by": "L3",
+    "accounts": [
+      {
+        "id": "cc",
+        "name": "AMEX",
+        "kind": "liability",
+        "type": "credit",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "cc-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Anthropic",
+        "from_account_id": "cc",
+        "from_amount": 100.0,
+        "from_currency": "USD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-anthropic2"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-3",
+        "kind": "expense",
+        "date": "2026-03-02",
+        "description": "ANTHROPIC",
+        "from_account_id": "cc",
+        "from_amount": 134.5,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-amex-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-anthropic-settle"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "near_duplicate",
+      "engine_action": "create",
+      "engine_action_note": "cross-currency (USD vs SGD): deterministic engine refuses to classify without real FX rates (F15); L3 would reason about FX equivalence",
+      "canonical": null,
+      "become_transfer": false,
+      "pending_l3": true
+    }
+  },
+  {
+    "id": "scenario-04-date-drift",
+    "label": "scenario #4 — receipt date ≠ posting date (±2 days)",
+    "must": "merge",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Starbucks",
+        "from_account_id": "dbs",
+        "from_amount": 8.5,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-sb1"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-4",
+        "kind": "expense",
+        "date": "2026-03-03",
+        "description": "STARBUCKS",
+        "from_account_id": "dbs",
+        "from_amount": 8.5,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-starbucks-0303"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "near_duplicate",
+      "engine_action": "review",
+      "canonical": "dbs-1",
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-05-dbs-paylah-topup",
+    "label": "scenario #5 — DBS→PayLah top-up: debit on DBS + credit on PayLah = one transfer",
+    "must": "pair",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      },
+      {
+        "id": "paylah",
+        "name": "PayLah",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-03",
+        "description": "To PayLah",
+        "from_account_id": "dbs",
+        "from_amount": 50.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "dbs-topup-1"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-5",
+        "kind": "income",
+        "date": "2026-03-03",
+        "description": "Top-up received",
+        "from_account_id": null,
+        "from_amount": null,
+        "from_currency": null,
+        "to_account_id": "paylah",
+        "to_amount": 50.0,
+        "to_currency": "SGD",
+        "batch_id": "batch-paylah",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "paylah-topup-1"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "transfer_pair",
+      "engine_action": "review",
+      "canonical": "dbs-1",
+      "become_transfer": true
+    }
+  },
+  {
+    "id": "scenario-06-auto-manual-topup-same-day",
+    "label": "scenario #6 — auto top-up + manual top-up same day: both are real (distinct connector IDs)",
+    "must": "keep_both",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Auto Top-up",
+        "from_account_id": "dbs",
+        "from_amount": 50.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-sf-1",
+        "source": "simplefin",
+        "external_refs": [
+          {
+            "source": "simplefin",
+            "ref": "sf-auto-topup-1"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-6",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Manual Top-up",
+        "from_account_id": "dbs",
+        "from_amount": 50.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-sf-2",
+        "source": "simplefin",
+        "external_refs": [
+          {
+            "source": "simplefin",
+            "ref": "sf-manual-topup-1"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "none",
+      "engine_action": "create",
+      "engine_action_note": "invariant 1: distinct simplefin IDs from same source namespace — two real events",
+      "canonical": null,
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-07-settlement-date-differs",
+    "label": "scenario #7 — settlement date differs between the two transfer legs",
+    "must": "pair",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      },
+      {
+        "id": "paylah",
+        "name": "PayLah",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-05",
+        "description": "Transfer out",
+        "from_account_id": "dbs",
+        "from_amount": 100.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "dbs-transfer-1"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-7",
+        "kind": "income",
+        "date": "2026-03-03",
+        "description": "Top-up received",
+        "from_account_id": null,
+        "from_amount": null,
+        "from_currency": null,
+        "to_account_id": "paylah",
+        "to_amount": 100.0,
+        "to_currency": "SGD",
+        "batch_id": "batch-paylah-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "paylah-recv-1"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "transfer_pair",
+      "engine_action": "review",
+      "engine_action_note": "2-day date difference is within WINDOW_DAYS=4; transfer pair detected",
+      "canonical": "dbs-1",
+      "become_transfer": true
+    }
+  },
+  {
+    "id": "scenario-08-card-payment-both-statements",
+    "label": "scenario #8 — card payment appears on both bank statement and CC statement",
+    "must": "pair",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      },
+      {
+        "id": "cc",
+        "name": "AMEX",
+        "kind": "liability",
+        "type": "credit",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-10",
+        "description": "CC Payment",
+        "from_account_id": "dbs",
+        "from_amount": 500.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "dbs-ccpay-1"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-8",
+        "kind": "income",
+        "date": "2026-03-10",
+        "description": "Payment Received",
+        "from_account_id": null,
+        "from_amount": null,
+        "from_currency": null,
+        "to_account_id": "cc",
+        "to_amount": 500.0,
+        "to_currency": "SGD",
+        "batch_id": "batch-amex-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "cc-pay-recv-1"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "transfer_pair",
+      "engine_action": "review",
+      "canonical": "dbs-1",
+      "become_transfer": true
+    }
+  }
+]

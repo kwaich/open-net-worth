@@ -1,0 +1,5 @@
+/* @layer declaration — imported FIRST in main.tsx so the cascade order is
+   established before any rules (including the font @import in index.css).
+   This is the only content allowed before @import per the CSS spec.
+   RFC: .claude/rfcs/phaseC-cascade-layers-and-deadcode.md (C-1) */
+@layer reset, tokens, base, primitives, legacy, app;

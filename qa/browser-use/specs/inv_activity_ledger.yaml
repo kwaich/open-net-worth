@@ -1,0 +1,163 @@
+# Spec: INV-ACT-01 — Activity sub-tab: signed ledger, type filter, Tax deep-link
+# Covers: docs/qa/acceptance/investments-activity.md
+id: INV-ACT-01
+acceptance_ids:
+  - INV-ACT-LEDGER-RENDERS
+  - INV-ACT-SIGNED-AMOUNTS
+  - INV-ACT-AMOUNT-CURRENCY
+  - INV-ACT-TYPE-FILTER-PRESENT
+  - INV-ACT-TYPE-FILTER-BUY
+  - INV-ACT-TYPE-FILTER-DIVIDEND
+  - INV-ACT-TYPE-FILTER-ALL-RESTORES
+  - INV-ACT-FILTER-EMPTY-STATE
+  - INV-ACT-TAX-DEEPLINK-PRESENT
+  - INV-ACT-TAX-DEEPLINK-NAVIGATES
+  - INV-ACT-EMPTY-NO-TRANSACTIONS
+title: "Investments Activity — signed ledger amounts, type filter, Tax tab deep-link"
+description: >
+  Exercises the Activity sub-tab of the redesigned Investments tab:
+    1. The ledger renders a chronological list of investment transactions with
+       signed amounts (positive for income/sells, negative for buys/costs).
+    2. The type filter controls (All / Buy / Sell / Dividend) filter rows
+       correctly and show an empty-state when no rows match.
+    3. A "View in Tax" or equivalent deep-link navigates to the Tax tab.
+
+  NOTE: This spec depends on the "Activity" sub-tab existing as a distinct
+  navigation target in the redesigned Investments tab. If the sub-tab is absent,
+  the spec reports SKIP.
+
+acceptance_criteria:
+  - AC1: Activity sub-tab opens without JS error
+  - AC2: Ledger rows show signed amounts (buys negative / income positive)
+  - AC3: Type filter visible with at least Buy, Sell, Dividend options
+  - AC4: Selecting "Buy" hides non-buy rows
+  - AC5: Selecting "Dividend" shows only dividend/income rows
+  - AC6: Selecting "All" restores all rows
+  - AC7: Empty-state shown when active filter has no matching rows
+  - AC8: Tax deep-link present and navigates to Tax tab
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open the Investments tab, Activity sub-tab (AC1).
+  Click "Investments" in the left sidebar. Wait 3 seconds.
+  Look for an "Activity" sub-tab in the Investments sub-tab navigation.
+  If NO "Activity" sub-tab is visible:
+    return "SKIP: Activity sub-tab not present — redesign may not be integrated yet"
+
+  Click "Activity". Wait 3 seconds.
+  Is there a visible JS error? If yes: return "FAIL: JS error on Activity sub-tab"
+  Record: ACTIVITY_TAB_LOADED = "yes".
+
+  Step 2 — Check ledger renders (AC2, AC3).
+  Look at the ledger content area. Are transaction rows visible (a table or
+  list of investment transactions with columns like Date, Description, Type,
+  Amount)?
+  Record: LEDGER_ROWS = "visible" or "absent (empty state)" or "blank/error".
+
+  If LEDGER_ROWS = "visible":
+    Read the amounts in the Amount column.
+    Are ANY amounts negative (shown with "−", a red tone, or parentheses)?
+    Are ANY amounts positive (shown with "+" or a green/positive tone)?
+    Record: HAS_NEGATIVE = "yes" or "no".
+    Record: HAS_POSITIVE = "yes" or "no".
+
+    Look at one amount. Does it include a currency code or symbol (e.g. "USD",
+    "$", "SGD", "S$")?
+    Record: HAS_CURRENCY = "yes" or "no".
+
+  Step 3 — Check type filter present (AC3).
+  Look for a type filter control above the ledger. Does it show options like
+  "All", "Buy", "Sell", "Dividend" (or similar labels)?
+  Record: TYPE_FILTER = "present" or "absent".
+
+  Step 4 — Filter by Buy (AC4).
+  If TYPE_FILTER = "present" and LEDGER_ROWS = "visible":
+    Note the number of visible rows before filtering (call it ROW_COUNT_ALL).
+    Click "Buy" in the type filter. Wait 2 seconds.
+    How many rows are now visible?
+    Record: ROW_COUNT_BUY = <count>.
+    Are any obviously non-buy rows visible (e.g. dividend income rows)?
+    Record: NON_BUY_VISIBLE = "yes" or "no".
+
+  Step 5 — Filter by Dividend (AC5).
+  If TYPE_FILTER = "present":
+    Click "Dividend" (or "Income") in the type filter. Wait 2 seconds.
+    Are any rows visible?
+    If rows visible: record DIVIDEND_ROWS = "visible".
+    If no rows: is there an empty-state message?
+    Record DIVIDEND_ROWS = "empty state shown" or "blank (bad)".
+
+  Step 6 — Restore All (AC6).
+  Click "All" in the type filter. Wait 1 second.
+  How many rows are now visible?
+  Record: ROW_COUNT_AFTER_ALL = <count>.
+  Does ROW_COUNT_AFTER_ALL equal ROW_COUNT_ALL (or is the ledger restored)?
+  Record: ALL_RESTORES = "yes" or "no".
+
+  Step 7 — Empty state on no-match filter (AC7).
+  Look for a filter type that is unlikely to have data in the demo dataset
+  (e.g. "Short Sell" or any option that is present but shows no rows). Or type
+  a nonsense string in a search field if available. Wait 1 second.
+  If the result is zero rows: is an empty-state message shown?
+  Record: FILTER_EMPTY_STATE = "shown" or "blank (bad)" or "not tested".
+
+  Step 8 — Tax deep-link (AC8).
+  Reset any filter to "All". Scroll the Activity sub-tab looking for a "View
+  in Tax", "See tax impact", "Tax" link or button in the header, footer, or on
+  a specific sell row with realized gain.
+  Is a Tax deep-link visible?
+  Record: TAX_DEEPLINK = "present" or "absent".
+
+  If TAX_DEEPLINK = "present":
+    Click it. Wait 3 seconds.
+    Does the page navigate to the Tax tab?
+    Is the Tax tab heading or disclaimer visible?
+    Record: TAX_DEEPLINK_NAVIGATES = "yes" or "no".
+
+  Decision:
+  - If ACTIVITY_TAB_LOADED = "no": return "FAIL: Activity sub-tab did not load"
+
+  - Evaluate signed amounts (AC2):
+    if LEDGER_ROWS = "visible" and HAS_NEGATIVE = "yes" and HAS_POSITIVE = "yes":
+      SIGNED_CHECK = "pass"
+    elif LEDGER_ROWS = "visible" and (HAS_NEGATIVE = "no" or HAS_POSITIVE = "no"):
+      SIGNED_CHECK = "fail — amounts not signed (all same polarity)"
+    elif LEDGER_ROWS = "absent (empty state)":
+      SIGNED_CHECK = "skip — no transactions in demo data to check sign"
+    else: SIGNED_CHECK = "fail — ledger is blank/erroring"
+
+  - Evaluate currency (AC3 sub):
+    if LEDGER_ROWS = "visible" and HAS_CURRENCY = "no":
+      CURRENCY_CHECK = "fail — no currency code/symbol on amounts"
+    elif LEDGER_ROWS = "absent (empty state)": CURRENCY_CHECK = "skip"
+    else: CURRENCY_CHECK = "pass"
+
+  - Evaluate type filter (AC4-AC7):
+    if TYPE_FILTER = "absent": FILTER_CHECK = "skip — type filter not present"
+    elif NON_BUY_VISIBLE = "yes": FILTER_CHECK = "fail — non-buy rows visible when Buy filter active"
+    elif ALL_RESTORES = "no": FILTER_CHECK = "fail — All filter did not restore all rows"
+    else: FILTER_CHECK = "pass"
+
+  - Evaluate Tax deep-link (AC8):
+    if TAX_DEEPLINK = "absent": TAX_CHECK = "skip — deep-link not present (redesign may not be integrated)"
+    elif TAX_DEEPLINK_NAVIGATES = "no": TAX_CHECK = "fail — Tax deep-link clicked but did not navigate to Tax tab"
+    else: TAX_CHECK = "pass"
+
+  - If any check is "fail":
+    return "FAIL: INV-ACT-01 — SIGNED=<SIGNED_CHECK>, CURRENCY=<CURRENCY_CHECK>, FILTER=<FILTER_CHECK>, TAX_LINK=<TAX_CHECK>"
+
+  - If all pass or skip:
+    return "PASS: INV-ACT-01 — SIGNED=<SIGNED_CHECK>, CURRENCY=<CURRENCY_CHECK>, FILTER=<FILTER_CHECK>, TAX_LINK=<TAX_CHECK>"
+
+max_steps: 35
+timeout_seconds: 300
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "INV-ACT-01-activity-ledger.png"
+  note: >
+    SKIP is acceptable if the Activity sub-tab or type filter is not yet present
+    (the redesign may not be integrated). The Tax deep-link SKIP is also
+    acceptable if no sell transactions with realized gain exist in the demo data.
+    No ANTHROPIC_API_KEY required.

@@ -1,0 +1,95 @@
+// The catalog, resolved against live connector state.
+//
+// Split out of `catalog.ts` so that module can stay a LEAF: `adapter.ts` reads
+// `catalogProvenanceFor` from the catalog, so the catalog must not import the adapter back.
+// This module is where the two legitimately meet — it depends on both and nothing depends on it
+// except the directory itself.
+
+import { isInstalled, toEntry } from './adapter'
+import { CATALOG, catalogProvenanceFor, type CatalogEntry, type DirectoryRow } from './catalog'
+import { connectorLogo } from './logos'
+import type { Connector } from './types'
+
+const MCP_PREFIX = 'mcp:'
+
+/**
+ * Two things only the server can answer: which catalog entries are already installed, and which
+ * MCP servers exist that no catalog could know about (a user's own custom server). Both land
+ * here, so the grid renders one uniform list.
+ *
+ * An installed MCP server that isn't a catalog entry is APPENDED rather than dropped — the same
+ * "installed entries stay listed" rule (spec §6), applied to the one family whose membership is
+ * open-ended. Its detail page is reachable from the directory exactly like any other card's.
+ */
+export function resolveDirectory(
+  connectors: Connector[],
+  catalog: CatalogEntry[] = CATALOG,
+): DirectoryRow[] {
+  const installed = connectors.filter(isInstalled)
+  const installedIds = new Set(installed.map((c) => c.id))
+  // Every NATIVE connector (id present here) is synthesized by `list_connectors()`
+  // unconditionally — configured or not — so this lookup finds it even on a fresh instance
+  // where the user hasn't set anything up yet. Only a catalog entry with no live counterpart
+  // (every MCP entry) misses.
+  const liveById = new Map(connectors.map((c) => [c.id, c]))
+
+  // `developer`/`verified` are PROJECTED from the provenance fields, never authored beside
+  // them — so the card badge and the vendor-trust panel can't disagree with the catalog.
+  // `logo` is looked up from the id rather than authored beside the entry, so a mark cannot be
+  // attached to the wrong card by hand; an entry with none keeps its tinted category glyph.
+  const rows: DirectoryRow[] = catalog.map((entry) => {
+    const live = liveById.get(entry.id)
+    // `sub`/`desc`/`tools`: for a NATIVE entry these read the SAME `short_description`/
+    // `long_description`/`tools` the connector's own installed detail page renders (`toEntry`,
+    // below) — never the catalog's own copy, which native entries no longer author (see
+    // `CatalogEntry.sub`'s doc comment). This is the 2026-08-14 fix (originally sub/desc only):
+    // before it, this line was `...entry` alone, so an installed Email's directory card and its
+    // detail page one click later could show two independently hand-edited strings that
+    // silently drifted apart. `tools` had the SAME bug (2026-08-22: a native connector's
+    // preview always showed the catalog's own — usually empty — tools list, never the live,
+    // backend-driven one) and gets the same fix here. An MCP catalog entry has no live
+    // counterpart to read (its id is a catalog key, e.g. `mcp-playwright`, not a server id), so
+    // it keeps authoring its own `sub`/`desc`/`tools` here, unaffected.
+    const liveText = live ? toEntry(live) : null
+    return {
+      ...entry,
+      sub: liveText?.sub || entry.sub || '',
+      desc: liveText?.desc || entry.desc || '',
+      tools: liveText?.tools || entry.tools || [],
+      logo: connectorLogo(entry.id),
+      developer: entry.publisher ?? undefined,
+      installed: installedIds.has(entry.id),
+    }
+  })
+
+  const known = new Set(catalog.map((e) => e.id))
+  for (const c of installed) {
+    if (!c.id.startsWith(MCP_PREFIX) || known.has(c.id)) continue
+    // `toEntry` already folds in catalog provenance when the endpoint matches a catalog server,
+    // so an installed Playwright MCP keeps its real verification here too.
+    const e = toEntry(c)
+    rows.push({
+      id: e.id,
+      name: e.name,
+      icon: e.icon,
+      hue: e.hue,
+      // Both inherited from the catalog entry this server's ENDPOINT matches, or absent — a
+      // user's own server has no mark and nothing truthful to file it under.
+      logo: e.logo,
+      categories: catalogProvenanceFor(e.url)?.categories ?? [],
+      families: e.families,
+      tag: e.tag,
+      sub: e.sub,
+      desc: e.desc,
+      mcp: e.mcp,
+      url: e.url,
+      tools: e.tools,
+      popular: false,
+      installed: true,
+      publisher: e.developer ?? null,
+      verification: e.verification,
+      developer: e.developer,
+    })
+  }
+  return rows
+}

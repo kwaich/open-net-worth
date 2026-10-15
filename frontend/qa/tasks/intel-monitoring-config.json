@@ -1,0 +1,15 @@
+{
+  "name": "intel-monitoring-config",
+  "title": "Intel — Monitoring config knobs (Phase 3)",
+  "tab": "intel",
+  "body": "Exercise the Analyst configuration controls in the Intel tab's 'Monitoring' panel. Open the Intel tab in the sidebar, locate the 'Monitoring' panel (it may need to be expanded by clicking its header). Beyond the existing 'Price-alert check' and 'News scan interval' selects and the 'Notify me via' channel grid, the panel should now expose: a 'News freshness' select (options Off / Balanced / Fast), a 'Comprehensive search (paid)' on/off toggle, an 'End-of-day digest' on/off toggle with a delivery-time hour field beneath it, a 'Pre-market digest' on/off toggle, and a collapsed 'Advanced' disclosure that expands on click to reveal crash-threshold percentage fields (equity/commodity/crypto) plus a spike floor and spike multiplier field. Every control saves automatically on change (a brief 'Saved' flash; there is no separate Save button). Judge both that the controls exist and actually respond, and that the panel stays calm/usable (presets first, Advanced tucked away). SAFETY: do NOT delete any watchlist, list, or data. It is safe to change selects, flip toggles, type into number fields, and expand/collapse the Advanced section — these are reversible user settings.",
+  "criteria": [
+    { "id": "mon-open", "text": "The 'Monitoring' panel can be opened/expanded and renders without an error boundary or blank screen." },
+    { "id": "mon-freshness", "text": "A 'News freshness' select is present with Off / Balanced / Fast choices; changing the selection updates the displayed value." },
+    { "id": "mon-websearch", "text": "A 'Comprehensive search (paid)' toggle is present and can be switched off and back on, reflecting the new state each time." },
+    { "id": "mon-digest", "text": "An 'End-of-day digest' toggle is present; turning it off visibly disables/greys the delivery-time hour field, and the hour field accepts a value (e.g. 21) when enabled." },
+    { "id": "mon-premarket", "text": "A 'Pre-market digest' toggle is present and can be switched." },
+    { "id": "mon-advanced", "text": "An 'Advanced' section is collapsed by default and, when clicked, expands to reveal crash-threshold % fields and spike floor/multiplier fields; collapsing hides them again." },
+    { "id": "mon-calm", "text": "The default panel view is calm/uncluttered — the raw threshold knobs are hidden behind 'Advanced', not shown up front; exercising the controls never breaks the layout or the app." }
+  ]
+}

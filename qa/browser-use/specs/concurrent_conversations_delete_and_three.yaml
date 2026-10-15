@@ -1,0 +1,81 @@
+# Spec: CC-05 — three at once, and deleting a conversation mid-turn
+# Covers: acceptance B3, B6
+#
+# B6 is the higher-severity half. The dead `.abort()` behind it was found during
+# the Phase 3 merge — left broken, a background turn keeps WRITING through the
+# deletion of the conversation it belongs to. It has no regression test.
+id: CC-05
+acceptance_ids:
+  - CONC-THREE-AT-ONCE
+  - CONC-DELETE-ABORTS
+title: "Concurrent conversations: three run at once, and deleting one mid-turn stops its turn"
+timeout_seconds: 600
+max_steps: 80
+
+description: >
+  Prove the concurrency is not capped at two, and that deleting a conversation
+  with a turn in flight cancels that turn rather than orphaning it.
+
+acceptance_criteria:
+  - AC1: Three conversations can be working simultaneously (B3)
+  - AC2: Nothing queues or refuses on count — there is no concurrency cap
+  - AC3: Deleting a conversation mid-turn removes it (B6)
+  - AC4: The other conversations are unaffected and still complete
+
+browser_use_task: |
+  Navigate to {app_url}.
+  IMPORTANT: this app loads real financial data and a cold boot is slow. Wait until the
+  main content has actually rendered — if you see a spinner or "Loading your dashboard",
+  keep waiting and re-checking for up to 60 seconds before doing anything else. Do not
+  give up or return a result while the page is still loading.
+  Open Lucius (a chat/spark button on a wide viewport, or the Lucius slot in the
+  bottom tab bar on a narrow one).
+
+  STEP 1 — start THREE turns, back to back, without waiting.
+  Do this three times in a row, as quickly as you can:
+    a. Click "New chat" in the conversation sidebar.
+    b. Type one of these, a different one each time:
+       - list all of my accounts and their balances
+       - what were my three largest expenses last month
+       - summarise my net worth
+    c. Press Enter. Do NOT wait for the reply.
+
+  If at any point "New chat" is disabled, or sending is refused, or you see a
+  message about a limit or queue, return
+  "FAIL: B3 - starting a third concurrent conversation was refused: <what you saw>".
+
+  STEP 2 — confirm all three are working.
+  Open the conversation list. Look for indications that more than one conversation
+  is currently working — a spinner, a dot, or wording such as "Working".
+  Describe what you see. If only one shows as working, say so.
+
+  STEP 3 — delete the THIRD conversation while it is still working.
+  In the conversation list, find the third conversation you created (the net-worth
+  one). Open its row menu (a "..." or kebab control on the row) and choose Delete.
+  Confirm the deletion if you are asked to.
+
+  If there is no delete control on the row, return
+  "BLOCKED: no delete control found on a conversation row".
+
+  STEP 4 — check the other two survived.
+  The deleted conversation should be gone from the list.
+  Click the FIRST conversation (accounts) and wait up to 90 seconds for its reply.
+  Then click the SECOND (expenses) and check it too.
+
+  Evaluate:
+  - If three conversations were started and worked concurrently, the third
+    deleted cleanly, and BOTH remaining conversations show complete replies,
+    return "PASS: three ran concurrently; delete removed the third; the other two completed"
+  - If starting the third was refused, return "FAIL: B3 - <what you saw>"
+  - If deleting the third also broke one of the others, return
+    "FAIL: B6 - deleting one conversation disturbed another - <what you saw>"
+  - If an error mentioning API key, model, or configuration appears, return
+    "SKIP: AI not configured - <error text>"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CC-05-three-and-delete.png"
+  note: >
+    This spec cannot see whether the deleted conversation's turn kept WRITING
+    server-side — only that the UI removed it and the others survived. The
+    server-side half of B6 still needs a backend regression test.

@@ -1,0 +1,149 @@
+# Spec: SETTINGS-OVERLAY — the Settings overlay redesign (2026-08-05)
+# Covers the shell + the behaviours the design calls out by name. Section-level detail lives in
+# docs/qa/acceptance/settings-redesign.md.
+id: SETTINGS-OVERLAY
+acceptance_ids:
+  - A1
+  - A2
+  - A4
+  - A8
+  - B1
+  - B2
+  - E14
+  - E15
+  - I1
+  - I2
+  - K9
+  - N1
+title: "Settings opens as an overlay with nine sections, a synonym search, and the vision warning"
+description: >
+  Settings is a dialog OVER the app, not a destination: a section rail left, one scrolling
+  pane right. Profile is its first section, not a tab. This spec verifies the shell, the
+  synonym-aware section search, Escape, the base-currency confirm, the typed RESET gate, and
+  the vision contract (a vision task routed to a text-only model must warn, loudly and
+  legibly, and offer a way to fix it).
+
+acceptance_criteria:
+  - AC1: Opening Settings shows a dialog over the previous tab — the tab is still visible behind the scrim
+  - AC2: The rail lists nine sections in order, Profile first
+  - AC3: Profile does NOT appear as its own entry in the app's left sidebar
+  - AC4: Typing "python" in the section search leaves only Developer
+  - AC5: A search with no matches shows "No matching settings"
+  - AC6: Escape closes the overlay and returns to the tab underneath
+  - AC7: Changing base currency opens a confirm modal naming the hand-typed amounts, and does not commit until accepted
+  - AC8: Routing a vision task to a text-only model raises a warning banner naming the task and the model
+  - AC9: The warning's inline caption is readable — it does not overlap the task's description
+  - AC10: The reset-instance confirm button is disabled until RESET is typed exactly
+  - AC11: No JavaScript errors on any section
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully (the Overview tab).
+
+  STEP 1 — Profile is no longer a tab. (AC3)
+  Look at the app's LEFT sidebar navigation. List every entry you can see.
+  Record: SIDEBAR_ENTRIES = the list
+  Record: PROFILE_IN_SIDEBAR = yes/no  (is there a "Profile" entry?)
+
+  STEP 2 — Open Settings as an overlay. (AC1, AC2)
+  Click "Settings" in the left sidebar. Wait 3 seconds.
+  A dialog should open ON TOP of the page — you should still see the previous tab's content
+  behind a dark scrim, NOT a blank page.
+  Record: OVERLAY_VISIBLE = yes/no
+  Record: PREVIOUS_TAB_VISIBLE_BEHIND = yes/no
+  Inside the dialog, read the list of sections down the left-hand rail, in order.
+  Record: SECTIONS = the ordered list
+  (Expected: Profile, AI Model, Permissions, Duplicate Detection, Appearance,
+   Currency & format, Security, Data, Developer)
+
+  STEP 3 — Section search matches synonyms, not just labels. (AC4, AC5)
+  Type "python" into the Search box at the top of the rail. Wait 1 second.
+  Record: SEARCH_PYTHON_RESULTS = the sections still listed
+  (Expected: only "Developer" — "python" is a synonym, it is not in any label.)
+  Clear the box, then type "zzzz". Wait 1 second.
+  Record: NO_HITS_TEXT = the message shown (expected "No matching settings")
+  Clear the search box again.
+
+  STEP 4 — Base currency confirms before it commits. (AC7)
+  Click "Currency & format" in the rail. Wait 2 seconds.
+  Note the current value of the "Base currency" select. Call it ORIGINAL_CURRENCY.
+  Change the select to a DIFFERENT currency (e.g. USD if it is not already).
+  Wait 2 seconds.
+  Record: CONFIRM_MODAL_SHOWN = yes/no
+  Record: CONFIRM_TITLE = the modal's title
+  Record: CONFIRM_LISTS_AMOUNTS = yes/no — does the modal NAME specific amounts
+          (e.g. "Monthly net income", "Monthly expenses") with values?
+  Click Cancel. Wait 1 second.
+  Record: CURRENCY_AFTER_CANCEL = the value of the Base currency select now
+  (It must still be ORIGINAL_CURRENCY — cancelling must not have changed it.)
+
+  STEP 5 — The vision contract. (AC8, AC9)
+  Click "AI Model" in the rail. Wait 3 seconds.
+  Scroll down to the "Task models" panel and click "Customise…". Wait 2 seconds.
+  Find the row labelled "Image reading".
+  Open its dropdown and look at the options. Some should be suffixed "— no vision".
+  Record: NO_VISION_OPTIONS_LABELLED = yes/no
+  Select one of the options ending in "— no vision". Wait 3 seconds.
+  Record: WARNING_BANNER_SHOWN = yes/no
+  Record: BANNER_TEXT = the banner's text
+          (It must name the TASK and the MODEL, e.g. "Image reading can't read images".)
+  Look at the "Image reading" row itself:
+  Record: INLINE_WARNING_TEXT = the warning line under the label
+  Record: WARNING_OVERLAPS_DESCRIPTION = yes/no — do TWO lines of text render ON TOP of
+          each other (overlapping / unreadable)? Look carefully. This must be "no".
+  Now click "Done" to collapse the customise view. Wait 2 seconds.
+  Record: FIX_BUTTON_SHOWN = yes/no — is there a "Fix…" button on the banner?
+  IMPORTANT — restore the original state: click "Fix…" (or "Customise…"), set the
+  "Image reading" dropdown back to "Default", and wait 2 seconds.
+  Record: BANNER_CLEARED_AFTER_RESET = yes/no
+
+  STEP 6 — The typed RESET gate. (AC10)
+  Click "Data" in the rail. Wait 2 seconds.
+  Scroll to the bottom, to the red "Danger zone" panel. Click "Reset instance…".
+  Wait 1 second. A confirm modal appears with a text field.
+  Record: RESET_BUTTON_DISABLED_INITIALLY = yes/no (is "I understand — reset" greyed out?)
+  Type "nope" into the field. Wait 1 second.
+  Record: RESET_BUTTON_DISABLED_WITH_WRONG_TEXT = yes/no
+  Clear the field and type exactly: RESET
+  Wait 1 second.
+  Record: RESET_BUTTON_ENABLED_WITH_CORRECT_TEXT = yes/no
+  *** DO NOT CLICK THE RESET BUTTON. *** Close the modal with its × instead.
+
+  STEP 7 — Escape closes the overlay. (AC6)
+  Press the Escape key. Wait 2 seconds.
+  Record: OVERLAY_CLOSED = yes/no
+  Record: UNDERLYING_TAB_VISIBLE = yes/no — are you back on a normal app tab?
+
+  STEP 8 — Console. (AC11)
+  Check the browser console for JavaScript errors accumulated during this run.
+  Record: JS_ERROR = yes/no, JS_ERROR_TEXT = first error if any
+
+  Decision:
+  - If OVERLAY_VISIBLE = no: FAIL "Settings did not open as an overlay"
+  - If PREVIOUS_TAB_VISIBLE_BEHIND = no: FAIL "Settings replaced the page instead of overlaying it"
+  - If SECTIONS does not start with Profile or has fewer than 9 entries: FAIL f"Section rail wrong: {SECTIONS}"
+  - If PROFILE_IN_SIDEBAR = yes: FAIL "Profile is still a top-level tab; it should be a Settings section"
+  - If SEARCH_PYTHON_RESULTS is not just Developer: FAIL f"Synonym search broken: {SEARCH_PYTHON_RESULTS}"
+  - If NO_HITS_TEXT does not contain "No matching settings": FAIL "Missing no-hits message"
+  - If CONFIRM_MODAL_SHOWN = no: FAIL "Base currency changed without confirming"
+  - If CONFIRM_LISTS_AMOUNTS = no: FAIL "Confirm modal does not name the amounts that will not convert"
+  - If CURRENCY_AFTER_CANCEL != ORIGINAL_CURRENCY: FAIL "Cancel still changed the base currency"
+  - If NO_VISION_OPTIONS_LABELLED = no: FAIL "Text-only models are not labelled '— no vision'"
+  - If WARNING_BANNER_SHOWN = no: FAIL "No warning when a vision task is routed to a text-only model"
+  - If WARNING_OVERLAPS_DESCRIPTION = yes: FAIL "The vision warning overlaps the task description and is unreadable"
+  - If FIX_BUTTON_SHOWN = no: FAIL "Collapsed banner does not offer Fix…"
+  - If RESET_BUTTON_DISABLED_INITIALLY = no or RESET_BUTTON_DISABLED_WITH_WRONG_TEXT = no:
+      FAIL "Reset is not gated on typing RESET"
+  - If RESET_BUTTON_ENABLED_WITH_CORRECT_TEXT = no: FAIL "Typing RESET does not enable the button"
+  - If OVERLAY_CLOSED = no: FAIL "Escape did not close the overlay"
+  - If JS_ERROR = yes: FAIL f"JavaScript error: {JS_ERROR_TEXT}"
+  - Otherwise: PASS f"Settings overlay OK — {len(SECTIONS)} sections, search/Escape/currency-confirm/vision-warning/RESET-gate all behave"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "SETTINGS-OVERLAY-vision-warning.png"
+  note: >
+    The vision step is the one that matters most: the design treats a vision task landing on a
+    text-only model as a run-time failure the user would otherwise only discover when a
+    statement import breaks. It is a WARNING, not a block — the selection is still accepted.
+    WARNING_OVERLAPS_DESCRIPTION exists because the handoff prototype itself renders those two
+    captions on top of each other; the port fixes that and this pins the fix.

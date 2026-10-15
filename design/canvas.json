@@ -1,0 +1,55 @@
+{
+  "artboards": [
+    {
+      "file": "Welcome.dc.html",
+      "title": "00 · Greeting",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "Main.dc.html",
+      "title": "01 · Where your data lives",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "Lucius.dc.html",
+      "title": "02 · Bring your own model",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "Password.dc.html",
+      "title": "03 · Password",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    }
+  ],
+  "annotations": [
+    {
+      "id": "note-flow",
+      "x": 0,
+      "y": -250,
+      "w": 500,
+      "text": "Welcome flow — framed as what it is: an OPEN SOURCE AGENT HARNESS for personal finance.\n\n00 is the only screen that asks nothing, so it carries the positioning: a harness, not a chatbot — typed tools, audited writes, permissioned actions, and the model is yours. The figures are real (292 tools, 21 connectors), not decoration.\n\nIt also carries the fork a returning self-hoster needs — RESTORE A BACKUP — which was previously buried three screens deep.\n\nStrictly the app's own system: Plus Jakarta Sans at 400/500/600/700 and system ui-monospace. No serif, no gradients, no glows, no cards. The only addition is the brand gold #9a7d44 from favicon.svg (#b08f4e where the base is too dim on dark)."
+    },
+    {
+      "id": "note-buttons",
+      "x": 1560,
+      "y": -250,
+      "w": 400,
+      "text": "Buttons now sit near the app's own density — 10px/26px at 13px, radius 6 — against .ui-btn's 6px/10px at 12px, radius 8. The earlier 14–15px tall pills were nearly double the product's height and read as marketing, not product."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

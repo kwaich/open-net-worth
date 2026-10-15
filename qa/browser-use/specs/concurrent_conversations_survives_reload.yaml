@@ -1,0 +1,77 @@
+# Spec: CC-06 — a turn survives the client that started it
+# Covers: acceptance D1, D2
+#
+# The walk-away promise, and the reason Phase 3 exists. Before it, the turn was
+# driven by the HTTP request coroutine: closing the tab cancelled the generator
+# and the turn died partway, persisted only as far as its last checkpoint.
+id: CC-06
+acceptance_ids:
+  - CONC-TURN-SURVIVES-CLIENT
+  - CONC-REATTACH-REPLAY
+title: "Concurrent conversations: a turn survives a full page reload and re-attaches live"
+timeout_seconds: 600
+max_steps: 80
+
+description: >
+  Start a slow turn, reload the page entirely mid-turn (the closest the harness
+  can get to closing the tab), reopen the conversation, and confirm the turn
+  either completed while the client was gone or is still running and re-attaches
+  — showing the turn so far rather than joining mid-sentence.
+
+acceptance_criteria:
+  - AC1: The turn is not cancelled by the client going away
+  - AC2: After reload, the conversation shows a complete answer or a live re-attach
+  - AC3: The answer is coherent and complete, not truncated at the reload point
+  - AC4: Re-attaching shows the turn so far, not a stream joined mid-sentence
+
+browser_use_task: |
+  Navigate to {app_url}.
+  IMPORTANT: this app loads real financial data and a cold boot is slow. Wait until the
+  main content has actually rendered — if you see a spinner or "Loading your dashboard",
+  keep waiting and re-checking for up to 60 seconds before doing anything else. Do not
+  give up or return a result while the page is still loading.
+  Open Lucius (a chat/spark button on a wide viewport, or the Lucius slot in the
+  bottom tab bar on a narrow one).
+
+  STEP 1 — start a slow turn and note which conversation it is.
+  Click "New chat" in the conversation sidebar.
+  Type exactly:
+  list all of my accounts and their balances
+  Press Enter.
+  Note the conversation's title as it appears in the list — you will need to find
+  it again after the reload.
+
+  STEP 2 — RELOAD THE WHOLE PAGE while the turn is still streaming.
+  Within about 3 seconds of sending, while the reply is still being written,
+  navigate to {app_url} again to force a full page reload. This discards all
+  in-memory client state, which is the point of the test.
+
+  STEP 3 — find the conversation again.
+  After the page finishes loading, open Lucius and open the conversation list.
+  Find and click the conversation you started in step 1.
+
+  STEP 4 — observe and wait.
+  Wait up to 120 seconds. The conversation should be in ONE of these states:
+    (a) already showing a complete reply that finished while you were away, or
+    (b) still visibly working, and then completing.
+  Both are a pass. What is NOT a pass is an empty conversation, a reply frozen
+  mid-sentence that never advances, or an error.
+
+  STEP 5 — evaluate.
+  - If the conversation shows a complete, coherent reply listing accounts, return
+    "PASS: turn survived the reload - <state you observed: already-complete or still-running> - <first 100 chars>"
+  - If the conversation is empty or the reply is permanently truncated mid-sentence,
+    return "FAIL: D1 - the turn did not survive the client going away - <what you saw>"
+  - If the conversation shows an error after the reload, return
+    "FAIL: D1 - turn errored after reload - <error text>"
+  - If an error mentioning API key, model, or configuration appears, return
+    "SKIP: AI not configured - <error text>"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CC-06-survives-reload.png"
+  note: >
+    A full page reload is the closest this harness gets to a real tab close. It
+    discards all in-memory client state and drops the SSE connection, which is
+    the mechanism D1 is about. A genuine OS-level tab close and mobile
+    backgrounding remain unverified.

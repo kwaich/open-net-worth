@@ -1,0 +1,27 @@
+{
+  "_comment": "Code area → product doc pages a change there most likely affects. Used by scripts/docs_impact.py (commit-msg hook) to suggest pages. Order matters: first match wins per file.",
+  "areas": [
+    { "glob": "desktop/src/**", "docs": ["docs/product/operations/desktop.md", "desktop/README.md"] },
+    { "glob": "scripts/install*", "docs": ["docs/product/getting-started/installation.md", "docs/product/operations/desktop.md"] },
+    { "glob": "backend/*/terminal.py", "docs": ["docs/product/operations/terminal.md"] },
+    { "glob": "backend/*/portab*", "docs": ["docs/product/operations/export-and-portability.md"] },
+    { "glob": "backend/api/gateway.py", "docs": ["docs/product/operations/exposing-beyond-localhost.md"] },
+    { "glob": "backend/cli/mcp.py", "docs": ["docs/product/operations/connect-ai-apps.md"] },
+    { "glob": "backend/mcp/stdio_bridge.py", "docs": ["docs/product/operations/connect-ai-apps.md"] },
+    { "glob": "backend/*/mcp_connect*", "docs": ["docs/product/operations/connect-ai-apps.md"] },
+    { "glob": "backend/cli/**", "docs": ["docs/product/getting-started/installation.md", "docs/product/operations"] },
+    { "glob": "backend/ai/tools/**", "docs": ["docs/product/lucius", "docs/ai"] },
+    { "glob": "backend/ai/**", "docs": ["docs/product/lucius"] },
+    { "glob": "frontend/src/components/tabs/lucius/**", "docs": ["docs/product/lucius"] },
+    { "glob": "frontend/src/components/chat/**", "docs": ["docs/product/lucius"] },
+    { "glob": "frontend/src/components/tabs/plan/**", "docs": ["docs/product/features"] },
+    { "glob": "frontend/src/components/tabs/connectors/**", "docs": ["docs/product/connectors"] },
+    { "glob": "backend/connectors/**", "docs": ["docs/product/connectors"] },
+    { "glob": "frontend/src/components/tabs/settings/sections/[Mm]cp*", "docs": ["docs/product/operations/connect-ai-apps.md", "docs/product/features/settings.md"] },
+    { "glob": "frontend/src/components/tabs/settings/sections/Shortcuts*", "docs": ["docs/product/features/phone-shortcuts.md", "docs/product/features/settings.md"] },
+    { "glob": "backend/services/shortcuts/**", "docs": ["docs/product/features/phone-shortcuts.md"] },
+    { "glob": "backend/api/shortcuts*", "docs": ["docs/product/features/phone-shortcuts.md"] },
+    { "glob": "frontend/src/**", "docs": ["docs/product/features", "docs/product/getting-started"] },
+    { "glob": "backend/api/**", "docs": ["docs/product/features", "docs/product/reference"] }
+  ]
+}

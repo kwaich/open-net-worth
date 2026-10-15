@@ -1,0 +1,62 @@
+id: RM-01
+acceptance_ids:
+  - RM-MOBILE-SHEET
+  - RM-MOBILE-MORE
+  - RM-PLAN-LIBRARY
+  - RM-DESKTOP-DIALOG
+  - RM-ACCESSIBILITY
+title: "Shared responsive modal presentation across the app"
+description: >
+  Canonical form modals, the mobile More tray, and every Planning modal use
+  library-owned interaction behavior and consistent responsive geometry.
+
+acceptance_criteria:
+  - AC1: Representative mobile modals on Overview, Accounts, Plan, Investments, and the gallery are bottom-docked, bounded, internally scrollable, and retain reachable sticky actions.
+  - AC2: The More tray is bottom-docked, within the viewport, inerting the page and restoring focus when dismissed.
+  - AC3: Nested dialogs dismiss only the top layer with Escape and retain focus inside the active layer.
+  - AC4: Desktop dialogs remain centered in the visible content region and clear an open Lucius panel.
+  - AC5: No scenario creates horizontal document overflow or obscures the close control.
+
+browser_use_task: |
+  Set the viewport to 390x844 and navigate to {app_url}.
+
+  Step 1: Tap More in the bottom tab bar. Confirm its sheet touches the bottom
+  viewport edge, stays fully within the viewport width, traps focus, shows a
+  close button, and leaves the page behind dimmed and inert. Close it with
+  Escape and confirm focus returns to More.
+
+  Step 2: On Overview, open Add section. Confirm it is a bottom sheet with its
+  header and action footer visible while the body scrolls. Close it.
+
+  Step 3: Navigate to Accounts and open Manage Payees or Statement Import.
+  Confirm the manager stays within the viewport. Open a nested confirmation or
+  transaction detail where available; press Escape once and confirm only the
+  top layer closes, then close the manager.
+
+  Step 4: Navigate to Plan. Open FIRE Settings, Manage categories, a target,
+  and one envelope action in turn. For each, confirm the surface is a
+  bottom-docked sheet no taller than the viewport, the background is inert,
+  Tab does not leave the active dialog, and its header and footer actions stay
+  reachable while its body scrolls.
+
+  Step 5: Navigate to Investments. Open Record disposal and Record dividend in
+  turn. Confirm both use the same bottom-sheet bounds and keep Cancel/Save in a
+  sticky footer outside the scrolling form body.
+
+  Step 6: Open a canonical modal from the UI gallery. Confirm it matches the
+  same phone geometry. Confirm there is no horizontal document overflow in
+  any of Steps 1-6.
+
+  Step 7: Set the viewport to 1440x900. Open Lucius, then open a canonical
+  modal and a Planning modal. Confirm each is centered in the visible app
+  region, never underneath chat, and retains its declared desktop size.
+
+  Capture one screenshot at mobile width with a long form and sticky actions
+  visible, and one at desktop width with Lucius open.
+
+  Return "PASS: RM-01" only if all seven steps pass. Otherwise return
+  "FAIL: RM-01 — <failed step and observed behavior>".
+
+expected:
+  pass_condition: "result contains 'PASS: RM-01'"
+  screenshot_name: "RM-01-responsive-modals.png"

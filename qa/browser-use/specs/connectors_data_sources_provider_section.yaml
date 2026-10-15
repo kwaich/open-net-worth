@@ -1,0 +1,88 @@
+# Spec: CDS-PROVIDER-01 — a provider's config form shows the generalized status line, the
+# "Automate with a template" hand-off, and the Accounts list — with no Sync now / poll
+# interval anywhere.
+# Covers: PlaidSection.tsx (representative of all 8: SimpleFIN, Plaid, Lunch Money, Lunch
+#         Flow, YNAB, Enable Banking, Alpaca, IBKR), ConnectorStatusLine.tsx,
+#         AutomateTemplateButton.tsx, ConnectorAccountsList.tsx.
+id: CDS-PROVIDER-01
+acceptance_ids:
+  - CDS-UI-1
+  - CDS-UI-2
+  - CDS-UI-3
+  - CDS-UI-4
+title: "Plaid config form: status line, Automate CTA, Accounts list — no Sync now"
+description: >
+  Opening the Plaid connector's config form must show a "Last fetched … · <status>" line
+  (never "Last synced … accounts linked … imported"), an always-visible "Automate with a
+  template" button, and an "Accounts" section listing any linked provider accounts. No
+  "Sync now" button, no poll-interval control, and no network request to a `/sync` endpoint
+  may appear anywhere in the form.
+
+acceptance_criteria:
+  - "AC1: The Connectors tab loads and a Plaid card/row is reachable (via the directory if it is unconfigured, or directly if already configured)"
+  - "AC2: The opened Plaid form shows a line starting Last fetched with a relative time and a status phrase (e.g. up to date, not set up yet) — never Last synced"
+  - "AC3: A button labelled Automate with a template is visible and enabled regardless of configuration state"
+  - "AC4: No button or link anywhere in the form is labelled Sync now"
+  - "AC5: No control or copy anywhere in the form mentions a polling/sync interval"
+  - "AC6: An Accounts heading is visible below the credential fields, followed by either a row list or an empty/error state — never a blank gap"
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1 — Open the Connectors tab.
+  In the left sidebar, click "Connectors". Wait up to 5 seconds.
+
+  Step 2 — Find and open Plaid.
+  Look for a "Plaid" card or row directly in the list. If not visible, open "Browse & add"
+  (or similar directory entry point), search for "Plaid", and click it to open its detail
+  page, then click "Connect" or "Edit configuration" to reach the config form.
+  If Plaid cannot be found or opened after these attempts:
+    return "FAIL: Plaid connector not reachable from the Connectors tab"
+
+  Step 3 — Check the status line.
+  Look for a line of small text starting with "Last fetched". It should be followed by a
+  relative time phrase (e.g. "2h ago", "never") and, after a middle dot, a short status
+  phrase such as "up to date", "not set up yet", "paused", or an error phrase.
+  Record STATUS_LINE = "found" or "missing".
+  Also check: is there any text reading "Last synced" instead? Record OLD_COPY = "present"
+  or "absent".
+
+  Step 4 — Check for "Automate with a template".
+  Look for a button labelled exactly "Automate with a template". It should be visible and
+  clickable (not greyed out) regardless of whether Plaid has credentials saved.
+  Record AUTOMATE_BUTTON = "present" or "absent".
+
+  Step 5 — Check there is no "Sync now" anywhere.
+  Scroll through the whole form. Look for any button or link labelled "Sync now".
+  Record SYNC_NOW = "present" or "absent".
+  Also check for any label, help text, or field mentioning "interval" or "polling".
+  Record POLL_INTERVAL_COPY = "present" or "absent".
+
+  Step 6 — Check the Accounts section.
+  Scroll to the bottom of the form. Look for a small heading reading "Accounts".
+  Below it there should be either: a list of account rows, or a short empty-state message
+  (e.g. "No accounts yet", "Not set up yet"), or an error message with a "Retry" button —
+  but NOT a blank empty area with nothing at all.
+  Record ACCOUNTS_SECTION = "present_with_content" or "present_blank" or "absent".
+
+  Decision:
+  - If Plaid was not reachable: return the FAIL from Step 2.
+  - If STATUS_LINE = "missing" or OLD_COPY = "present":
+    return "FAIL: status line missing or still shows the old 'Last synced' copy"
+  - If AUTOMATE_BUTTON = "absent":
+    return "FAIL: 'Automate with a template' button not found"
+  - If SYNC_NOW = "present" or POLL_INTERVAL_COPY = "present":
+    return "FAIL: Sync now button or poll-interval copy still present"
+  - If ACCOUNTS_SECTION != "present_with_content":
+    return "FAIL: Accounts section absent or blank"
+  - Otherwise:
+    return "PASS: Plaid form shows the new status line, Automate CTA, and a non-blank Accounts section, with no Sync now / poll interval anywhere"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CDS-PROVIDER-01-plaid-section.png"
+  note: >
+    No real Plaid credentials are needed — the form renders its "not_configured"/"ok"
+    states the same way regardless. The Accounts list may legitimately show an empty
+    state if nothing has been linked yet; that still counts as "present_with_content"
+    since it is a rendered message, not a blank gap.

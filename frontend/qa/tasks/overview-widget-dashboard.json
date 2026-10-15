@@ -1,0 +1,67 @@
+{
+  "name": "overview-widget-dashboard",
+  "title": "Overview v2 widget dashboard — customizable grid & Lucius integration",
+  "body": "Verify the Overview tab's redesigned widget dashboard with customizable grid, Lucius integration, and widget interactions. This tests the root-cause overlap bug fix and all 6 areas of parity restoration.",
+  "criteria": [
+    {
+      "id": "OV-OVERLAP-FIXED",
+      "text": "Widget overlap bug is fixed: No widget visually overlaps or paints over another, especially Daily Briefing versus widgets below it. Confirm no text/content bleeding."
+    },
+    {
+      "id": "OV-CUSTOMIZE-MODE-GRID",
+      "text": "Customize mode: Opens without errors; 12-column dashed grid overlay appears while dragging; grid renders properly (not hidden)."
+    },
+    {
+      "id": "OV-DRAG-REFLOW",
+      "text": "Customize drag: Dragging a widget's handle shows live reflow (other widgets move) and on release, layout compacts correctly."
+    },
+    {
+      "id": "OV-RESIZE-HANDLES",
+      "text": "Resize handles: Resize from multiple corners/edges works correctly; widget resizes in the correct direction."
+    },
+    {
+      "id": "OV-FULLSCREEN-VIEW",
+      "text": "Fullscreen widget view: Clicking a widget opens a split view with the widget content and an Appearance/Data settings rail. Settings changes apply live."
+    },
+    {
+      "id": "OV-ADD-WIDGET-PICKER",
+      "text": "Add widget picker: Opens as a flat searchable list (not sectioned by group initially); picking a widget adds it to the dashboard with a visible highlight/scroll-into-view."
+    },
+    {
+      "id": "OV-LUCIUS-BUILD-FLOW",
+      "text": "Build with Lucius: Picking 'Generate as custom' from the picker actually adds a widget instance to the dashboard (previously dead/no-op). No errors."
+    },
+    {
+      "id": "OV-NEEDS-ATTENTION-DISMISS",
+      "text": "Needs Attention widget: Each risk row has a dismiss (✕) button; dismissed risks are removed from view. If more risks than limit, '+N more' message appears."
+    },
+    {
+      "id": "OV-TODAYS-MOVERS-LIMIT",
+      "text": "Today's movers widget: Respects row-limit setting and shows '+N more' line if truncated."
+    },
+    {
+      "id": "OV-CANCEL-REVERTS",
+      "text": "Customize Cancel: After making edits (add/drag/resize), clicking Cancel reverts the view exactly to its pre-Customize state."
+    },
+    {
+      "id": "OV-UNIFIED-CARD-CHROME",
+      "text": "Unified widget model: Every card (predefined and Lucius-generated) renders with the same card chrome (title row, kebab menu, drag handle). No special treatment."
+    },
+    {
+      "id": "OV-NO-VISUAL-ERRORS",
+      "text": "General regression: No console errors, garbled numbers, or obviously broken layouts. Overview, Reports, and any other sub-views load correctly."
+    },
+    {
+      "id": "OV-RESPONSIVE-HEIGHT-REPACK",
+      "text": "Container-driven reflow automatically grows a widget and repacks every widget below it with the normal grid gap; shrinking back remains stable and saved fixed heights continue to act as a floor."
+    },
+    {
+      "id": "OV-NET-WORTH-RESPONSIVE-KPIS",
+      "text": "Net Worth keeps Today, Unrealized P&L, Cash on hand, and Liabilities visible at all supported card widths: four columns when wide, a complete 2×2 grid when compact, and a readable single column when very narrow."
+    },
+    {
+      "id": "OV-CASH-FLOW-RESPONSIVE-METRICS",
+      "text": "Cash Flow keeps In/Out labels, bars, amounts, and transaction counts visible when its card is resized; compact cards move each bar below its label and amount without clipping."
+    }
+  ]
+}

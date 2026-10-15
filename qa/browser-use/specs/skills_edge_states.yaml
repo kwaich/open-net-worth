@@ -1,0 +1,40 @@
+# Deterministic no-provider fixture coverage for the two Skills states that a
+# shared browser-use seed cannot truthfully force.  The component fixture
+# isolates useSkills and never makes a network or model request.
+id: SKILLS-02
+acceptance_ids:
+  - SKILLS-DEGRADED-WARNING
+  - SKILLS-EMPTY-STATE
+title: "Skills degraded and empty-state deterministic fixtures"
+description: >
+  Covers the two stateful Skills edge cases in isolated UI fixtures. The
+  fixture supplies a degraded skill with a missing registry tool, then an
+  empty skills list; neither fixture uses application data or a provider.
+
+fixture:
+  type: "Vitest component fixture"
+  source: "frontend/src/components/tabs/Skills.integration.test.tsx"
+  command: "npm --prefix frontend test -- --run src/components/tabs/Skills.integration.test.tsx"
+  isolation: >
+    The mocked useSkills hook supplies only the stated skill rows and the
+    mocked authFetch/global fetch assertions reject a network or model handoff.
+
+acceptance_criteria:
+  - AC1: A seeded degraded skill lists its missing tool and cannot be run.
+  - AC2: An isolated empty list provides helpful guidance and a Create your first skill action.
+
+browser_use_task: |
+  This is a deterministic component-fixture contract, not a runnable
+  Claude/browser-use navigation task. Execute the fixture command above. Do
+  not attempt a shared-data browser session: it cannot provision the required
+  missing-tool or empty-store preconditions without mutating application data.
+
+  Return "SKIP: fixture-only Skills edge-state contract" when invoked by a
+  browser-use executor that cannot dispatch the stated Vitest fixture.
+
+expected:
+  pass_condition: "fixture command passes"
+  note: >
+    Browser-use execution is deliberately not claimed for this fixture-only
+    spec. The UI evidence is the no-provider component-test render; no live
+    key, shared-store mutation, or fabricated browser screenshot is used.

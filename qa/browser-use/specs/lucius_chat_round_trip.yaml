@@ -1,0 +1,50 @@
+# Spec: CH-01 — Lucius chat round-trip
+# Covers: POST /api/chat/stream SSE → ChatPanel renders reply
+id: CH-01
+acceptance_ids:
+  - CHAT-SEND-PLAIN
+  - CHAT-OPEN-TOGGLE
+title: "Lucius chat round-trip: send 'what is my net worth?' and get a non-empty reply"
+description: >
+  The user opens the Lucius chat panel, types a simple net-worth question,
+  and receives a meaningful non-empty reply. This validates the full SSE
+  streaming path from ChatPanel → /api/chat/stream → assistant.run().
+  No ANTHROPIC_API_KEY = expected SKIP (env not configured).
+
+acceptance_criteria:
+  - AC1: The chat panel opens when the user clicks the chat button
+  - AC2: Typing "what is my net worth?" and pressing Enter sends the message
+  - AC3: A non-empty reply appears in the chat (not a spinner stuck, not blank)
+  - AC4: The reply contains recognizable content (a number, currency, or descriptive text)
+
+# Task for the browser-use Agent
+browser_use_task: |
+  Navigate to {app_url}.
+  Wait for the page to load.
+
+  Look for a chat button, usually at the bottom-right or top-right of the page
+  (it may look like a speech bubble icon or say "Ask Lucius").
+  Click it to open the chat panel.
+
+  Wait for the chat panel to appear (it may slide in from the right).
+
+  Find the message input field at the bottom of the chat panel.
+  Type the text: what is my net worth?
+  Press Enter to send the message.
+
+  Wait up to 30 seconds for a response to appear in the chat.
+
+  Evaluate the response:
+  - If a non-empty text reply appears (not just a spinner), return "PASS: <first 100 chars of reply>"
+  - If an error message appears mentioning API key, model config, or settings,
+    return "SKIP: AI not configured - <error text>"
+  - If the chat panel never opened, return "FAIL: chat panel did not open"
+  - If no reply appeared after 30 seconds, return "FAIL: no reply received"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CH-01-lucius-chat-reply.png"
+  note: >
+    SKIP is an acceptable outcome when ANTHROPIC_API_KEY is not configured in
+    the test environment. The spec is still useful as a smoke test for the
+    chat panel UI itself.

@@ -1,0 +1,1373 @@
+/* budgetLens/proportional/propTable.css — the 50/30/20 screen, ported from the Budget Onboarding
+   (cards) design's budget_onboarding/prop_table.css (owner, 2026-09-25). The design layers several
+   override passes on a few selectors (and zero.css re-skins the Lucius button with !important);
+   each rule here is the FINAL computed result of those passes, written once. */
+
+.bo-spacer {
+  flex: 1;
+}
+
+/* ── Money input (take-home income) ─────────────────────────────────────────────────────── */
+.pt-inc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 11px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+}
+.pt-inc:focus-within {
+  border-color: var(--accent);
+}
+.pt-inc b {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--faint);
+}
+.pt-inc input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.pt-inc--xl {
+  height: 54px;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 16px;
+  border-radius: 12px;
+}
+.pt-inc--xl b {
+  font-size: 18px;
+}
+.pt-inc--xl input {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ── Onboarding (income → split) ────────────────────────────────────────────────────────── */
+.pt-ob {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.pt-ob * {
+  box-sizing: border-box;
+}
+.pt-ob-dots {
+  display: flex;
+  gap: 5px;
+  margin-top: -4px;
+}
+.pt-ob-dots i {
+  width: 18px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+.pt-ob-dots i.on {
+  background: var(--accent);
+}
+.pt-ob-sub {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--muted);
+}
+.pt-ob-err {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--bad);
+}
+.pt-ob-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+/* ── The screen ─────────────────────────────────────────────────────────────────────────── */
+.pt {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  container: pt / inline-size;
+}
+.pt-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* The previous month's figures under the new month's label, for one round-trip: dimmed so they
+   don't read as settled, inert so nothing is edited against them (Zero-Based's .is-switching). */
+.pt-body.is-switching {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+.pt-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+/* A phone keeps the bar one row: Configure / Manage categories drop to their icons (owner,
+   2026-09-25) — the aria-label still names each. */
+@container pt (max-width: 560px) {
+  .pt-bar {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .pt-barbtn-l {
+    display: none;
+  }
+  .pt-bar .pt-barbtn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+.pt-month {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+}
+.pt-month button {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+}
+.pt-month button:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--hover-line);
+  background: var(--hover);
+}
+.pt-month button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.pt-month svg {
+  display: block;
+}
+.pt-month-l {
+  display: inline-block;
+  width: 7.2ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bo-linkbtn {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+.bo-linkbtn:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+.bo-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--line-strong);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: #fff;
+}
+.bo-check.on {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ── Hero ───────────────────────────────────────────────────────────────────────────────── */
+/* Its background — the Budget hero's status tint — is painted with Zero-Based's, in plan.css. */
+.pt-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid var(--pl-hero-line);
+  border-radius: 16px;
+}
+.pt-plan {
+  gap: 12px;
+  padding: 16px 20px;
+}
+.pt-plan-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pt-verdict {
+  color: var(--ink);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.pt-verdict.warn {
+  color: var(--warn);
+}
+/* Spending past income: the hero is red, and so is what it says. */
+.pt-verdict.bad {
+  color: var(--bad);
+}
+.pt-plan-inc {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pt-plan-bar {
+  display: grid;
+  gap: 4px;
+  height: 8px;
+}
+.pt-plan-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  min-width: 0;
+}
+/* One small tile per share (owner, 2026-09-26: a full-width bar per group was more hero than a
+   desktop needs): name and "61% / 30%" on a line, and under them a bar of what the share actually
+   took as a slice of income, with a tick at its target and hatched past it. Side by side on a
+   desktop; stacked on a phone. */
+.pt-shares {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+  gap: 12px 28px;
+}
+.pt-share {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'l n' 'b b';
+  align-items: center;
+  gap: 7px 10px;
+}
+.pt-share-l {
+  grid-area: l;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.pt-share-l > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pt-share-l i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.pt-share-bar {
+  grid-area: b;
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  /* Ink, not --bg-2: the grey track all but vanished into the hero's tint. */
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.pt-share-bar i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  transition: width 0.35s;
+}
+.pt-share-bar i.in {
+  background: var(--c);
+}
+.pt-share-bar i.in.cut {
+  border-radius: 999px 0 0 999px;
+}
+.pt-share-bar i.over {
+  background:
+    repeating-linear-gradient(45deg, var(--c) 0 3px, transparent 3px 6px),
+    color-mix(in srgb, var(--c) 30%, transparent);
+}
+.pt-share-bar .tick {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ink);
+}
+.pt-share-n {
+  grid-area: n;
+  text-align: right;
+  font-size: var(--text-sm);
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pt-share-n b {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--ink);
+}
+.pt-share-n b.bad {
+  color: var(--bad);
+}
+.pt-plan-cols {
+  display: grid;
+  column-gap: 4px;
+  row-gap: 0;
+}
+/* Any number of groups: the legend wraps rather than sitting under a bar share of its own. */
+.pt-plan-cols--wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+.pt-plan-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.pt-plan-col .k {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pt-plan-col .k i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+/* The "·" separator is an <i> too — without this it takes the swatch's 8px square. */
+.pt-plan-col .k b {
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pt-plan-col .k em {
+  font-style: normal;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.pt-plan-col .v {
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  padding-left: 15px;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+.pt-plan-col .v b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.pt-plan-col .v.warn,
+.pt-plan-col .v.warn b {
+  color: var(--bad);
+}
+@media (max-width: 640px) {
+  .pt-plan-col .v {
+    padding-left: 0;
+  }
+}
+@media (max-width: 560px) {
+  .pt-plan-cols {
+    grid-template-columns: 1fr !important;
+    row-gap: 8px;
+  }
+  .pt-plan-col {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+.pt-plan-pace {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pt-plan-pace b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pt-plan-pace.up b {
+  color: var(--warn);
+}
+.pt-plan-pace.down b {
+  color: var(--good);
+}
+/* The shares on the left, what's above usual on the right (owner, 2026-09-26: "split them left and
+   right, not vertically"); a narrow hero stacks them, the list under a rule. */
+.pt-hero-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 14px 30px;
+}
+.pt-hero-body > :only-child {
+  grid-column: 1 / -1;
+}
+.pt-ins {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 30px;
+  border-left: 1px solid var(--pl-hero-line);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+@container pt (max-width: 820px) {
+  .pt-hero-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pt-shares {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+  .pt-ins {
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--pl-hero-line);
+  }
+}
+@container pt (max-width: 560px) {
+  .pt-shares {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+}
+.pt-ins li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.pt-ins li > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  margin-top: 7px;
+}
+.pt-ins b {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pt-ins-t {
+  display: block;
+  line-height: 1.45;
+}
+/* Which income and period a savings figure is measured against — a second line, quieter. */
+.pt-ins-basis {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+/* ── Table (rides on the Zero-Based table's pl-trow / pl-grow / pl-crow) ───────────────────── */
+.pt-layout {
+  display: block;
+}
+.pt-layout > .pt-table {
+  width: 100%;
+  max-width: none;
+}
+/* Columns are Zero-Based's own (.pl-trow, plan.css): the money columns scale with the table
+   (15/15/17%), so a wide window doesn't open a void between the name and the figures (owner,
+   2026-09-26: "a better proportion for the columns, like in Zero-Based"). */
+.pt-table .pl-trow {
+  column-gap: 12px;
+}
+.pt-table .pl-tbody-wrap {
+  overflow: visible;
+}
+/* Narrower, but all four columns stay — Left is the number a cap exists to produce. Only a phone
+   (below) drops it. */
+@container pt (max-width: 640px) {
+  .pt-table .pl-trow {
+    grid-template-columns: minmax(0, 1fr) 88px 100px 96px;
+    column-gap: 8px;
+  }
+}
+/* A phone: the name is what the row is for, so everything else gives way — tighter money
+   columns, and no envelope icon, category chip or pencil (tapping the name opens the same
+   editor). The Move button stays: touch can't drag a row between shares. */
+@container pt (max-width: 420px) {
+  .pt-table .pl-trow {
+    grid-template-columns: minmax(0, 1fr) 74px 92px;
+    column-gap: 6px;
+  }
+  .pt-table .pl-trow > :nth-child(4) {
+    display: none;
+  }
+  .pt-grow .t {
+    display: none;
+  }
+  .pt-table .pt-cname {
+    gap: 6px;
+    padding-left: 8px;
+  }
+  .pt-cname > .pl-cicon,
+  .pt-cname .pl-envcats-wrap,
+  .pt-cname .pl-gcount--empty {
+    display: none;
+  }
+}
+.pt-num {
+  font-size: var(--text-base);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.pt-num.dim {
+  color: var(--muted);
+}
+.pt-num.strong {
+  font-weight: 700;
+}
+.pt-num.warn {
+  color: var(--warn);
+}
+.pt-num.good {
+  color: var(--good);
+}
+.pt-num .dim {
+  color: var(--faint);
+  font-weight: 500;
+}
+.pt-group.over {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  background: var(--hover);
+}
+/* Zero-Based groups carry no colour of their own; the dot is the group's colour in the hero. */
+.pt-gdot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.pt-gname-in {
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 3px 8px;
+  min-width: 0;
+  width: 180px;
+}
+.pt-gname-in:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+/* Outside the split: its rows read quieter than the ones savings is measured against. */
+.pt-group--out .pt-crow,
+.pt-group--out .pt-mrow {
+  opacity: 0.72;
+}
+.pt-grow .t {
+  font-size: var(--text-xs);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pt-grow .t.warn {
+  color: var(--warn);
+}
+/* The whole row opens its editor, as a Zero-Based row opens its panel. */
+.pt-crow {
+  cursor: pointer;
+}
+.pt-crow.dragging {
+  opacity: 0.4;
+}
+/* The name cell contains its own content: name + categories shrink with ellipsis; on To sort
+   rows the three share buttons drop to a second line under the name. */
+.pt-cname {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  padding-left: 21px;
+  padding-right: 4px;
+  position: relative;
+  overflow: hidden;
+  flex-wrap: nowrap;
+  font-size: var(--text-base);
+  color: var(--ink);
+}
+.pt-grip {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fg-3);
+  opacity: 0;
+  transition: opacity 0.12s;
+  display: inline-flex;
+}
+.pt-crow:hover .pt-grip {
+  opacity: 1;
+}
+/* Anchored to its trigger in JS (right/top/bottom inline) so no row divider clips it. */
+.pt-ename {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  /* After the font shorthand, which resets it: room for descenders, since the ellipsis needs
+     overflow hidden, which clipped the "g" in Shopping. */
+  line-height: 1.5;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pt-ename:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+.pt-capcell {
+  display: flex;
+  justify-content: flex-end;
+}
+/* One focus ring only — the rounded wrap; the inner input draws none. */
+.pt .pl-assign-edit,
+.pt .pl-assign-edit:focus,
+.pt .pl-assign-edit:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+/* The two sections below the groups (PropOutside.tsx): their header folds nothing, and a
+   not-in-an-envelope row opens nothing but its own Activity. */
+.pt-outhead,
+.pt-looserow {
+  cursor: default;
+}
+/* Titles line up with the group names above them (past a group's chevron and dot). */
+.pt-outhead .pl-gname {
+  padding-left: 37px;
+}
+.pt-dropnote {
+  padding: 12px 18px 12px 42px;
+  font-size: var(--text-xs);
+  color: var(--faint);
+  border-bottom: 1px solid var(--line);
+}
+.pt-add {
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.pt-add .bo-linkbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pt-add input {
+  width: 260px;
+  height: 30px;
+  padding: 0 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--ink);
+  outline: none;
+}
+.pt-add input:focus {
+  border-color: var(--accent);
+}
+
+/* ── A phone: Zero-Based's card list (PropCards.tsx), same shells and leaf cells ──────────── */
+.pt-mlist .pt-add {
+  padding: 0 2px;
+}
+/* ── Phone: one card per group, its envelopes rows inside (owner, 2026-09-26: "it lacks depth,
+   lacks structure — hard to know which one is group") ───────────────────────────────────── */
+.pt-mlist {
+  gap: 14px;
+}
+.pt-mgroup {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--pl-card-shadow);
+}
+/* The hero above them is raised the same way — left flat, it read as a different kind of thing
+   from the group cards under it. A desktop's table has no raised cards, so neither does its
+   hero; 639.98px is useIsMobile()'s own query, the switch that swaps the table for these cards. */
+@media (max-width: 639.98px) {
+  .pt-hero {
+    box-shadow: var(--pl-card-shadow);
+  }
+}
+/* No overflow:hidden on the card (a row's popovers must not be clipped): the tinted head rounds
+   its own top corners, or all four when nothing sits under it. */
+.pt-mghead {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 15px 15px 0 0;
+  background: var(--bg-2);
+}
+.pt-mghead:not(:last-child) {
+  border-bottom: 1px solid var(--line);
+}
+.pt-mghead:last-child {
+  border-radius: 15px;
+}
+.pt-mghead-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.pt-mgtoggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.pt-mgtoggle svg {
+  flex: none;
+  color: var(--muted);
+}
+/* Zero-Based's phone head shows its + and ⋮ outright (no hover on a phone) at a thumb's size. */
+.pt-mghead-top .pl-gadd {
+  opacity: 1;
+  width: 30px;
+  height: 30px;
+}
+.pt-mghead-top .pl-kebab {
+  opacity: 1;
+  width: 36px;
+  height: 36px;
+}
+.pt-mgname {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+.pt-mgshare {
+  flex: none;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pt-mgstats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.pt-mgstats > span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.pt-mgstats em,
+.pt-mk {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.pt-mgstats b {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pt-mgstats b.bad {
+  color: var(--bad);
+}
+.pt-mgstats b.good {
+  color: var(--good);
+}
+.pt-mgbody > .pt-mrow + .pt-mrow {
+  border-top: 1px solid var(--line);
+}
+.pt-mrow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+.pt-mrow-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+/* The name is a button (it opens the editor) — the row's face, not a button's. */
+.pt-mrow-top .pt-ename {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--ink);
+}
+.pt-mrow-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  margin-left: auto;
+}
+/* The table's pill hangs 9px into the column gutter; a row has no gutter to hang into. */
+.pt-mrow-left .pl-avail {
+  margin-right: 0;
+}
+.pt-mrow-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: var(--text-sm);
+}
+.pt-mrow-sub > .pt-mk + * + .pt-mk {
+  margin-left: 12px;
+}
+
+/* ── Edit envelope ──────────────────────────────────────────────────────────────────────── */
+.pt-ed {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+.pt-ed-f {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pt-ed-f > span:first-child,
+.pt-ed-caphead > span:first-child,
+.pt-pop-f > span:first-child,
+.pt-pop-k {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.pt-ed-in {
+  height: 34px;
+  padding: 0 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.pt-ed-in:focus {
+  border-color: var(--accent);
+}
+.pt-ed-selwrap {
+  position: relative;
+  display: block;
+}
+.pt-ed-selwrap select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 32px;
+  cursor: pointer;
+}
+.pt-ed-selwrap select:disabled {
+  cursor: default;
+  color: var(--muted);
+}
+.pt-ed-selwrap svg {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+.pt-ed-in.invalid {
+  border-color: var(--warn);
+}
+.pt-ed-ro {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: var(--text-md);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+/* The cap leads, set apart by a rule under it — the one field here that is 50/30/20's own; the
+   rest describes the envelope, shared with Zero-Based. */
+.pt-ed-count {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.pt-ed-count > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+.pt-ed-count b {
+  font-weight: 600;
+}
+.pt-ed-capsec {
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.pt-ed-caphead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pt-ed-capfill {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pt-ed-cap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 42px;
+  font-size: var(--text-md);
+  box-sizing: border-box;
+}
+.pt-ed-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.pt-ed-merge {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.pt-ed-merge .ui-btn {
+  align-self: flex-start;
+}
+.pt-ed-cap b {
+  font-weight: 500;
+  color: var(--faint);
+}
+.pt-ed-cap input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.pt-ed-cap:focus-within {
+  border-color: var(--accent);
+}
+.pt-ed-capchip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  border-radius: 999px;
+  padding: 0 5px 0 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+/* A suggestion reads like FIRE's (.fire-suggest, plan.css): the figure in the accent, and a
+   "Use" tag that says the chip DOES something (owner, 2026-09-26: "these don't look like
+   suggestion pills"). */
+.pt-ed-capchip b {
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pt-ed-capuse {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+@media (hover: hover) {
+  .pt-ed-capchip:hover {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+}
+.pt-ed-hint {
+  font-size: var(--text-xs);
+  color: var(--faint);
+}
+.pt-sw {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.pt-sw button {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px transparent;
+  transition: box-shadow 0.12s;
+}
+.pt-sw button:hover {
+  box-shadow: 0 0 0 2px var(--line-strong);
+}
+.pt-sw button.on {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--ink);
+}
+.pt-sw button svg {
+  display: block;
+}
+.pt-sw-custom {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1.5px dashed var(--line-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  cursor: pointer;
+  overflow: hidden;
+}
+.pt-sw-custom:hover {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+.pt-sw-custom input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.pt-ed-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+/* The category pill — the transactions table's category pill, tinted with --cc. */
+.pt-ed-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0 7px 0 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  border: none;
+  background: color-mix(in srgb, var(--cc) 15%, transparent);
+  color: var(--cc);
+}
+.pt-ed-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--cc);
+  opacity: 0.75;
+  cursor: pointer;
+}
+.pt-ed-chip button:hover {
+  opacity: 1;
+}
+.pt-ed-chip svg {
+  display: block;
+}
+.pt-catpill {
+  line-height: 1;
+}
+/* The add-a-category select always shows its prompt (it resets after a pick) — faint like the
+   input's placeholder beside it, so the two read the same size and weight. */
+.pt-ed-none {
+  font-size: var(--text-xs);
+  color: var(--warn);
+}
+.pt-ed-add {
+  display: flex;
+  gap: 8px;
+}
+.pt-ed-add > * {
+  flex: 1;
+}
+.pt-ed-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+}
+.pt-ed-dellink {
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--bad);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.pt-ed-dellink:hover {
+  text-decoration: underline;
+}
+
+/* ── Budget settings ────────────────────────────────────────────────────────────────────── */
+.pt-pop,
+.pt-set {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pt-pop-f {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pt-shared {
+  display: block;
+  margin: 6px 0 4px;
+  font-size: var(--text-xs);
+  color: var(--faint);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.pt-incl {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.pt-incl-r {
+  display: grid;
+  grid-template-columns: 20px 8px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+.pt-incl-r:first-child {
+  border-top: none;
+}
+.pt-incl-r i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.pt-incl-r .n {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--ink);
+}
+.pt-incl-r .d {
+  font-size: var(--text-xs);
+  color: var(--faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.pt-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+.pt-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-base);
+  color: var(--ink);
+  padding-top: 4px;
+}
+.pt-step i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.pt-step .n {
+  flex: 1;
+}
+.pt-step .v {
+  min-width: 38px;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pt-step .v.rest {
+  color: var(--muted);
+  margin-right: 32px;
+}
+/* The −/+ steppers. Not the row's "count it in the split" box — a checkbox keeps its own shape
+   and white tick (it had turned into a big blue circle with a grey tick). */
+.pt-step button:not(.bo-check) {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.pt-step button:not(.bo-check):hover {
+  color: var(--ink);
+  background: var(--hover);
+}
+.pt-step button svg {
+  display: block;
+}
+
+/* ── Touch + narrow screens (owner, 2026-09-25: "proper mobile responsive") ─────────────────
+   The drag grip goes (touch can't drag rows — the editor's Group dropdown moves one), and the
+   name cell reclaims its gutter. The editor's side-by-side pickers stack on a narrow sheet. */
+@media (hover: none) {
+  .pt-grip {
+    display: none;
+  }
+  .pt-cname {
+    padding-left: 12px;
+  }
+}
+@media (max-width: 560px) {
+  .pt-bar {
+    gap: 8px;
+  }
+  .pt-hero {
+    padding: 14px 16px;
+  }
+  .pt-plan-top .ui-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+  .pt-ed-add {
+    flex-direction: column;
+  }
+  .pt-ed-pair {
+    grid-template-columns: 1fr;
+  }
+  .pt-ed-foot {
+    flex-wrap: wrap;
+  }
+  .pt-add input {
+    width: 100%;
+  }
+}
+.pt-step--out .n {
+  color: var(--faint);
+}
+/* A group's "count it in the split" box, at the end of its share row. */
+.pt-step-in {
+  margin-left: 10px;
+}

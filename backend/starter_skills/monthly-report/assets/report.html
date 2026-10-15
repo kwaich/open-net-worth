@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{{TITLE}}</title>
+<!-- onw:design -->
+</head>
+<body>
+<main class="onw onw-report">
+  <table class="onw-masthead"><tr><td class="onw-brand"><!-- onw:logo -->Open Net Worth</td><td class="r onw-for">Prepared for {{NAME}}</td></tr></table>
+
+  <h1 class="onw-title">{{HEADING}}</h1>
+  <p class="onw-period">{{PERIOD}}</p>
+
+  <div class="onw-summary">{{SUMMARY}}</div>
+
+  <table class="onw-figures" aria-label="The month in figures">
+    <tr>
+      <td><span class="onw-label">Earned</span><span class="onw-value">{{INCOME}}</span><span class="onw-sub">{{INCOME_LINE}}</span></td>
+      <td><span class="onw-label">Kept</span><span class="onw-value">{{KEPT}}</span><span class="onw-sub">{{SAVINGS_RATE_LINE}}</span></td>
+    </tr>
+    <tr>
+      <td><span class="onw-label">Day-to-day spending</span><span class="onw-value">{{DAY_TO_DAY}}</span><span class="onw-sub">{{DAY_TO_DAY_LINE}}</span></td>
+      <td><span class="onw-label">Bills</span><span class="onw-value">{{BILLS}}</span><span class="onw-sub">{{BILLS_LINE}}</span></td>
+    </tr>
+    <tr>
+      <td class="wide" colspan="2"><span class="onw-label">Net worth</span><span class="onw-value">{{NET_WORTH}}</span><span class="onw-sub">{{NET_WORTH_CHANGE}}</span></td>
+    </tr>
+  </table>
+  <p class="onw-total">{{TOTAL_LINE}}</p>
+
+  <!-- optional: budget -->
+  <div class="onw-section">
+    <h2>Against your budget</h2>
+    <p class="onw-lede">{{BUDGET_LEDE}}</p>
+    <script type="application/x-onw-chart">{{BUDGET_CHART}}</script>
+    <!-- optional: over -->
+    <h3>Over budget</h3>
+    <p class="onw-lede">{{OVER_LEDE}}</p>
+    <table class="onw-rows">
+      <!-- repeat: over -->
+      <tr><td>{{ENVELOPE}}<span class="onw-sub">budget {{ENVELOPE_BUDGET}}</span></td><td class="r">{{ENVELOPE_SPENT}}<span class="onw-sub onw-loss">over by {{ENVELOPE_OVER}}</span></td></tr>
+      <!-- /repeat -->
+    </table>
+    <p class="onw-lede">{{OVER_MORE}}</p>
+    <!-- /optional -->
+  </div>
+  <!-- /optional -->
+
+  <div class="onw-section">
+    <h2>Day-to-day spending</h2>
+    <p class="onw-lede">{{SPENDING_LEDE}}</p>
+    <table class="onw-rows">
+      <!-- repeat: category -->
+      <tr class="onw-has-bar"><td>{{CATEGORY}}<span class="onw-sub">{{CATEGORY_COMPARE}}</span></td><td class="r">{{CATEGORY_AMOUNT}}</td></tr>
+      <tr class="onw-bar-row"><td colspan="2"><div class="onw-track"><div class="onw-fill onw-{{CATEGORY_CLASS}}" style="width:{{CATEGORY_BAR_PCT}}%"></div><span class="onw-mark" style="left:{{CATEGORY_COMPARE_PCT}}%" data-screen-only></span></div></td></tr>
+      <!-- /repeat -->
+    </table>
+    <p class="onw-key"><i></i>your average month</p>
+  </div>
+
+  <div class="onw-section">
+    <h2>Largest day-to-day payments</h2>
+    <table class="onw-rows">
+      <!-- repeat: item -->
+      <tr><td>{{PAYEE}}<span class="onw-sub">{{ITEM_DATE}}, {{ITEM_CATEGORY}}</span></td><td class="r">{{ITEM_AMOUNT}}</td></tr>
+      <!-- /repeat -->
+    </table>
+  </div>
+
+  <div class="onw-section">
+    <h2>Bills and subscriptions</h2>
+    <p class="onw-lede">{{BILLS_LEDE}}</p>
+    <table class="onw-rows" data-complete>
+      <!-- repeat: bill -->
+      <tr><td>{{BILL}}<span class="onw-sub">{{BILL_DETAIL}}</span></td><td class="r">{{BILL_AMOUNT}}</td></tr>
+      <!-- /repeat -->
+    </table>
+    <!-- optional: bills-missing -->
+    <p class="onw-lede">{{BILLS_MISSING}}</p>
+    <!-- /optional -->
+    <!-- optional: subscriptions -->
+    <h3>{{SUBSCRIPTIONS_TITLE}}</h3>
+    <p class="onw-lede">{{SUBSCRIPTIONS_LEDE}}</p>
+    <table class="onw-rows" data-complete>
+      <!-- repeat: subscription -->
+      <tr><td>{{SUBSCRIPTION}}<span class="onw-sub">{{SUBSCRIPTION_DETAIL}}</span></td><td class="r">{{SUBSCRIPTION_AMOUNT}}</td></tr>
+      <!-- /repeat -->
+    </table>
+    <!-- /optional -->
+  </div>
+
+  <!-- optional: investments -->
+  <div class="onw-section">
+    <h2>Investments</h2>
+    <p class="onw-lede">{{INVEST_LEDE}}</p>
+    <table class="onw-rows" aria-label="Portfolio performance">
+      <tr><td>Portfolio value<span class="onw-sub">{{PORTFOLIO_START_LINE}}</span></td><td class="r">{{PORTFOLIO_VALUE}}</td></tr>
+      <tr><td>Return<span class="onw-sub">{{BENCHMARK_LINE}}</span></td><td class="r onw-{{RETURN_CLASS}}">{{PORTFOLIO_RETURN}}</td></tr>
+    </table>
+    <!-- optional: return-chart -->
+    <script type="application/x-onw-chart">{{RETURN_CHART}}</script>
+    <!-- /optional -->
+    <table class="onw-rows" aria-label="Gains and income">
+      <tr><td>Gain over the month</td><td class="r onw-{{GAIN_CLASS}}">{{PORTFOLIO_GAIN}}</td></tr>
+      <!-- optional: realized -->
+      <tr><td>Realized from sales<span class="onw-sub">{{REALIZED_LINE}}</span></td><td class="r onw-{{REALIZED_CLASS}}">{{REALIZED}}</td></tr>
+      <!-- /optional -->
+      <!-- optional: invest-income -->
+      <tr><td>Dividends and interest</td><td class="r">{{INVEST_INCOME}}</td></tr>
+      <!-- /optional -->
+    </table>
+
+    <!-- optional: allocation -->
+    <h3>Allocation</h3>
+    <p class="onw-lede">{{ALLOCATION_LEDE}}</p>
+    <script type="application/x-onw-chart">{{ALLOCATION_CHART}}</script>
+    <!-- /optional -->
+
+    <!-- optional: holdings -->
+    <h3>How each holding did</h3>
+    <p class="onw-lede">{{HOLDINGS_LEDE}}</p>
+    <script type="application/x-onw-chart">{{HOLDINGS_CHART}}</script>
+    <!-- /optional -->
+
+    <!-- optional: trades -->
+    <h3>Trades</h3>
+    <p class="onw-lede">{{TRADES_LEDE}}</p>
+    <table class="onw-rows">
+      <!-- repeat: trade -->
+      <tr><td>{{TRADE}}<span class="onw-sub">{{TRADE_DETAIL}}</span></td><td class="r">{{TRADE_AMOUNT}}</td></tr>
+      <!-- /repeat -->
+    </table>
+    <!-- /optional -->
+  </div>
+  <!-- /optional -->
+
+  <div class="onw-section">
+    <h2>Worth a look</h2>
+    <p class="onw-lede">{{LOOK_LEDE}}</p>
+    <!-- optional: all-clear -->
+    <p class="onw-clear">{{ALL_CLEAR}}</p>
+    <!-- /optional -->
+    <!-- optional: looks -->
+    <table class="onw-rows">
+      <!-- repeat: look -->
+      <tr><td><span class="onw-flag">{{LOOK_KIND}}</span>{{LOOK}}<span class="onw-sub">{{LOOK_DETAIL}}</span></td><td class="r">{{LOOK_AMOUNT}}</td></tr>
+      <!-- /repeat -->
+    </table>
+    <!-- /optional -->
+  </div>
+
+  {{EXTRA}}
+
+  <!-- optional: notes -->
+  <details class="onw-notes">
+    <summary>Data notes ({{NOTES_COUNT}})</summary>
+    <ul>
+      <!-- repeat: note -->
+      <li>{{NOTE}}</li>
+      <!-- /repeat -->
+    </ul>
+  </details>
+  <!-- /optional -->
+
+  <footer class="onw-footer">{{FOOTER}}
+    <p>Made with <a href="https://github.com/open-net-worth-ai/open-net-worth">Open Net Worth</a>, your finances on your own machine.</p>
+  </footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,3128 @@
+/* Settings overlay redesign — ported VERBATIM from
+   design_handoffs/settings_handoff/prototype/redesign/shell.css.
+   Builds on the app's design tokens.
+
+   Two deliberate transforms, both cascade-only (DOM and class names are unchanged):
+
+   1. EVERY selector is scoped under .onw-settings, the class this port puts on the
+      dialog card. The prototype sheet is a shared "rd-" foundation, and tabs/automations.css
+      already ships its OWN rd-input (fixed 34px height) and rd-dot. Both sheets are
+      unlayered, so without scoping the winner would be whichever tab React loaded first.
+      Scoping keeps this port's values inside this port and leaves Automations untouched.
+
+   2. Standalone-shell scaffolding is stripped: html/body, the universal box-sizing reset,
+      the onw- nav rail, the rd-main/rd-masthead page scaffold, and the prototype's own
+      scrim/dialog (rd-set-scrim, rd-set-modal). The real RouterShell provides the chrome and
+      the design-system Modal (size="workspace") provides the dialog — its geometry is
+      overridden below to the prototype's exact numbers.
+
+   3. Two small rules carry over from the prototype's own styles.css rather than its shell.css
+      (the icon flex: none fix), and one rule deliberately DIFFERS from shell.css — the
+      two-caption grid fix, commented where it appears.
+
+   Raw px and unitless font sizes below are intentional and match the handoff: this rd- system
+   is parallel to components/ui/, not composed from it, and the flattening rules depend on its
+   exact metrics. See the ADR for the token exemption.
+
+   Unlayered (wins, like accounts.css / plan.css / investments/design.css). */
+
+/* ── the design-system workspace modal, restyled to the prototype's dialog ──── */
+.modal-overlay--workspace.onw-settings-overlay {
+  background: rgba(6, 8, 12, 0.66);
+  backdrop-filter: none;
+  padding: 28px;
+  container-name: settings-workspace;
+  container-type: inline-size;
+}
+.ui-modal-card--workspace.onw-settings {
+  display: flex;
+  flex-direction: row;
+  width: min(1060px, 100%);
+  height: min(760px, 100%);
+  max-height: min(760px, 100%);
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+/* The prototype's dialog has no title bar — its close button floats inside the pane.
+   The head still has to exist for the accessible name, so it is visually hidden rather than
+   removed. */
+.onw-settings > .ui-modal__head {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: none;
+}
+/* …but the head's own close button is REMOVED, not just hidden. Visually-hidden is still
+   FOCUSABLE, so leaving it in would put a generic "Close" ahead of the pane's real, properly
+   labelled "Close settings" in the tab order — two close controls, the first one weaker.
+   display:none takes it out of the tab order; the sr-only title above it still names the
+   dialog. */
+.onw-settings > .ui-modal__head .ui-modal__close {
+  display: none;
+}
+.onw-settings > .ui-modal__body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ── settings overlay: rail left, one scrolling pane right ─────────────────── */
+/* ── mobile bottom-sheet chrome (rendered only below the phone breakpoint) ─── */
+.onw-settings .rd-set-grab {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 4px;
+  touch-action: none;
+  cursor: grab;
+}
+.onw-settings .rd-set-grabbar {
+  width: 36px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+}
+/* Close sits on the LEFT of the title, the way a sheet reads on a phone. */
+.onw-settings .rd-set-sheethead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 14px 8px;
+}
+.onw-settings .rd-set-sheettitle {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* The rail is a panel beside the modal canvas, not another canvas. `--panel` keeps that
+   hierarchy explicit in every named theme; using `--bg` made it merge into White's body,
+   and --surface stopped being distinct once card surfaces collapsed onto --bg. */
+.onw-settings .rd-set-nav {
+  width: 222px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 10px;
+  background: var(--bg-2);
+}
+.onw-settings .rd-set-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+.onw-settings .rd-set-search-ic {
+  position: absolute;
+  left: 9px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--fg-3);
+  pointer-events: none;
+}
+.onw-settings .rd-set-search input {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 8px 10px 8px 32px;
+  outline: none;
+}
+.onw-settings .rd-set-search input:focus {
+  border-color: var(--line-strong);
+}
+.onw-settings .rd-set-search input::placeholder {
+  color: var(--fg-3);
+}
+.onw-settings .rd-set-search-x {
+  position: absolute;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  border-radius: 5px;
+}
+@media (hover: hover) {
+  .onw-settings .rd-set-search-x:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+.onw-settings .rd-set-navlist {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+}
+.onw-settings .rd-set-navitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  background: transparent;
+}
+.onw-settings .rd-set-navitem .ic {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  color: var(--muted);
+}
+@media (hover: hover) {
+  .onw-settings .rd-set-navitem:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+.onw-settings .rd-set-navitem.on {
+  color: var(--ink);
+  background: var(--selected);
+}
+.onw-settings .rd-set-navitem.on .ic {
+  color: var(--accent);
+}
+.onw-settings .rd-set-nohits {
+  font-size: var(--text-xs);
+  color: var(--faint);
+  padding: 8px 10px;
+}
+
+/* min-height: 0 is load-bearing. As a COLUMN flex item its default min-height:auto refuses to
+   shrink below content, so the scrolling body grew to its full content height, overflowed the
+   card (which is overflow:hidden) and could not be scrolled at all — everything past the fold
+   was simply unreachable. */
+.onw-settings .rd-set-pane {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* Swipe-right-to-go-back (useSwipeBack, mobile drill-down only) — belt-and-suspenders for
+     any touch landing directly on the pane's own bare areas. `.rd-set-body` below carries the
+     load-bearing copy: touch-action does NOT inherit to a descendant scroll container, and
+     virtually every real touch lands there, not here. */
+  touch-action: pan-y;
+}
+/* The section header: title left, close right. Owns the pane's top padding so the scroller
+   below starts flush under it. */
+.onw-settings .rd-set-topbar {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 24px 10px;
+}
+.onw-settings .rd-set-x {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .onw-settings .rd-set-x:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+/* Equal side padding, and NOTHING reserved for the scrollbar.
+   The prototype's 24-left/20-right tried to pre-compensate for a scrollbar and came out 24 vs
+   31 on screen. Reserving a gutter on both edges made it symmetric but wasted a strip of the
+   pane on both sides for a scrollbar that is an OVERLAY on macOS/iOS anyway. So: no gutter,
+   equal padding, and the scrollbar is hidden — the rail and the mobile tab row already hide
+   theirs, the pane is a short list of cards, and scroll position is legible from the content
+   itself. This is the only combination that is exactly symmetric on every platform AND gives
+   the full width to the content. */
+.onw-settings .rd-set-body {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: auto;
+  padding: 0 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  /* THE load-bearing half of swipe-right-to-go-back (useSwipeBack): this is the element real
+     touches actually land on (it's the scroll container), so this is where `touch-action` has
+     to live to suppress Safari's own edge swipe-back gesture — set on an ancestor instead
+     (`.rd-set-pane`) it has no effect here, since touch-action never inherits into a
+     descendant scroll container. Without it, iOS's system gesture can win the race against
+     our JS on a real device, leaving a stuck mid-drag transform behind (owner report
+     2026-09-04: right padding vanished, left padding doubled, and the swipe never navigated). */
+  touch-action: pan-y;
+}
+.onw-settings .rd-set-body {
+  scrollbar-width: none;
+}
+/* The pane is a programmatic focus TARGET (tabIndex -1 + data-autofocus) so the dialog does not
+   hand focus to the search box and pop the phone keyboard on open. It is not a control and is
+   never tab-reached, so its focus ring — a blue rectangle around the whole scrolling area for
+   as long as Settings was open — is pure noise. */
+.onw-settings .rd-set-body:focus,
+.onw-settings .rd-set-body:focus-visible {
+  outline: none;
+}
+/* The pane is a programmatic focus TARGET (tabIndex -1 + data-autofocus), so the dialog does
+   not hand focus to the search box and pop the keyboard on open. It is not a control and is
+   never tab-reached, so the focus ring it was drawing — a blue rectangle around the whole
+   scrolling area for as long as Settings was open — is pure noise. */
+.onw-settings .rd-set-body:focus,
+.onw-settings .rd-set-body:focus-visible {
+  outline: none;
+}
+/* Drawn OVER the pane's right padding, so it costs no layout width. */
+.onw-settings .rd-set-scrollwrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+.onw-settings .rd-set-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+/* thin, self-effacing scrollbars — the default chrome is far too heavy in a dialog */
+.onw-settings .rd-set-navlist,
+.onw-settings .rd-modal {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.onw-settings .rd-set-navlist::-webkit-scrollbar,
+.onw-settings .rd-modal::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.onw-settings .rd-set-navlist::-webkit-scrollbar-track,
+.onw-settings .rd-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.onw-settings .rd-set-navlist::-webkit-scrollbar-thumb,
+.onw-settings .rd-modal::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+@media (hover: hover) {
+  .onw-settings .rd-set-navlist::-webkit-scrollbar-thumb:hover,
+  .onw-settings .rd-modal::-webkit-scrollbar-thumb:hover {
+    background: var(--faint);
+    background-clip: content-box;
+  }
+}
+.onw-settings .rd-set-h {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+/* Inside the dialog a panel is a LABELLED GROUP: the title sits outside, above a
+   single rounded card whose rows are separated by inset hairlines. Each row is
+   title + description on the left, its control on the right. */
+.onw-settings .rd-set-body .rd-panel {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+.onw-settings .rd-set-body .rd-panel-head {
+  padding: 0 0 9px;
+  border-bottom: none;
+}
+.onw-settings .rd-set-body .rd-panel-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.onw-settings .rd-set-body .rd-panel-sub {
+  font-size: var(--text-xs);
+  color: var(--faint);
+  margin-top: 3px;
+}
+.onw-settings .rd-set-body .rd-panel-body {
+  padding: 0;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+/* every direct child of the card is a row */
+.onw-settings .rd-set-body .rd-panel-body > * {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-set-body .rd-panel-body > *:last-child {
+  border-bottom: none;
+}
+.onw-settings .rd-set-body .rd-panel-body.flush {
+  padding: 0;
+}
+.onw-settings .rd-set-body .rd-panel-body > .rd-formgrid,
+.onw-settings .rd-set-body .rd-panel-body > .rd-readout {
+  padding: 0;
+  border-bottom: none;
+}
+/* A textarea is a CONTROL, not a panel row. As the last direct child of .rd-panel-body it was
+   picking up the row rules above — the separator reset stripped its bottom border, so a focused
+   field showed an accent border on three sides and nothing along the bottom, and the row padding
+   replaced its own. Re-assert its own box. */
+.onw-settings .rd-set-body .rd-panel-body > .rd-textarea {
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+}
+.onw-settings .rd-set-body .rd-panel-body > .rd-textarea:focus {
+  border-color: var(--line-strong);
+}
+.onw-settings .rd-set-body .rd-panel-body > .rd-row {
+  padding: 13px 16px;
+}
+/* settings rows carry no kebab, so actions sit flush to the card edge (the 72px offset
+   elsewhere reserves room for one) */
+.onw-settings .rd-set-body .rd-row-actions {
+  right: 16px;
+}
+/* a bare explanatory line belongs TO the block above it — tuck it under, no hairline
+   between, so it reads as a caption rather than an ugly footer strip of its own */
+.onw-settings .rd-set-body .rd-panel-body > *:has(+ .rd-help) {
+  border-bottom: none;
+  padding-bottom: 8px;
+}
+.onw-settings .rd-set-body .rd-panel-body > .rd-help {
+  display: block;
+  padding: 0 16px 13px;
+  border-bottom: none;
+  line-height: 1.55;
+}
+.onw-settings .rd-set-body .rd-panel-body > .rd-help:first-child {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+}
+/* a warning inside a card is a tinted flush row, not a bordered box inside a bordered box */
+.onw-settings .rd-set-body .rd-panel-body > .rd-banner {
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--warn) 9%, transparent);
+}
+.onw-settings .rd-set-body .rd-panel-body > .rd-banner:last-child {
+  border-bottom: none;
+}
+/* rows inside a group card are hairline-separated, never boxes in a box */
+.onw-settings .rd-set-body .rd-panel-body > .rd-provlist {
+  padding: 0;
+  border-bottom: none;
+  gap: 0;
+}
+/* …but it DOES need one when something follows it (the Default model row). Its own last row
+   is borderless so the list never doubles up a divider, which left the two blocks fused. */
+.onw-settings .rd-set-body .rd-panel-body > .rd-provlist:not(:last-child) {
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-set-body .rd-prov {
+  border: none;
+  border-radius: 0;
+  background: none;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-set-body .rd-provlist > :last-child {
+  border-bottom: none;
+}
+.onw-settings .rd-set-body .rd-permrow.head {
+  padding: 11px 16px 8px;
+}
+.onw-settings .rd-set-body .rd-permrow {
+  padding: 12px 16px;
+}
+/* an alarm panel keeps its own tinted container and reads as one warning, not two rows */
+.onw-settings .rd-set-body .rd-panel.rd-danger-panel .rd-panel-body {
+  border: none;
+  background: none;
+  border-radius: 0;
+}
+.onw-settings .rd-set-body .rd-panel.rd-danger-panel .rd-panel-body > * {
+  padding: 0;
+  border-bottom: none;
+}
+
+/* settings rows: label (and help) left, control right-aligned */
+.onw-settings .rd-set-body .rd-formgrid {
+  display: block;
+}
+.onw-settings .rd-set-body .rd-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 264px);
+  align-items: center;
+  column-gap: 24px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-set-body .rd-formgrid .rd-field:last-child {
+  border-bottom: none;
+}
+.onw-settings .rd-set-body .rd-field > .rd-label {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: var(--text-base);
+  color: var(--ink);
+  font-weight: 500;
+}
+/* `grid-row: auto`, not a pinned row 2 — DELIBERATE FIX, not a port of the prototype.
+   A task-model row carries TWO captions (its description, plus the warn line a vision task
+   gets when it lands on a text-only model). Pinned to the same row they render exactly on top
+   of each other, which is what the prototype does — an unreadable warning is not a warning.
+   Auto-placement stacks them; a single-caption field is unaffected. */
+.onw-settings .rd-set-body .rd-field > .rd-help {
+  grid-column: 1;
+  grid-row: auto;
+  margin-top: 3px;
+  line-height: 1.5;
+}
+/* A TOGGLE is excluded from the stretch: it is a fixed-size switch, not a field control, and
+   width:100% turned it into a full-width blue slab across the 264px column (owner,
+   2026-08-24). Excluded HERE rather than overridden below because :not() carries its
+   argument's specificity — this selector is (0,5,0), so a plain
+   `.rd-field > .rd-toggle` override (0,4,0) silently loses the cascade every time. */
+.onw-settings .rd-set-body .rd-field > :not(.rd-label):not(.rd-help):not(.rd-toggle) {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-self: end;
+  width: 100%;
+}
+.onw-settings .rd-set-body .rd-field > .rd-toggle {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-self: end;
+}
+/* `span="full"` (label above, control filling the whole row) had no effect outside a modal —
+   the label|264px two-column grid above applied unconditionally, so a wide control (a country
+   checklist, easily 200 options) was squeezed into 264px and, worse, the row's height grew to
+   fit it while the label stayed vertically centered — a huge blank gap floating the label away
+   from its control. Stack instead: grid-row/column/justify-self on the children are grid-only
+   and simply do nothing once the container itself is flex. */
+.onw-settings .rd-set-body .rd-field.full {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+/* the readout list is already a two-column table — keep it flush inside the card */
+.onw-settings .rd-set-body .rd-readout {
+  column-gap: 0;
+}
+/* totals collapse into hairline rows rather than a grid that orphans its last card */
+.onw-settings .rd-set-body .rd-panel-body > .rd-stats {
+  display: block;
+  padding: 0;
+  border-bottom: none;
+}
+.onw-settings .rd-set-body .rd-stats .rd-stat {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 12px 16px;
+}
+.onw-settings .rd-set-body .rd-stats .rd-stat + .rd-stat {
+  border-top: 1px solid var(--line);
+}
+.onw-settings .rd-set-body .rd-stats .rd-stat-lbl {
+  font-size: var(--text-base);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+.onw-settings .rd-set-body .rd-stats .rd-stat-val {
+  font-size: var(--text-base);
+  font-weight: 600;
+  text-align: right;
+}
+.onw-settings .rd-set-body .rd-stats .rd-stat-val small {
+  display: inline;
+  margin: 0 0 0 7px;
+  font-size: var(--text-xs);
+}
+.onw-settings .rd-set-body .rd-readout-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-set-body .rd-readout-item:nth-child(odd) {
+  border-right: 1px solid var(--line);
+}
+/* ...but a modal rendered from inside the pane is a focused editor, not a settings list */
+.onw-settings .rd-set-body .rd-modal .rd-panel-body {
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+.onw-settings .rd-set-body .rd-modal .rd-panel-body > * {
+  padding: 0;
+  border-bottom: none;
+}
+.onw-settings .rd-set-body .rd-modal .rd-formgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px 16px;
+}
+.onw-settings .rd-set-body .rd-modal .rd-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 0;
+  border-bottom: none;
+}
+.onw-settings .rd-set-body .rd-modal .rd-field > .rd-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.onw-settings .rd-set-body .rd-modal .rd-field > .rd-help {
+  margin-top: 0;
+}
+.onw-settings .rd-set-body .rd-modal .rd-field > * {
+  grid-column: auto;
+  grid-row: auto;
+  justify-self: stretch;
+}
+
+/* save bar: portaled (ProfileSection) into .rd-set-actionbar-slot, a SIBLING of the scrolling
+   pane — not `position: sticky` inside it. Sticky only pins within its own scroll container;
+   it cannot stop overlapping that container's own content, which is exactly what made it
+   float, translucent, over "Nationalities"/"Countries of residence" the moment the form had
+   more content than fit one screen. A plain block in its own flex slot
+   below the scroller needs none of sticky/bottom/z-index/margin-top:auto. */
+.onw-settings .rd-set-actionbar-slot {
+  flex: none;
+}
+.onw-settings .rd-set-actionbar-slot:not(:empty) {
+  padding: 0 24px 20px;
+}
+.onw-settings .rd-actionbar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, var(--line));
+  background: var(--surface2);
+  box-shadow: var(--shadow-lg);
+}
+.onw-settings .rd-actionbar-note {
+  flex: 1;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--warn);
+  white-space: nowrap;
+}
+
+/* ── panel ────────────────────────────────────────────────────────────────── */
+.onw-settings .rd-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+}
+.onw-settings .rd-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-panel-title {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.onw-settings .rd-panel-sub {
+  font-size: 12px;
+  color: var(--faint);
+  margin-top: 2px;
+}
+.onw-settings .rd-panel-body {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.onw-settings .rd-panel-body.flush {
+  padding: 0;
+  gap: 0;
+}
+
+/* ── buttons ──────────────────────────────────────────────────────────────── */
+.onw-settings .rd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  white-space: nowrap;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+.onw-settings .rd-btn.primary {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+@media (hover: hover) {
+  .onw-settings .rd-btn.primary:hover {
+    background: color-mix(in srgb, var(--accent) 88%, #fff);
+  }
+}
+.onw-settings .rd-btn.secondary {
+  background: var(--surface2);
+  border-color: var(--line);
+}
+@media (hover: hover) {
+  .onw-settings .rd-btn.secondary:hover {
+    border-color: var(--line-strong);
+    background: color-mix(in srgb, var(--surface2) 80%, var(--line));
+  }
+}
+.onw-settings .rd-btn.ghost {
+  color: var(--muted);
+}
+@media (hover: hover) {
+  .onw-settings .rd-btn.ghost:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+.onw-settings .rd-btn.danger {
+  color: var(--bad);
+  background: var(--surface2);
+  border-color: var(--line);
+}
+@media (hover: hover) {
+  .onw-settings .rd-btn.danger:hover {
+    background: color-mix(in srgb, var(--bad) 12%, transparent);
+  }
+}
+.onw-settings .rd-btn.danger-solid {
+  background: var(--bad);
+  color: #fff;
+}
+.onw-settings .rd-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.onw-settings .rd-btn.xs {
+  padding: 4px 9px;
+  font-size: 11.5px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── badges ───────────────────────────────────────────────────────────────── */
+.onw-settings .rd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.onw-settings .rd-badge.good {
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+  border-color: color-mix(in srgb, var(--good) 26%, transparent);
+}
+.onw-settings .rd-badge.warn {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 26%, transparent);
+}
+.onw-settings .rd-badge.bad {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  border-color: color-mix(in srgb, var(--bad) 26%, transparent);
+}
+.onw-settings .rd-badge.accent {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+/* ── metrics strip ────────────────────────────────────────────────────────── */
+.onw-settings .rd-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.onw-settings .rd-stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.onw-settings .rd-stat-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.onw-settings .rd-stat-val {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.onw-settings .rd-stat-val small {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--faint);
+  margin: 3px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── model telemetry (Settings → AI Model → Model performance) ──────────────
+   This is comparison data, not a settings form. One aligned table makes relative performance
+   legible at a glance and avoids the nested-card rules used by the spend summary above it. */
+.onw-settings .rd-set-body .rd-panel-body > .rd-telemetry-table-wrap {
+  padding: 0;
+  border-bottom: none;
+  overflow-x: auto;
+}
+.onw-settings .rd-telemetry-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.onw-settings .rd-telemetry-table th,
+.onw-settings .rd-telemetry-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.onw-settings .rd-telemetry-table thead th {
+  background: var(--surface2);
+  color: var(--faint);
+  cursor: default;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.onw-settings .rd-telemetry-table thead th:first-child {
+  width: 34%;
+  text-align: left;
+}
+.onw-settings .rd-telemetry-table thead th:nth-child(2),
+.onw-settings .rd-telemetry-table thead th:nth-child(3) {
+  width: 12%;
+}
+.onw-settings .rd-telemetry-table thead th:nth-child(4) {
+  width: 15%;
+}
+.onw-settings .rd-telemetry-table thead th:last-child {
+  width: 27%;
+}
+.onw-settings .rd-telemetry-table tbody tr:last-child > * {
+  border-bottom: none;
+}
+.onw-settings .rd-telemetry-model {
+  cursor: default;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  user-select: text;
+}
+.onw-settings .rd-telemetry-row-label {
+  display: block;
+  font-size: var(--text-base);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.onw-settings .rd-telemetry-row-samples {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--faint);
+  white-space: nowrap;
+}
+.onw-settings .rd-telemetry-metric {
+  color: var(--ink);
+  font-size: var(--text-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.onw-settings .rd-telemetry-reliability {
+  text-align: right;
+}
+.onw-settings .rd-telemetry-reliability .rd-badge {
+  max-width: 100%;
+}
+
+/* ── forms ────────────────────────────────────────────────────────────────── */
+.onw-settings .rd-input,
+.onw-settings .rd-select,
+.onw-settings .rd-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 11px;
+  outline: none;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+/* A field must read lighter than the surface it sits on — that is what says "you can type here".
+   `--surface2` preserves that step in every named theme; disabled controls use the recessed
+   `--bg-2` step instead. */
+.onw-settings .rd-input:disabled,
+.onw-settings .rd-select:disabled,
+.onw-settings .rd-textarea:disabled {
+  background: var(--bg-2);
+  color: var(--faint);
+  border-color: color-mix(in srgb, var(--line) 60%, transparent);
+  cursor: not-allowed;
+}
+/* Read-only is not disabled: the value still matters and stays legible, it simply is not yours
+   to change (a pinned provider endpoint, for instance). */
+.onw-settings .rd-input[readonly],
+.onw-settings .rd-textarea[readonly] {
+  background: var(--bg-2);
+  cursor: default;
+}
+.onw-settings .rd-input[readonly]:focus,
+.onw-settings .rd-textarea[readonly]:focus {
+  border-color: var(--line);
+}
+/* Focus is a NEUTRAL border, not the blue --accent (--primary #3b86dd): this pane is a
+   warm-neutral surface and the blue read as an error/link state on it. Still a visible
+   state change, so the focus affordance survives. */
+.onw-settings .rd-input:focus,
+.onw-settings .rd-select:focus,
+.onw-settings .rd-textarea:focus {
+  border-color: var(--line-strong);
+}
+.onw-settings .rd-input::placeholder,
+.onw-settings .rd-textarea::placeholder {
+  color: var(--fg-3);
+}
+.onw-settings .rd-select-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+.onw-settings .rd-select {
+  appearance: none;
+  padding-right: 30px;
+}
+.onw-settings .rd-select-ic {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  color: var(--fg-3);
+  pointer-events: none;
+}
+.onw-settings .rd-select:disabled + .rd-select-ic {
+  color: var(--faint);
+}
+/* A <button class="rd-select"> (the country-picker trigger) shares every visual with the real
+   <select> above, but a button's UA default centers its text and never truncates — restore both
+   so a long "Singapore, United States, Vietnam" selection reads as one clipped line, not a
+   button that grew to fit it. */
+.onw-settings button.rd-select {
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.onw-settings .rd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.onw-settings .rd-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.onw-settings .rd-help {
+  font-size: 11px;
+  color: var(--faint);
+}
+.onw-settings .rd-help code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: inherit;
+  color: var(--muted);
+}
+.onw-settings .rd-formgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px 16px;
+}
+.onw-settings .rd-formgrid .full {
+  grid-column: 1 / -1;
+}
+.onw-settings .rd-countryselect {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Date of birth — iOS Safari's native <input type="date"> ignores height/overflow applied to
+   the INPUT ITSELF (confirmed against a real device; macOS Safari has no such restriction,
+   which is why that fix verified there and still failed on iOS). A first attempt hid the
+   real input (opacity: 0) behind a fake display box — that fixed the height, but broke
+   tap-to-open: an invisible replaced element does not reliably forward a tap into the OS's
+   native picker (confirmed live — nothing opened). The input stays real, visible, and is
+   what's actually tapped, so native behavior is untouched. The WRAPPER owns the visible box
+   (border/background/radius, every other field's look) at a fixed height with
+   `overflow: hidden` — a containment the input's own internal painting cannot escape, unlike
+   a height/overflow declared on the input, which iOS is free to ignore. */
+.onw-settings .rd-datefield {
+  height: 38px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-md);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+}
+.onw-settings .rd-datefield:focus-within {
+  border-color: var(--line-strong);
+}
+.onw-settings .rd-datefield:has(.rd-datefield-input:disabled) {
+  background: var(--bg-2);
+  border-color: color-mix(in srgb, var(--line) 60%, transparent);
+}
+/* No `height: 100%` on the input — that forces it to fill the wrapper, but iOS still anchors
+   its internal content to the TOP of whatever height it's given, so the visible (clipped)
+   text sat high instead of centered. Letting the input keep its own natural height and
+   centering IT in the flex wrapper clips symmetrically top/bottom instead. Confirmed fixed
+   on a real device. */
+.onw-settings .rd-datefield-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 8px 11px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+}
+.onw-settings .rd-datefield-input:disabled {
+  color: var(--faint);
+  cursor: not-allowed;
+}
+
+/* ── toggle switch ────────────────────────────────────────────────────────── */
+.onw-settings .rd-toggle {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--line);
+  border: none;
+  cursor: pointer;
+  flex: none;
+  padding: 0;
+  transition: background 0.15s;
+}
+.onw-settings .rd-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 0.15s;
+}
+.onw-settings .rd-toggle.on {
+  background: var(--accent);
+}
+/* Same contract as the design system's .ui-switch: the ON track owns the accent, so its thumb
+   uses the on-accent token. --ink here put a near-black knob on a blue track in LIGHT theme
+   (#23262e on #3b86dd) and the switch read as muddy/off; dark theme hid it. */
+.onw-settings .rd-toggle.on::after {
+  transform: translateX(14px);
+  background: var(--ink-on-accent);
+}
+
+/* ── rows / lists ─────────────────────────────────────────────────────────── */
+.onw-settings .rd-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-row:last-child {
+  border-bottom: none;
+}
+@media (hover: hover) {
+  .onw-settings .rd-row:hover {
+    background: color-mix(in srgb, var(--surface2) 40%, transparent);
+  }
+}
+.onw-settings .rd-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.onw-settings .rd-row-title {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.onw-settings .rd-row-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.onw-settings .rd-row-meta {
+  font-size: 10.5px;
+  color: var(--faint);
+  display: flex;
+  gap: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.onw-settings .rd-row-actions {
+  position: absolute;
+  right: 72px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  padding: 6px 0 6px 34px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--surface2) 40%, var(--surface)) 26px
+  );
+}
+.onw-settings .rd-row:focus-within .rd-row-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (hover: hover) {
+  .onw-settings .rd-row:hover .rd-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+.onw-settings .rd-row-ic {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+/* ── provider list (Settings → AI Model) ──────────────────────────────────── */
+.onw-settings .rd-provlist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.onw-settings .rd-prov {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.onw-settings .rd-prov-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+}
+.onw-settings .rd-prov-main {
+  flex: 1;
+  min-width: 0;
+}
+.onw-settings .rd-prov-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+/* The column gap sits on BOTH sides of the "·" separator (it is its own flex child), so the
+   12px this used to carry — sized back when there were only two items — rendered as ~28px
+   around a 3px glyph. The dot now does the separating; the gap only has to breathe. */
+.onw-settings .rd-prov-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  font-size: var(--text-xs);
+  color: var(--faint);
+  margin-top: 2px;
+}
+/* An endpoint URL is one long unbreakable token, so a flex child sized to its content pushed
+   it out from under the row and straight through the status badge at narrow widths. The URL
+   is secondary — truncate it and let the badge keep its place. */
+.onw-settings .rd-prov-meta > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* radio cards (routing profile) */
+
+/* disclosure row (advanced groups) */
+
+/* stored-memory list */
+.onw-settings .rd-factlist {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.onw-settings .rd-fact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 13px;
+  background: var(--surface);
+}
+.onw-settings .rd-fact + .rd-fact {
+  border-top: 1px solid var(--line);
+}
+.onw-settings .rd-fact > div {
+  flex: 1;
+  min-width: 0;
+}
+.onw-settings .rd-fact-t {
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.onw-settings .rd-fact-meta {
+  display: flex;
+  gap: 12px;
+  font-size: var(--text-xs);
+  color: var(--faint);
+  margin-top: 3px;
+}
+
+.onw-settings a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+@media (hover: hover) {
+  .onw-settings a:hover {
+    color: color-mix(in srgb, var(--accent) 80%, #fff);
+    border-bottom-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+}
+
+/* footnote at the end of a settings pane (licence notices etc.) */
+.onw-settings .rd-setfoot {
+  margin: -14px 0 0;
+  font-size: var(--text-xs);
+  color: var(--fg-3);
+  line-height: 1.55;
+}
+.onw-settings .rd-setfoot a {
+  border-bottom-color: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* subheading row inside a group card */
+.onw-settings .rd-subhead {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.onw-settings .rd-set-body .rd-panel-body > .rd-subhead {
+  padding: 11px 16px 7px;
+  border-bottom: none;
+  background: var(--bg-2);
+}
+
+/* pick-what-you-want picker: chosen items as chips, a search that only offers the rest */
+
+/* proportion bars (spend by surface / by model) */
+.onw-settings .rd-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.onw-settings .rd-bars-lbl {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.onw-settings .rd-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 118px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.onw-settings .rd-bar-k {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.onw-settings .rd-bar-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-2);
+  overflow: hidden;
+}
+.onw-settings .rd-bar-track span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.onw-settings .rd-bar-v {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+.onw-settings .rd-bar-v em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--faint);
+  margin-left: 7px;
+}
+
+/* Keep the summary metrics and timeline as visibly separate rows. The generic settings
+   stats reset removes its outer divider, so the AI-spend summary restores it here. */
+.onw-settings .rd-set-body .rd-panel-body > .rd-cost-stats {
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-cost-trend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.onw-settings .rd-cost-trend-head,
+.onw-settings .rd-cost-trend-values,
+.onw-settings .rd-cost-trend-axis {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.onw-settings .rd-cost-trend-title {
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.onw-settings .rd-cost-trend-values {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.onw-settings .rd-cost-trend-values span + span::before {
+  content: '•';
+  margin-right: 10px;
+  color: var(--line-strong);
+}
+.onw-settings .rd-cost-trend-plot {
+  display: grid;
+  align-items: end;
+  gap: 3px;
+  height: 38px;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-cost-trend-bar {
+  position: relative;
+  min-width: 2px;
+  border-radius: 3px 3px 0 0;
+  background: color-mix(in srgb, var(--accent) 66%, var(--surface));
+}
+.onw-settings .rd-cost-trend-tooltip {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(280px, 80vw);
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: var(--ink);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--ink) 20%, transparent);
+  color: var(--surface);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.25;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.onw-settings .rd-cost-trend-tooltip.start {
+  left: 0;
+  transform: none;
+}
+.onw-settings .rd-cost-trend-tooltip.end {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+@media (hover: hover) {
+  .onw-settings .rd-cost-trend-bar:hover {
+    background: var(--accent);
+  }
+}
+.onw-settings .rd-cost-trend-axis {
+  color: var(--faint);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.onw-settings .rd-cost-trend-axis span:nth-child(2) {
+  text-align: center;
+}
+.onw-settings .rd-cost-trend-axis span:last-child {
+  text-align: right;
+}
+
+.onw-settings .rd-service-cost-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  color: var(--faint);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+.onw-settings .rd-service-cost-total strong {
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.onw-settings .rd-set-body .rd-panel-body > .rd-service-cost-table-wrap {
+  padding: 0;
+  overflow-x: auto;
+}
+.onw-settings .rd-service-cost-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.onw-settings .rd-service-cost-table th,
+.onw-settings .rd-service-cost-table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-service-cost-table tr:last-child td {
+  border-bottom: none;
+}
+.onw-settings .rd-service-cost-table th {
+  background: var(--surface2);
+  color: var(--faint);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: right;
+}
+.onw-settings .rd-service-cost-table td {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-align: right;
+}
+.onw-settings .rd-service-cost-table th:first-child,
+.onw-settings .rd-service-cost-table td:first-child {
+  text-align: left;
+}
+.onw-settings .rd-service-cost-table td:nth-child(2) {
+  color: var(--ink);
+  font-weight: 600;
+}
+.onw-settings .rd-service-cost-empty {
+  color: var(--faint);
+  font-size: var(--text-sm);
+}
+
+.onw-settings .rd-cost-window {
+  position: relative;
+}
+.onw-settings .rd-cost-period-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-height: 34px;
+  margin-bottom: -17px;
+}
+.onw-settings .rd-cost-period-label {
+  color: var(--faint);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.onw-settings .rd-cost-filter {
+  position: relative;
+  display: none;
+}
+.onw-settings .rd-cost-filter-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 112px;
+  min-height: 34px;
+  padding: 6px 9px 6px 11px;
+  color: var(--ink);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.onw-settings .rd-cost-filter-menu {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  min-width: 156px;
+  padding: 5px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.onw-settings .rd-cost-filter-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 36px;
+  padding: 7px 9px;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.onw-settings .rd-cost-filter-item.on {
+  color: var(--ink);
+  background: var(--selected);
+  font-weight: 600;
+}
+
+/* segmented control (cost window) */
+.onw-settings .rd-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.onw-settings .rd-seg-b {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .onw-settings .rd-seg-b:hover {
+    color: var(--ink);
+  }
+}
+.onw-settings .rd-seg-b.on {
+  color: var(--ink);
+  background: var(--selected);
+}
+/* a long tab row (the MCP client list) must stay inside its card and scroll, not be
+   amputated by the dialog's overflow — narrow rows like the cost window are unaffected */
+.onw-settings .rd-seg--scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.onw-settings .rd-seg--scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── permission rows (Settings → Permissions) ─────────────────────────────── */
+/* tool | owner | level | updated | actions — the owner column was added with the 2026-08-14
+   permission-store merge, so a decision made under Connectors ("sync_plaid_now") names
+   whose ladder it came from instead of reading as an unscoped puzzle. */
+.onw-settings .rd-permrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 128px 118px 96px 92px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-permrow.head {
+  padding: 0 0 7px;
+  font-size: var(--text-xs);
+  color: var(--faint);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line-strong);
+}
+.onw-settings .rd-permrow:last-of-type {
+  border-bottom: none;
+}
+.onw-settings .rd-permrow-tool {
+  font-size: 12.5px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  color: var(--ink);
+  word-break: break-all;
+}
+.onw-settings .rd-permrow-owner {
+  font-size: var(--text-xs);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.onw-settings .rd-permrow-when {
+  font-size: var(--text-xs);
+  color: var(--faint);
+  white-space: nowrap;
+}
+.onw-settings .rd-permrow > span:last-child {
+  display: flex;
+  justify-content: flex-end;
+}
+.onw-settings .rd-danger-panel {
+  border-color: color-mix(in srgb, var(--bad) 32%, var(--line));
+  background: color-mix(in srgb, var(--bad) 6%, var(--surface));
+}
+/* the dialog flattens a panel, so an alarm panel has to out-specify that rule to keep its edge */
+.onw-settings .rd-set-body .rd-panel.rd-danger-panel {
+  border: 1px solid color-mix(in srgb, var(--bad) 34%, var(--line));
+  background: color-mix(in srgb, var(--bad) 8%, var(--surface));
+  border-radius: var(--radius-xl);
+}
+.onw-settings .rd-set-body .rd-panel.rd-danger-panel .rd-panel-head {
+  padding: 13px 16px 8px;
+}
+.onw-settings .rd-set-body .rd-panel.rd-danger-panel > .rd-panel-body {
+  padding: 0 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.onw-settings .rd-set-body .rd-panel.rd-danger-panel .rd-panel-title {
+  font-size: 13px;
+}
+
+/* computed readout inside a modal (FIRE number) */
+.onw-settings .rd-callout {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 15px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.onw-settings .rd-callout-k {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.onw-settings .rd-callout-calc {
+  font-size: 12.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.onw-settings .rd-callout-eq {
+  font-size: 12.5px;
+  color: var(--fg-3);
+}
+.onw-settings .rd-callout-v {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+/* read-only mirror of values owned by an editor elsewhere: a quiet two-column list */
+.onw-settings .rd-readout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 32px;
+}
+.onw-settings .rd-readout-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-readout-k {
+  font-size: var(--text-base);
+  color: var(--muted);
+}
+.onw-settings .rd-readout-v {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.onw-settings .rd-readout-v em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--faint);
+  margin-left: 7px;
+}
+
+/* ── empty state ──────────────────────────────────────────────────────────── */
+/* ── Settings > Developer > SQL access ──────────────────────────────────────────
+   A dense LOG, not a stack of config snippets. `.rd-code` (the MCP-snippet block:
+   border + bg + 14px padding + white-space:pre + overflow-x:auto) was the wrong
+   primitive here — one horizontal scrollbar per row, inside a box, inside a box.
+   A query is one line you scan; you open the one you care about. */
+/* NOTE: no wrapper element, and deliberately no padding here. Each row is a DIRECT child
+   of `.rd-panel-body`, so it inherits that rule's `13px 16px` + bottom divider — the same
+   treatment the toggle row above it gets. A wrapper with `display: contents` does NOT work:
+   it drops the box the padding was applied to, leaving every row flush against the edge. */
+.onw-settings .sqla-q {
+  /* A <button> stretched to full width: without border-box the inherited section padding
+     would push it past the panel edge. */
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .onw-settings .sqla-q:hover {
+    background: color-mix(in srgb, var(--surface2) 40%, transparent);
+  }
+}
+.onw-settings .sqla-q:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* Status as a 6px dot rather than a pill: at one row per query the badge was the
+   loudest thing on the line, and "ok" is the boring case that should recede. */
+.onw-settings .sqla-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  margin-top: 6px;
+  background: var(--faint);
+}
+.onw-settings .sqla-dot.ok {
+  background: var(--good);
+}
+.onw-settings .sqla-dot.bad {
+  background: var(--bad);
+}
+.onw-settings .sqla-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.onw-settings .sqla-sql {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Expanded WRAPS instead of scrolling — the whole statement readable without dragging. */
+.onw-settings .sqla-sql.open {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+.onw-settings .sqla-err {
+  font-size: 11px;
+  color: var(--bad);
+}
+.onw-settings .sqla-meta {
+  flex: none;
+  margin-top: 2px;
+}
+.onw-settings .rd-gw-identity {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 639.98px) {
+  /* The email + portal link is wide and unbreakable, so beside the label it starved the label
+     column down to a word per line. On a phone it takes its own line under the label. */
+  .onw-settings .rd-gw-identity-row {
+    flex-wrap: wrap;
+  }
+  .onw-settings .rd-gw-identity-row > .rd-gw-identity {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Meta under the statement rather than squeezed beside it. */
+  .onw-settings .sqla-q {
+    flex-wrap: wrap;
+  }
+  .onw-settings .sqla-meta {
+    width: 100%;
+    margin-left: 16px;
+  }
+}
+
+.onw-settings .rd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 44px 20px;
+  text-align: center;
+}
+.onw-settings .rd-empty-title {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.onw-settings .rd-empty-body {
+  font-size: 12.5px;
+  color: var(--faint);
+  max-width: 380px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* ── modal (rendered from inside the settings pane) ───────────────────────── */
+/* `right: var(--chat-width)` is the app-wide rule for a fixed overlay (index.css's own
+   .modal-overlay carries it, and ui/Gallery documents it): clear the docked Lucius panel so
+   the dialog centres in the VISIBLE area. This ported sheet re-implemented the overlay and
+   dropped it, so every Settings sub-dialog centred on the whole screen and sat noticeably
+   right of the Settings card behind it. */
+.onw-settings .rd-modal-scrim {
+  position: fixed;
+  inset: 0;
+  right: var(--chat-width, 0px);
+  z-index: var(--z-modal);
+  background: rgba(6, 8, 12, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.onw-settings .rd-modal {
+  width: min(520px, 100%);
+  max-height: min(80vh, 720px);
+  overflow: auto;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-modal);
+  display: flex;
+  flex-direction: column;
+}
+.onw-settings .rd-modal.lg {
+  width: min(760px, 100%);
+}
+.onw-settings .rd-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.onw-settings .rd-modal-title {
+  flex: 1;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.onw-settings .rd-modal-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .onw-settings .rd-modal-x:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+}
+.onw-settings .rd-modal-body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.onw-settings .rd-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+}
+
+/* ── banner (attention / review) ──────────────────────────────────────────── */
+.onw-settings .rd-banner {
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, var(--line));
+  background: color-mix(in srgb, var(--warn) 7%, var(--surface));
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.onw-settings .rd-banner .rd-banner-title {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.onw-settings .rd-banner .rd-banner-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+/* misc */
+.onw-settings .rd-faint {
+  color: var(--faint);
+}
+.onw-settings .rd-mono {
+  font-variant-numeric: tabular-nums;
+}
+.onw-settings .rd-code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11.5px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  color: var(--muted);
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.6;
+}
+/* Same reasoning as .rd-modal-scrim: half the panel's width off centre, so the pill
+   stays centred in the visible area instead of drifting under the chat panel. */
+.onw-settings .rd-toast {
+  position: fixed;
+  bottom: 22px;
+  left: calc(50% - var(--chat-width, 0px) / 2);
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 18px;
+  box-shadow: var(--shadow-lg);
+  /* Sized to its text, never squeezed: centred with left 50% + translate, a shrink-to-fit box
+     only gets half the viewport, so a long message wrapped into a tall pill-shaped oval. */
+  width: max-content;
+  max-width: min(520px, calc(100vw - 32px));
+  text-align: center;
+  border-radius: 14px;
+}
+
+/* an inline SVG used as a flex child can collapse to 0px width (its flex min-content
+   resolves to 0), so icons inside interactive elements are marked flex: none */
+.onw-settings button svg,
+.onw-settings a svg,
+.onw-settings label svg {
+  flex: none;
+}
+
+/* ── anything below desktop: the dialog IS the screen, not a card on it ─────
+   The prototype's boundaries are 900px / 700px. Those are re-pointed at this app's
+   canonical ladder (640 / 768 / 1024 — see src/design/breakpoints.source.mjs) because the
+   raw numbers put the dialog out of step with the shell around it:
+
+     - A PHONE IN LANDSCAPE is 844–956 CSS px. At the prototype's 900px cutoff it fell out
+       of edge-to-edge and rendered as a centred card floating on a scrim — a popup on a
+       phone, which is the one thing this surface must never be.
+     - Between 640 and 700 the app was already in its DESKTOP shell (useIsMobile is
+       <640px) while Settings had switched to the phone chip row.
+
+   Below --lg (1024px) is every phone in either orientation and every tablet in portrait,
+   which is exactly the set the design describes as "edge to edge". */
+@media (max-width: 1023.98px) {
+  .modal-overlay--workspace.onw-settings-overlay {
+    padding: 0;
+  }
+  .ui-modal-card--workspace.onw-settings {
+    width: 100%;
+    /* dvh, not %: on iOS a fixed 100% resolves against the LAYOUT viewport, so the bottom
+       of the pane hides behind the browser chrome. dvh tracks the visible area. */
+    height: 100dvh;
+    max-height: 100dvh;
+    border: none;
+    border-radius: 0;
+  }
+}
+
+/* ── safe areas ────────────────────────────────────────────────────────────
+   Edge to edge means edge to edge: the dialog now runs under the status bar, the home
+   indicator and (in landscape) the notch. index.html sets viewport-fit=cover, so nothing
+   insets it for us. Backgrounds still reach the physical edge — it is the CONTENT that is
+   padded in, which is why these land on the bars rather than on the card. */
+@media (max-width: 1023.98px) {
+  .onw-settings .rd-set-nav {
+    padding-left: calc(10px + env(safe-area-inset-left));
+  }
+  .onw-settings .rd-set-body {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    padding-right: calc(20px + env(safe-area-inset-right));
+  }
+}
+
+/* ── tablet / landscape phone: the rail narrows but stays a rail ───────────── */
+@media (min-width: 640px) and (max-width: 1023.98px) {
+  .onw-settings .rd-set-nav {
+    width: calc(178px + env(safe-area-inset-left));
+    padding-top: calc(14px + env(safe-area-inset-top));
+  }
+  .onw-settings .rd-set-body {
+    padding: 0 20px 24px;
+  }
+  .onw-settings .rd-set-actionbar-slot:not(:empty) {
+    padding: 0 20px 20px;
+  }
+  /* The rail is beside the pane, so both columns clear the status bar independently. */
+  .onw-settings .rd-set-topbar {
+    padding-top: calc(16px + env(safe-area-inset-top));
+  }
+}
+
+/* ── phone: the section list becomes a scrolling chip row above the pane ─────
+   Gated on the SAME query as useIsMobile (<640px), so the dialog and the app shell change
+   shape at the same width instead of 60px apart. */
+@media (max-width: 639.98px) {
+  /* A bottom SHEET, not a full-screen page: docked to the bottom edge, rounded at the top,
+     leaving the app visible behind it. This is the same treatment index.css already gives
+     every non-workspace modal on a phone — the workspace tier opts out of it by default
+     because a manager surface usually wants the whole screen. */
+  .modal-overlay--workspace.onw-settings-overlay {
+    align-items: flex-end;
+    /* .modal-overlay insets itself by --chat-width so a CENTRED desktop dialog never hides
+       behind the docked Lucius panel. On a phone nothing is docked beside anything, and the
+       inset just pushed the sheet off the right edge by whatever width ChatPanel last
+       published — the asymmetric margin. index.css already resets this at this width for
+       every modal EXCEPT the workspace tier; this is that missing case. */
+    right: 0;
+  }
+  .ui-modal-card--workspace.onw-settings {
+    flex-direction: column;
+    height: var(--sheet-max-height);
+    max-height: var(--sheet-max-height);
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    animation: onw-settings-sheet-up 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+    /* Whole-card drag-to-dismiss surface (useSheetDragToDismiss, wired via Modal's
+       `mobileDockedSheet` — see index.css's identical rule for every other phone sheet):
+       `none` here means the browser never attempts native panning on this root, while
+       `.rd-set-body`'s own scroll container is untouched (touch-action doesn't inherit
+       into descendants) and keeps native scrolling. */
+    touch-action: none;
+    /* Second box-shadow layer fills the upward rubber-band gap with the card's own color
+       instead of the dimmed app behind it (see index.css's `.ui-modal-card` for the full
+       rationale — this is the workspace-tier equivalent, so it needs its own copy). */
+    box-shadow:
+      0 24px 0 0 var(--modal-bg),
+      var(--shadow-lg);
+  }
+  @keyframes onw-settings-sheet-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  .onw-settings > .ui-modal__body {
+    flex-direction: column;
+  }
+  .onw-settings .rd-set-nav {
+    width: 100%;
+    flex-direction: column;
+    gap: 9px;
+    /* A sheet never reaches the status bar, so no top inset here — the left/right ones
+       still matter in landscape. */
+    padding: 0 calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left));
+    /* The rail's darker mix (bg 78% + black) is for a full-height COLUMN beside the pane. As
+       a bar inside a sheet it read as a mismatched band; the sheet's own surface is right. */
+    background: transparent;
+    border-bottom: 1px solid var(--line);
+  }
+  /* The prototype's chip row is replaced by the app's own section switcher (PageTabs), so
+     Settings changes section the way every other tab does. It only needs its page-level
+     bottom margin removed — the nav owns that spacing here. */
+  .onw-settings .rd-set-pagetabs {
+    margin-bottom: 0;
+    border-bottom: none;
+  }
+  /* PageTabs' overflow hint is an inset shadow in var(--bg); the nav sits on a DARKER mix, so
+     the fade read as a pale smear rather than the page fading out. The row is already inside a
+     padded bar, so drop it. */
+  .onw-settings .rd-set-pagetabs {
+    box-shadow: none;
+  }
+  /* First tab flush with the search box above it — .ui-page-tabs__tab has its own left pad. */
+  .onw-settings .rd-set-pagetabs .ui-page-tabs__tab {
+    padding: 8px 12px;
+    font-size: var(--text-base);
+  }
+  .onw-settings .rd-set-pagetabs .ui-page-tabs__tab:first-child {
+    padding-left: 0;
+  }
+  .onw-settings .rd-set-x {
+    top: 8px;
+    right: 10px;
+  }
+  .onw-settings .rd-set-actionbar-slot:not(:empty) {
+    padding: 0 14px calc(14px + env(safe-area-inset-bottom));
+  }
+  .onw-settings .rd-set-body {
+    padding: 0 14px calc(20px + env(safe-area-inset-bottom));
+    gap: 20px;
+  }
+  /* The active tab already names the section, and Close has moved to the nav — so the pane's
+     header row is redundant chrome on a phone. Kept in the a11y tree as the section heading,
+     just not painted. */
+  .onw-settings .rd-set-topbar {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .onw-settings .rd-set-body {
+    padding-top: 16px;
+  }
+
+  .onw-settings .rd-formgrid {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+  .onw-settings .rd-set-body .rd-field {
+    grid-template-columns: 1fr;
+    row-gap: 7px;
+    padding: 12px 14px;
+  }
+  .onw-settings .rd-set-body .rd-field > .rd-label {
+    grid-row: 1;
+  }
+  .onw-settings .rd-set-body .rd-field > .rd-help {
+    grid-row: auto;
+    margin-top: 0;
+  }
+  /* Must match the base rule's :not() count (line 221) — one fewer :not() clause is LOWER
+     specificity, so this override silently lost every property to the base rule despite
+     matching and coming later: the control stayed in grid-column 2 of a now-single-column
+     (1fr) grid, forcing an implicit second track sized by the control's own content, which is
+     exactly why every field rendered a different width instead of stacking full-width. */
+  .onw-settings .rd-set-body .rd-field > :not(.rd-label):not(.rd-help):not(.rd-toggle) {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: stretch;
+  }
+  .onw-settings .rd-readout {
+    grid-template-columns: 1fr;
+  }
+  .onw-settings .rd-set-body .rd-readout-item:nth-child(odd) {
+    border-right: none;
+  }
+  .onw-settings .rd-set-body .rd-panel-body > * {
+    padding: 12px 14px;
+  }
+  .onw-settings .rd-input,
+  .onw-settings .rd-select,
+  .onw-settings .rd-textarea {
+    font-size: var(--text-md);
+    padding: 9px 12px;
+  }
+  .onw-settings .rd-label {
+    font-size: var(--text-sm);
+  }
+  .onw-settings .rd-help {
+    font-size: var(--text-xs);
+  }
+  .onw-settings .rd-btn {
+    min-height: 40px;
+  }
+  /* A field with buttons beside it (setup code): one height for all three, the tap target. */
+  .onw-settings .rd-secret-row > .rd-input,
+  .onw-settings .rd-secret-row > .rd-btn {
+    min-height: var(--tap-min);
+  }
+  .onw-settings .rd-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .onw-settings .rd-cost-window-segments {
+    display: none;
+  }
+  .onw-settings .rd-cost-filter {
+    display: block;
+  }
+  .onw-settings .rd-cost-trend {
+    gap: 5px;
+  }
+  .onw-settings .rd-cost-trend-head {
+    align-items: flex-start;
+  }
+  .onw-settings .rd-cost-trend-values {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+  }
+  .onw-settings .rd-cost-trend-values span + span::before {
+    content: none;
+  }
+  .onw-settings .rd-cost-trend-plot {
+    gap: 2px;
+    height: 34px;
+  }
+  .onw-settings .rd-telemetry-table,
+  .onw-settings .rd-telemetry-table tbody,
+  .onw-settings .rd-telemetry-table tr {
+    display: block;
+  }
+  .onw-settings .rd-telemetry-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .onw-settings .rd-telemetry-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--line);
+  }
+  .onw-settings .rd-telemetry-table tbody tr:last-child {
+    border-bottom: none;
+  }
+  .onw-settings .rd-telemetry-table tbody tr > * {
+    display: flex;
+    min-width: 0;
+    padding: 10px 14px;
+    border-bottom: none;
+  }
+  .onw-settings .rd-telemetry-model,
+  .onw-settings .rd-telemetry-reliability {
+    grid-column: 1 / -1;
+  }
+  .onw-settings .rd-telemetry-model {
+    flex-direction: column;
+    padding: 8px 12px 5px;
+  }
+  .onw-settings .rd-telemetry-row-label {
+    font-size: var(--text-sm);
+    line-height: 1.3;
+  }
+  .onw-settings .rd-telemetry-row-samples {
+    margin-top: 1px;
+    font-size: var(--text-2xs);
+  }
+  .onw-settings .rd-telemetry-metric {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding-top: 7px;
+    text-align: left;
+  }
+  .onw-settings .rd-telemetry-metric::before,
+  .onw-settings .rd-telemetry-reliability::before {
+    content: attr(data-label);
+    color: var(--faint);
+    font-size: var(--text-xs);
+    font-weight: 500;
+  }
+  .onw-settings .rd-telemetry-reliability {
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 7px;
+  }
+  .onw-settings .rd-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+    position: static;
+    transform: none;
+    padding: 0;
+    background: none;
+  }
+
+  .onw-settings .rd-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .onw-settings .rd-bar-track {
+    grid-column: 1 / -1;
+  }
+
+  /* tool (full width) / owner + level (row 2) / updated + actions (row 3) — three lines
+     instead of desktop's five columns, in DOM order tool → owner → level → updated → actions. */
+  .onw-settings .rd-permrow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
+  }
+  .onw-settings .rd-permrow.head {
+    display: none;
+  }
+  .onw-settings .rd-permrow-tool {
+    grid-column: 1 / -1;
+  }
+  .onw-settings .rd-permrow-owner {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .onw-settings .rd-permrow > span:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+  .onw-settings .rd-permrow-when {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .onw-settings .rd-permrow > span:last-child {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .onw-settings .rd-prov-head {
+    flex-wrap: wrap;
+  }
+  .onw-settings .rd-prov-main {
+    flex-basis: 60%;
+  }
+
+  /* right: 0 for the same reason the overlay above resets it — nothing is docked beside
+     anything on a phone, and a stale --chat-width would push the sheet off the right edge. */
+  .onw-settings .rd-modal-scrim {
+    padding: 0;
+    right: 0;
+    align-items: flex-end;
+  }
+  .onw-settings .rd-modal {
+    width: 100%;
+    max-height: 90vh;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  }
+  .onw-settings .rd-modal-foot {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .onw-settings .rd-modal-foot .rd-btn {
+    flex: 1;
+  }
+}
+
+/* ── first-load skeleton ───────────────────────────────────────────────────────
+   The section paints before /api/profile resolves (proved: with the request hung, all four
+   panels and six inputs still render). That is the right behaviour, but empty controls read
+   as "my data is gone" rather than "loading" — and on a slow backend that state is on screen
+   for over a second. Shimmer says loading; `disabled` in the JSX stops a keystroke being
+   clobbered by the response that lands on top of it.
+   display:contents so the wrapper adds no box — .rd-set-body is a flex column with a 26px
+   gap, and a real wrapper would collapse its panels into a single child. */
+.onw-settings .rd-secwrap {
+  display: contents;
+}
+.onw-settings .rd-secwrap[aria-busy='true'] :is(.rd-input, .rd-select, .rd-textarea),
+.onw-settings .rd-set-body[aria-busy='true'] :is(.rd-input, .rd-select, .rd-textarea) {
+  color: transparent;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--ink) 5%, transparent),
+    color-mix(in srgb, var(--ink) 5%, transparent)
+  );
+  animation: skeleton-breathe 2.4s ease-in-out infinite;
+}
+/* Sections that render lists rather than form controls (Permissions, AI) have nothing for the
+   shimmer above to paint, so the panel itself carries the loading state — otherwise those two
+   sections look finished-but-empty, the exact thing this whole state exists to prevent. */
+.onw-settings .rd-set-body[aria-busy='true'] .rd-panel {
+  opacity: 0.55;
+  transition: opacity 0.18s ease;
+}
+/* Nothing is interactive while its own data is still arriving — a toggle flipped now would be
+   overwritten by the response, and a button would act on state that is not on screen yet. */
+.onw-settings .rd-set-body[aria-busy='true'] :is(input, select, textarea, button) {
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .onw-settings .rd-secwrap[aria-busy='true'] :is(.rd-input, .rd-select, .rd-textarea),
+  .onw-settings .rd-set-body[aria-busy='true'] :is(.rd-input, .rd-select, .rd-textarea) {
+    animation: none;
+  }
+}
+
+/* ── phone: the grouped section index (drill-down level 1) ───────────────────
+   Rendered instead of the rail, inside the sheet's scroller. Rows are grouped into labelled
+   cards so nine destinations stay scannable on a narrow screen — the tab row this replaced
+   scrolled sideways and hid most of them. */
+.onw-settings .rd-set-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding-top: 4px;
+}
+.onw-settings .rd-set-menugroup {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.onw-settings .rd-set-menuhead {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--faint);
+}
+.onw-settings .rd-set-menucard {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.onw-settings .rd-set-menurow {
+  /* index.css has a global `button { border-radius: 8px }`. Inside a card that already clips its
+     own corners that gave every row rounded ends, so rows 2..n showed a stray rounded top sitting
+     inside a square card. The card owns the shape; the rows are square. */
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  text-align: left;
+  padding: 14px 14px;
+  cursor: pointer;
+  /* 48px minimum touch target once padding and line-height are counted. */
+  min-height: 48px;
+}
+/* Separator between rows only — not under the last one, which would double the card border. */
+.onw-settings .rd-set-menurow + .rd-set-menurow {
+  border-top: 1px solid var(--line);
+}
+.onw-settings .rd-set-menurow:active {
+  background: var(--surface2);
+}
+.onw-settings .rd-set-menuic {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  color: var(--fg-3);
+}
+.onw-settings .rd-set-menulabel {
+  flex: 1;
+  min-width: 0;
+}
+.onw-settings .rd-set-menuchev {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--faint);
+}
+
+/* ── phone: who this instance belongs to ──────────────────────────────────── */
+.onw-settings .rd-set-me {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  padding: 13px 14px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.onw-settings .rd-set-me:active {
+  background: var(--surface2);
+}
+.onw-settings .rd-set-meavatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.onw-settings .rd-set-mename {
+  flex: 1;
+  min-width: 0;
+  font-size: 15.5px;
+  font-weight: 600;
+  /* A long name must not push the chevron off the row. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── placeholder while a section's lazy chunk loads ──────────────────────────
+   Sections are lazy chunks, so switching to one not yet fetched rendered a BLANK pane (a null
+   Suspense fallback) before even the skeleton appeared. This holds the shape instead. */
+.onw-settings .rd-set-skel {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  padding-top: 2px;
+}
+.onw-settings .rd-set-skelpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.onw-settings .rd-set-skelbar {
+  height: 12px;
+  width: 100%;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  animation: skeleton-breathe 2.4s ease-in-out infinite;
+}
+.onw-settings .rd-set-skelbar.short {
+  width: 62%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .onw-settings .rd-set-skelbar {
+    animation: none;
+  }
+}
+
+/* api-key field: an rd-input with trailing icon buttons parked inside its right edge
+   (reveal the saved key / hide it again). RESTORED 2026-08-06 — see git history. */
+.onw-settings .rd-keyfield {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.onw-settings .rd-keyfield .rd-input {
+  padding-right: 38px;
+}
+.onw-settings .rd-keyeye {
+  position: absolute;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .onw-settings .rd-keyeye:hover:not(:disabled) {
+    color: var(--ink);
+    background: var(--line);
+  }
+}
+.onw-settings .rd-keyeye:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* group heading inside the provider list ("Enabled 3"); the --toggle variant is the same
+   row as a button that collapses the disabled group. */
+/* border-bottom matches the row dividers below it (--line, NOT --line-strong: a heavier rule
+   under the header read as a different or doubled line). */
+.onw-settings .rd-provgroup {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 16px 7px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.onw-settings .rd-provgroup > span {
+  color: var(--faint);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.onw-settings .rd-provgroup--toggle {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .onw-settings .rd-provgroup--toggle:hover {
+    color: var(--ink);
+  }
+}
+
+/* Money input: the currency lives INSIDE the field. `type="number"` cannot hold a grouped
+   value ("9,000" is an invalid number), so the amount stays raw — the symbol is what removes
+   the ambiguity, since every read-only surface renders the same figure as "S$9,000". */
+.onw-settings .rd-moneyfield {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.onw-settings .rd-moneysym {
+  position: absolute;
+  left: 11px;
+  font-size: 13px;
+  color: var(--faint);
+  pointer-events: none;
+}
+.onw-settings .rd-moneyfield .rd-input {
+  /* Room for the widest symbol we render (e.g. "S$"); the value never sits under it. */
+  padding-left: 34px;
+}
+
+/* Lucius reduces the workspace without reducing the browser viewport, so viewport media
+   queries cannot tell when Settings has become narrow. Query the overlay's actual inline
+   space instead: keep the established rail language as an icon rail and let Market Data
+   rows/forms use the same stacked shape as the phone sheet. */
+@media (min-width: 640px) {
+  @container settings-workspace (width < 720px) {
+    .onw-settings .rd-set-nav {
+      width: calc(56px + env(safe-area-inset-left));
+      align-items: center;
+      gap: 8px;
+      padding: calc(14px + env(safe-area-inset-top)) 8px 14px calc(8px + env(safe-area-inset-left));
+    }
+    .onw-settings .rd-set-search {
+      display: none;
+    }
+    .onw-settings .rd-set-navlist {
+      width: 100%;
+    }
+    .onw-settings .rd-set-navitem {
+      width: 100%;
+      justify-content: center;
+      gap: 0;
+      padding: 9px 8px;
+    }
+    .onw-settings .rd-set-navlabel {
+      display: none;
+    }
+    .onw-settings .rd-set-topbar {
+      padding: 16px 14px 10px;
+    }
+    .onw-settings .rd-set-actionbar-slot:not(:empty) {
+      padding: 0 14px calc(14px + env(safe-area-inset-bottom));
+    }
+    .onw-settings .rd-set-body {
+      padding: 0 14px calc(20px + env(safe-area-inset-bottom));
+      gap: 20px;
+    }
+    .onw-settings .rd-set-body .rd-panel-body > * {
+      padding: 12px 14px;
+    }
+    .onw-settings .rd-set-body .rd-field {
+      grid-template-columns: 1fr;
+      row-gap: 7px;
+      padding: 12px 14px;
+    }
+    .onw-settings .rd-set-body .rd-field > .rd-label {
+      grid-row: 1;
+    }
+    .onw-settings .rd-set-body .rd-field > .rd-help {
+      grid-row: auto;
+      margin-top: 0;
+    }
+    /* Same specificity fix as the phone-width block above — this narrowed-workspace-but-wide-
+     viewport case had the identical missing :not(.rd-toggle). */
+    .onw-settings .rd-set-body .rd-field > :not(.rd-label):not(.rd-help):not(.rd-toggle) {
+      grid-column: 1;
+      grid-row: auto;
+      justify-self: stretch;
+    }
+  }
+}
+
+/* Alerts: which kinds of update go to which channel (one checkbox per cell). */
+.onw-settings .rd-nroutes {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.onw-settings .rd-nroutes th,
+.onw-settings .rd-nroutes td {
+  padding: 9px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  vertical-align: middle;
+}
+.onw-settings .rd-nroutes thead th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--faint);
+  white-space: nowrap;
+}
+/* The grid's row in the card (the card pads direct children; a collapsed table ignores padding). */
+.onw-settings .rd-nroutes-wrap {
+  position: relative;
+}
+/* The channel header's (i): open down-left so it stays inside the card, in sentence case. */
+.onw-settings .rd-nroutes .info-pop-bubble {
+  left: auto;
+  right: 0;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.onw-settings .rd-nroutes th[scope='row'] {
+  text-transform: none;
+  letter-spacing: normal;
+}
+.onw-settings .rd-nroutes th[scope='row'],
+.onw-settings .rd-nroutes thead th:first-child {
+  text-align: left;
+  padding-left: 0;
+  width: 100%;
+}
+.onw-settings .rd-nroutes tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.onw-settings .rd-nroutes-kind {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.onw-settings .rd-nroutes thead th:not(:first-child) {
+  min-width: 92px;
+}
+.onw-settings .rd-nroutes-ch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.onw-settings .rd-nroutes-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--faint);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+.onw-settings .rd-nroutes input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.onw-settings .rd-nroutes input[type='checkbox']:disabled {
+  cursor: default;
+}
+.onw-settings .rd-nroutes-stale input[type='checkbox'] {
+  accent-color: var(--warn);
+  outline: 1px solid var(--warn);
+  outline-offset: 2px;
+}
+
+/* Settings → Terminal */
+.onw-settings .rd-term {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.onw-settings .rd-term-screen {
+  height: min(60vh, 520px);
+  min-height: 220px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #0e0f12;
+  overflow: hidden;
+}
+.onw-settings .rd-term-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+@media (max-width: 700px) {
+  .onw-settings .rd-toast {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}
+
+/* One card row holding a stack (Phone shortcuts' request + its buttons): one column, scale gaps. */
+.onw-settings .rd-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.onw-settings .rd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.onw-settings .rd-qr {
+  display: block;
+  width: var(--qr-size);
+  height: var(--qr-size);
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
+.onw-settings .rd-secret-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-3);
+  min-width: 0;
+}
+/* Buttons beside a field take the field's height, so the row reads as one control. */
+.onw-settings .rd-secret-row > .rd-btn {
+  display: inline-flex;
+  align-items: center;
+  height: auto;
+}
+.onw-settings .rd-secret-row > .rd-input {
+  flex: 1;
+  min-width: 0;
+}
+/* Phone shortcuts: the QR beside a short step list; stacked on a phone. */
+.onw-settings .rd-phone {
+  display: grid;
+  grid-template-columns: var(--qr-size) minmax(0, 1fr);
+  gap: var(--space-7);
+  align-items: center;
+}
+@media (max-width: 639.98px) {
+  .onw-settings .rd-phone {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+  .onw-settings .rd-phone > .rd-qr-slot {
+    justify-self: center;
+  }
+}
+.onw-settings .rd-qr-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--qr-size);
+  height: var(--qr-size);
+  max-width: 100%;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+}
+.onw-settings .rd-qr-slot:has(> .rd-qr),
+.onw-settings .rd-qr-slot.loading {
+  border: none;
+}
+/* While the QR is minted: the same breathing tile the Settings first-load skeleton uses. */
+.onw-settings .rd-qr-loading {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  animation: skeleton-breathe 2.4s ease-in-out infinite;
+}
+.onw-settings .rd-qr-slot > .rd-qr {
+  animation: rd-qr-in 0.24s ease-out;
+}
+@keyframes rd-qr-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onw-settings .rd-qr-loading,
+  .onw-settings .rd-qr-slot > .rd-qr {
+    animation: none;
+  }
+}
+.onw-settings .rd-qr-empty {
+  padding: var(--space-6);
+  color: var(--faint);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+.onw-settings .rd-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline-start: var(--space-7);
+  color: var(--ink);
+  font-size: var(--text-base);
+}
+.onw-settings .rd-steps > li::marker {
+  color: var(--faint);
+  font-weight: 600;
+}
+.onw-settings .rd-help--warn {
+  color: var(--warn);
+}
+/* Phone shortcuts option: icon · title/sub · Install on one line, its two steps under the text. */
+.onw-settings .rd-row--option {
+  flex-wrap: wrap;
+  row-gap: var(--space-4);
+}
+.onw-settings .rd-row--option > .rd-steps {
+  flex: 1 0 100%;
+  padding-inline-start: calc(34px + 14px + var(--space-6));
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.onw-settings .rd-row--option > .rd-steps b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.onw-settings .rd-secret-row > .rd-btn {
+  justify-content: center;
+  min-width: var(--tap-min);
+}
+/* Phone shortcuts platform switch: full width, equal segments — reads as the page's own tabs. */
+.onw-settings .rd-phone-tabs > .rd-seg {
+  display: flex;
+  width: 100%;
+}
+.onw-settings .rd-phone-tabs .rd-seg-b {
+  flex: 1;
+  padding-block: var(--space-3);
+}
+@media (max-width: 639.98px) {
+  .onw-settings .rd-phone-tabs .rd-seg-b {
+    min-height: var(--tap-min);
+    font-size: var(--text-sm);
+  }
+}
+/* On a phone, Install is the row's one action: a full-width tap target under the title, the
+   steps under it — the same order as the phone setup page. */
+@media (max-width: 639.98px) {
+  .onw-settings .rd-row--option > .rd-btn {
+    flex: 1 0 100%;
+    justify-content: center;
+    min-height: var(--tap-min);
+    font-size: var(--text-sm);
+  }
+  .onw-settings .rd-row--option > .rd-steps {
+    padding-inline-start: var(--space-7);
+  }
+}
+/* The setup code's value: the address gives way (ellipsis) so the mask is always on screen. */
+.onw-settings .rd-secret-value {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  background: var(--bg-2);
+  cursor: default;
+}
+.onw-settings .rd-secret-value.revealed {
+  display: block;
+  /* Grows to the whole code: an input's fixed height cut the token's second line off. */
+  height: auto;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.onw-settings .rd-secret-addr {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.onw-settings .rd-secret-mask {
+  flex: none;
+  color: var(--faint);
+}
+@media (max-width: 639.98px) {
+  /* The value gets the whole line; Reveal and Copy share the one under it, equal halves. */
+  .onw-settings .rd-secret-row {
+    flex-wrap: wrap;
+  }
+  .onw-settings .rd-secret-row > .rd-secret-value {
+    flex: 1 0 100%;
+  }
+  .onw-settings .rd-secret-row > .rd-btn {
+    flex: 1;
+    justify-content: center;
+    font-size: var(--text-sm);
+  }
+  /* Phone shortcuts' cards breathe: 16px inside every row, 12px between a row's parts. */
+  .onw-settings .rd-set-body .rd-panel--roomy .rd-panel-body > :not(.rd-formgrid) {
+    padding: var(--space-6);
+  }
+  .onw-settings .rd-set-body .rd-panel--roomy .rd-panel-body > *:has(+ .rd-help) {
+    padding-bottom: var(--space-4);
+  }
+  .onw-settings .rd-set-body .rd-panel--roomy .rd-panel-body > .rd-help {
+    padding: 0 var(--space-6) var(--space-6);
+  }
+  .onw-settings .rd-row--option {
+    row-gap: var(--space-5);
+  }
+  .onw-settings .rd-row--option > .rd-steps {
+    gap: var(--space-3);
+  }
+}

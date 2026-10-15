@@ -1,0 +1,453 @@
+/* Overview v2 — Investing widget group styles (fx, dividends, holdings map,
+   allocation drift, performance vs benchmark, unrealized gains, dividend
+   forecast). Ported row/list conventions from the design handoff's
+   overview_v2b/overview.css (ov-fx-row, ov-up-row, ov-panel-link and friends),
+   extended with new classes for the treemap, drift bars, performance stat row
+   and gains list. */
+
+/* ── shared row/link primitives (ported from the handoff) ────────────────── */
+
+.ov-panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+@media (hover: hover) {
+  .ov-panel-link:hover {
+    text-decoration: underline;
+  }
+}
+
+.ov-up-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.ov-up-row:first-child {
+  border-top: none;
+}
+
+.ov-up-date {
+  flex: none;
+  width: 52px;
+  font-size: 11.5px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-sym {
+  flex: none;
+  width: 48px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: 4px;
+  padding: 4px 0;
+  text-align: center;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.ov-up-lbl {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-up-lbl span {
+  color: var(--faint);
+}
+
+.ov-up-amt {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── FX rates ──────────────────────────────────────────────────────────────── */
+
+.ov-fx-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-fx-row {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 7.5px 0;
+  font-size: 12.5px;
+}
+
+.ov-fx-row + .ov-fx-row {
+  border-top: 1px solid var(--line);
+}
+
+/* The pair label is the flip control: click to read it the other way round. */
+.ov-fx-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ov-fx-flip {
+  color: var(--faint);
+  flex: none;
+}
+
+.ov-fx-pair:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (hover: hover) {
+  .ov-fx-pair:hover .ov-fx-flip {
+    color: var(--ink);
+  }
+}
+
+.ov-fx-note {
+  color: var(--faint);
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-fx-rate {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Dividends ─────────────────────────────────────────────────────────────── */
+
+.ov-div-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Holdings map (flexbox proportional treemap) ──────────────────────────── */
+
+.ov-treemap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  height: 100%;
+  min-height: 0;
+}
+
+.ov-treemap-group {
+  display: flex;
+  flex-direction: column;
+  min-height: 34px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--line) 25%, transparent);
+}
+
+.ov-treemap-group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  font-size: 10.5px;
+}
+
+.ov-treemap-group-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+.ov-treemap-group-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ov-treemap-group-total {
+  color: var(--faint);
+}
+
+.ov-treemap-tiles {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-height: 0;
+  padding: 0 2px 2px;
+}
+
+.ov-treemap-tile {
+  /* Size-contained so a tile's area is its VALUE share alone — its label never widens it —
+     and so the label can be dropped once the tile is too small to carry one (below). */
+  flex-basis: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 4px;
+  overflow: hidden;
+  padding: 2px;
+}
+
+/* A tile too small for text shows none — the hover/tap popup carries its detail instead. The
+   move goes first, the symbol last. */
+@container (max-width: 46px) or (max-height: 30px) {
+  .ov-treemap-tile-chg {
+    display: none;
+  }
+}
+
+@container (max-width: 30px) or (max-height: 15px) {
+  .ov-treemap-tile-sym {
+    display: none;
+  }
+}
+
+.ov-treemap-tile--clickable {
+  cursor: pointer;
+}
+
+.ov-treemap-tile-sym {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ov-treemap-tile-chg {
+  font-size: 9.5px;
+  color: var(--muted);
+}
+
+/* ── Allocation drift ──────────────────────────────────────────────────────── */
+
+.ov-drift-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ov-drift-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ov-drift-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.ov-drift-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+.ov-drift-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-drift-delta {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 11.5px;
+}
+
+/* Dual-direction: centered at 0pp drift, fill grows LEFT (under target) or
+   RIGHT (over target) from the middle — mirrors the handoff's `AllocDrift`
+   (`budgets.jsx`) rather than a single filled bar + target tick, so "over vs
+   under" reads as a direction, not a number you have to compare yourself. */
+.ov-drift-track {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--line) 60%, transparent);
+}
+
+.ov-drift-center {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--line);
+}
+
+.ov-drift-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+}
+
+.ov-drift-fill.over {
+  left: 50%;
+  background: var(--warn);
+}
+
+.ov-drift-fill.under {
+  right: 50%;
+  background: var(--accent);
+}
+
+.ov-drift-nums {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.ov-drift-tgt {
+  color: var(--muted);
+}
+
+/* ── Performance vs benchmark ──────────────────────────────────────────────── */
+
+.ov-perf {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.ov-perf-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.ov-perf-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Unrealized gains ──────────────────────────────────────────────────────── */
+
+.ov-gains-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ov-gains-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.ov-gains-row:first-child {
+  border-top: none;
+}
+
+.ov-gains-row--clickable {
+  cursor: pointer;
+}
+
+.ov-gains-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ov-gains-sym {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--faint);
+}
+
+.ov-gains-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.ov-gains-vals {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-gains-mv {
+  color: var(--muted);
+}
+
+.ov-gains-plpct {
+  min-width: 52px;
+  text-align: right;
+  font-size: 11px;
+}
+
+/* Narrower cards drop the market-value column so P&L stays legible. */
+@container ovcard (max-width: 280px) {
+  .ov-gains-mv {
+    display: none;
+  }
+  .ov-fx-row {
+    grid-template-columns: 88px minmax(0, 1fr) auto;
+  }
+  .ov-perf-stats {
+    gap: 12px;
+  }
+}

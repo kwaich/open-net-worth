@@ -1,0 +1,3606 @@
+/* Commitments tab redesign — ported from frontend/design_handoffs/commitments_handoff/
+   prototype/commitments_v2/commitments2.css + commitments_v3/commitments3.css, verbatim
+   class vocabulary (c2- and c3- prefixes). Stripped of shell scaffolding: the standalone
+   prototype's own app-nav rail, html/body reset, duplicate :root tokens (index.css already
+   defines the same set — --lucius included), the privacy-mask .mask/hide-amounts rule
+   (superseded by the app's real body.hide-amounts .money convention, used instead of .mask
+   throughout the ported components), and the simulated Lucius side panel/dock CSS (this port
+   routes every Lucius touchpoint through the app's REAL LuciusDock via onAskLucius, per
+   docs/adr/2026-07-22-commitments-tab-redesign-faithful-port.md, so there is no local panel
+   to style). Unlayered — wins like plan.css/accounts.css. Registered in
+   frontend/scripts/check-css-classes.mjs's CSS_FILES. */
+
+/* ── page scaffold (mirrors Plan's .pl-page: no horizontal padding of its own —
+   .app-layout already owns the page gutter (24px desktop / 16px ≤640px); adding
+   more here double-padded the tab at every width, most visibly on wide desktop
+   screens where the old clamp(18px, 3vw, 44px) added up to ~44px on TOP of
+   .app-layout's 24px) ── */
+.c2-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 96px;
+  container-type: inline-size;
+}
+/* top: var(--c2-topbar-h), not 0 — the app shell's .topbar is ALSO sticky at top:0, so a plain
+   top:0 here pins this header invisibly behind it. --c2-topbar-h is measured in Commitments.tsx
+   (ResizeObserver on .topbar); the 0px fallback only covers the first paint before that effect
+   runs. */
+.c2-page > .ui-page-header {
+  position: sticky;
+  top: var(--c2-topbar-h, 0px);
+  z-index: 40;
+  padding: 0 0 14px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.ui-page-header__title {
+  font-size: 19px;
+}
+.ui-page-header__subtitle {
+  font-size: 12.5px;
+}
+/* Match Plan's phone bottom clearance. Horizontal gutters belong exclusively to
+   .app-layout, so Commitments does not double-pad the shared shell. */
+@media (max-width: 560px) {
+  .c2-page {
+    padding-bottom: 110px;
+  }
+}
+
+/* The shared PageHeader drops its actions onto their own row below the title on phones. Here
+   that spent a third full row on a single button while leaving the title row half empty. With
+   the label shortened to "New" the action fits beside the title, so keep the desktop row. */
+@media (max-width: 640px) {
+  .c2-page > .ui-page-header {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-4);
+    /* 14px was sized for a two-line header (title + subtitle). With the subtitle dropped below,
+       that padding plus .c2-page's own 18px inter-card gap left ~32px of dead air under a now
+       single-line header — visibly more than the gap between any other two cards on the page. */
+    padding-bottom: 6px;
+  }
+  .c2-new-rest {
+    display: none;
+  }
+  /* The subtitle restates what the card below already shows. On a phone that is a whole row of
+     above-the-fold height spent on decoration, so drop it here; desktop keeps it. */
+  .c2-page > .ui-page-header .ui-page-header__subtitle {
+    display: none;
+  }
+}
+
+/* privacy mask (same idiom as Plan) */
+
+/* link-style button */
+.c2-link {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+  font-family: inherit;
+}
+@media (hover: hover) {
+  .c2-link:hover {
+    text-decoration: underline;
+  }
+}
+
+/* ════════ Funding outlook summary card (Plan pl-summary pattern) ════════ */
+/* Flex column (was block) purely so the phone layout can REORDER the card's bands — see the
+   ≤560px query. Order is a no-op at desktop widths, where the visual order already matches. */
+.c2-sum {
+  container-type: inline-size;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+/* Standalone ribbon card — phone only (desktop renders the ribbon inline inside .c2-sum via
+   the !narrow branch in masthead.tsx, so this element doesn't exist in the DOM there at all;
+   the `display: none` default here just covers a same-session width change from phone up
+   through wider breakpoints without a remount). */
+.c2-ribbon-card {
+  display: none;
+}
+@container (max-width: 560px) {
+  .c2-ribbon-card {
+    /* No margin-top: .c2-page is already a flex column with an 18px gap between every card
+       (masthead, this, needs-lane, the list) — adding one here stacked on top of that and
+       doubled the space above this card versus every other seam on the page. */
+    display: block;
+    background: color-mix(in srgb, var(--lucius) 6%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--lucius) 20%, var(--line));
+    border-radius: 16px;
+    overflow: hidden;
+  }
+}
+.c2-sum-loading {
+  padding: 44px 0;
+}
+.c2-sum-skeleton {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(250px, 1fr);
+  gap: 20px;
+  padding: 20px;
+}
+.c2-sum-skeleton__hero,
+.c2-sum-skeleton__stats,
+.c2-sum-skeleton__stats > div {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.c2-sum-skeleton__stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .c2-sum-skeleton {
+    grid-template-columns: 1fr;
+  }
+}
+.c2-sum-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 28px;
+  padding: 16px 22px 15px;
+}
+.c2-sum-left {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.c2-sum-heroline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* 17px, down from 19px: with the eyebrow gone the verdict is the block's only heading, so it
+   no longer needs to out-shout a line above it — and at 19px it sat level with the page title. */
+.c2-sum-hero {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.c2-sum-hero.neg {
+  color: var(--bad);
+}
+.c2-sum-hero.pos {
+  color: var(--good);
+}
+.c2-sum-badge {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.c2-sum-badge svg {
+  width: 13px;
+  height: 13px;
+}
+.c2-sum-badge.bad {
+  background: color-mix(in srgb, var(--bad) 15%, transparent);
+  color: var(--bad);
+}
+.c2-sum-badge.good {
+  background: color-mix(in srgb, var(--good) 15%, transparent);
+  color: var(--good);
+}
+/* The verdict sentence WRAPS at every width: it was nowrap with an ellipsis above 560px, which cut
+   "Cash dips below your S$5,000 floor in July 2026 and bottoms out in ..." off mid-sentence
+   under the Short figure (persona QA round 7). */
+.c2-sum-sub {
+  font-size: 12px;
+  color: var(--faint);
+  line-height: 1.45;
+  max-width: 56ch;
+}
+.c2-sum-sub b {
+  color: var(--muted);
+}
+.c2-sum-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, auto));
+  gap: 8px clamp(14px, 2.4vw, 34px);
+  justify-content: end;
+  align-items: start;
+}
+.c2-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+}
+.c2-stat .k {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.c2-stat .v {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.c2-stat .v.warn {
+  color: var(--warn);
+}
+.c2-stat .v.bad {
+  color: var(--bad);
+}
+.c2-stat .u {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+/* chart strip */
+.c2-chart-wrap {
+  border-top: 1px solid var(--line);
+  padding: 13px 22px 14px;
+  background: color-mix(in srgb, var(--bg) 35%, var(--surface));
+}
+.c2-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.c2-chart-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.c2-chart-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.c2-leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.c2-leg i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.c2-leg i.out {
+  background: var(--bad);
+}
+.c2-leg i.in {
+  background: var(--good);
+}
+.c2-leg i.line {
+  width: 14px;
+  height: 0;
+  border-top: 2px solid var(--primary);
+  border-radius: 0;
+}
+/* Phone-only legend entry: the cash-floor line's label is dropped from inside the plot (it
+   occluded the series at that size) and stated here instead. */
+.c2-leg.floor {
+  color: var(--warn);
+}
+.c2-leg i.floorline {
+  width: 14px;
+  height: 0;
+  border-top: 1.5px dashed var(--warn);
+  border-radius: 0;
+}
+/* Swatches mirror the two in-plot reference lines exactly (zero = 3-3 dash on --line-strong,
+   floor = 5-4 dash on --warn) so the legend is readable as a key, not just a caption. */
+.c2-leg i.zeroline {
+  width: 14px;
+  height: 0;
+  border-top: 1.5px dashed var(--line-strong);
+  border-radius: 0;
+}
+.c2-chart-body {
+  position: relative;
+}
+.c2-chart-plot {
+  position: relative;
+}
+.c2-chart-svg {
+  width: 100%;
+  display: block;
+  overflow: visible;
+}
+.c2-chart-zero,
+.c2-chart-floor {
+  position: absolute;
+  font-size: 9px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.c2-chart-zero {
+  left: 4px;
+  color: var(--faint);
+}
+.c2-chart-floor {
+  right: 4px;
+  color: var(--warn);
+}
+.c2-chart-x {
+  display: grid;
+  margin-top: 4px;
+}
+.c2-chart-x span {
+  font-size: 10px;
+  color: var(--faint);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.c2-chart-x span.gap {
+  color: var(--bad);
+  font-weight: 700;
+}
+.c2-tip {
+  position: absolute;
+  top: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 9px 11px;
+  box-shadow: var(--shadow-lg);
+  z-index: 6;
+  width: max-content;
+  max-width: 250px;
+  pointer-events: none;
+}
+.c2-tip-m {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 5px;
+}
+.c2-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 1.5px 0;
+}
+.c2-tip-row i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+}
+.c2-tip-row i.out {
+  background: var(--bad);
+}
+.c2-tip-row i.in {
+  background: var(--good);
+}
+.c2-tip-row .n {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c2-tip-row .a {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ink);
+}
+.c2-tip-row .a.neg {
+  color: var(--bad);
+}
+.c2-tip-row .a.pos {
+  color: var(--good);
+}
+.c2-tip-none {
+  font-size: 11px;
+  color: var(--faint);
+}
+.c2-tip-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 10.5px;
+  color: var(--faint);
+  border-top: 1px solid var(--line);
+  margin-top: 6px;
+  padding-top: 5px;
+}
+.c2-tip-foot b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.c2-tip-foot b.neg {
+  color: var(--bad);
+}
+
+/* Lucius insight ribbon */
+.c2-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 22px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--lucius) 6%, transparent);
+  flex-wrap: wrap;
+}
+.c2-ribbon-spark {
+  color: var(--lucius);
+  display: inline-flex;
+  flex: none;
+}
+.c2-ribbon-text {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.45;
+  flex: 1;
+  min-width: 220px;
+}
+.c2-ribbon-text b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.c2-ribbon-acts {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+.c2-ribbon-act {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.12s;
+}
+@media (hover: hover) {
+  .c2-ribbon-act:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+}
+.c2-ribbon-act.hot {
+  color: #fff;
+  background: var(--lucius);
+  border-color: var(--lucius);
+}
+@media (hover: hover) {
+  .c2-ribbon-act.hot:hover {
+    background: color-mix(in srgb, var(--lucius) 86%, #fff);
+  }
+}
+.c2-ribbon-lite {
+  display: none;
+}
+
+/* summary card squeeze */
+@container (max-width: 880px) {
+  .c2-sum-metrics {
+    grid-template-columns: repeat(2, minmax(0, auto));
+  }
+}
+@container (max-width: 720px) {
+  .c2-sum-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .c2-sum-left {
+    padding-bottom: 14px;
+  }
+  /* metrics become a tidy full-bleed 2×2 panel with hairline dividers */
+  .c2-sum-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    justify-content: stretch;
+    border-top: 1px solid var(--line);
+    margin: 0 -22px -15px;
+  }
+  .c2-sum-metrics .c2-stat {
+    gap: 6px;
+    padding: 13px 22px;
+  }
+  .c2-sum-metrics .c2-stat:nth-child(odd) {
+    border-right: 1px solid var(--line);
+  }
+  .c2-sum-metrics .c2-stat:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+  .c2-sum-metrics .c2-stat .v {
+    font-size: 16px;
+  }
+  /* ribbon: header already states the shortfall — show the actionable fix instead */
+  .c2-ribbon-core {
+    display: none;
+  }
+  .c2-ribbon-lite {
+    display: inline;
+  }
+}
+
+/* ── phone: reorder the card by what the reader needs, and demote the stats ───
+   Desktop order (verdict → stats → chart → Lucius fix) puts the LOWEST-value band second on a
+   phone: four reference numbers, commonly three of them "S$0.00", between the verdict and
+   everything actionable — which pushed the one tappable recommendation clean off the fold.
+   Reading priority on a phone is:
+     1. am I OK?      → the verdict hero
+     2. what do I do? → the suggested fix + its button
+     3. how bad/when? → the chart
+     4. reference     → the four stats
+   `display: contents` dissolves the desktop hero|stats grid row so both halves become direct
+   flex children of .c2-sum and can be ordered independently. All four stats still render — a
+   zero is a real answer ("nothing due in 30 days"), and hiding it would leave the reader
+   unsure whether the stat was absent or just not applicable. They simply stop being a
+   full-height band and become one compact strip at the foot of the card. */
+/* ── phone: calm the verdict block ────────────────────────────────────────────
+   Three consecutive lines carried three different type treatments — tracked uppercase caps,
+   a 19px red number, then a 12px grey sentence with two bolded fragments — at 5px gaps, so
+   ~60px of card held five weight/colour changes and read as one busy clump (owner: "this part
+   looks too busy somehow"). The content is right; the typography was overworked.
+   The eyebrow is gone from the markup entirely (masthead.tsx), the in-sentence bold is a colour
+   lift rather than a weight jump, and .c2-sum-left carries a 7px gap — all three applied at
+   EVERY width, not just phones, once the owner confirmed the same treatment for web. */
+
+@container (max-width: 560px) {
+  /* One step below the 17px desktop verdict — on a phone it sits directly under the 19px page
+     title, and at 17px the two competed for the same rung of the hierarchy. */
+  .c2-sum-hero {
+    font-size: 16px;
+  }
+
+  /* On phone the ribbon is no longer a strip stacked inside the funding-outlook card — it
+     renders as its OWN card via .c2-ribbon-card (masthead.tsx), directly below. Collapse it to
+     one row here regardless: sentence left, one primary action right. "Review commitment" is
+     dropped rather than shrunk — the same commitment is a tap away in the list further down,
+     so that button was duplicated navigation, whereas "Fix with Lucius" is the only place that
+     action exists. */
+  .c2-ribbon {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-top: none;
+  }
+  .c2-ribbon-text {
+    min-width: 0;
+    flex: 1;
+    font-size: 12px;
+  }
+  .c2-ribbon-acts {
+    flex: none;
+  }
+  .c2-ribbon-act:not(.hot) {
+    display: none;
+  }
+  .c2-ribbon-act.hot {
+    padding: 9px 13px;
+  }
+
+  /* ── chart chrome: 4 rows → 1 ──
+     Title, then the timeframe control on its own row, then a legend that wrapped to two —
+     four rows of chrome above a 156px chart (owner: "the month selector is an entire row
+     itself"). The title goes: "Cash cushion vs. committed payments" names exactly the three
+     series the legend beneath it already names, and the card's subject is stated in the
+     verdict above. That frees the row for the select, and shortening the legend's second
+     words ("Payments out" → "Payments") lets the control and the whole key share it. */
+  /* Title shares a row with the select instead of taking its own — the legend below already
+     names the three series, so the title only needs to state the chart's subject, not repeat
+     them; letting it truncate rather than wrap keeps the row to one line. */
+  .c2-chart-title {
+    font-size: 10px;
+    white-space: nowrap;
+    flex: none;
+  }
+  .c2-chart-title-rest {
+    display: none;
+  }
+  .c2-chart-head {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px 12px;
+    margin-bottom: 8px;
+  }
+  /* Forces the legend onto its own second line no matter how much room the title+select row
+     leaves — title and select are the two that must share row one. */
+  .c2-chart-legend {
+    flex: 1 0 100%;
+    gap: 10px;
+  }
+  .c2-leg {
+    font-size: 10.5px;
+  }
+  .c2-leg-rest {
+    display: none;
+  }
+  /* Timeframe dropdown replaces the 4-button segmented group (see masthead.tsx). */
+  .c3-hz-select {
+    height: 30px;
+    padding: 0 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  /* Ribbon is no longer a .c2-sum child on phone (see .c2-ribbon-card below), so this list is
+     verdict → chart → stats, not verdict → ribbon → chart → stats. */
+  .c2-sum-row {
+    display: contents;
+  }
+  .c2-sum-left {
+    order: 1;
+    padding: 16px 22px 14px;
+  }
+  .c2-chart-wrap {
+    order: 2;
+  }
+  .c2-sum-metrics {
+    order: 3;
+  }
+
+  .c2-sum-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    justify-content: flex-start;
+    margin: 0;
+    padding: 11px 22px 13px;
+    border-top: 1px solid var(--line);
+  }
+  /* Label above value, tight — a pair reads as one token, four fit on two lines (~56px total,
+     vs ~160px as full-width rows or ~90px as a 2×2 of quadrants). */
+  .c2-sum-metrics .c2-stat {
+    flex: 0 1 auto;
+    min-width: calc(50% - 18px);
+    gap: 3px;
+    padding: 0;
+    border: none;
+  }
+  /* The ≤720px grid rules below are (0,3,0) and would otherwise outrank the (0,2,0) reset
+     above, leaving a stray part-width hairline floating between the wrapped stat rows.
+     Match their specificity to actually clear them. */
+  .c2-sum-metrics .c2-stat:nth-child(odd) {
+    border-right: none;
+  }
+  .c2-sum-metrics .c2-stat:nth-child(n + 3) {
+    border-top: none;
+  }
+  .c2-sum-metrics .c2-stat .k {
+    font-size: 9.5px;
+    white-space: nowrap;
+  }
+  .c2-sum-metrics .c2-stat .v {
+    font-size: 14px;
+  }
+}
+
+@container (max-width: 560px) {
+  /* Thin the axis, but NEVER the gap month — `.gap` is the red tick marking where cash goes
+     short, the single most important label on the axis, and a bare :nth-child(even) hid it
+     on every timeline where it happened to land on an even index. */
+  .c2-chart-x span:nth-child(even):not(.gap) {
+    visibility: hidden;
+  }
+  /* NOTE: do NOT pin a height here. It was tried and reverted — preserveAspectRatio="none"
+     makes a pinned height stretch the Y axis alone, which turns the data dots into ellipses
+     and floats the bar band off the plot. The chart now swaps to a taller VIEWBOX at this
+     width instead (see useNarrow() in chart.tsx), which is real geometry, not a stretch. */
+  /* Both axis labels float INSIDE the plot, so on a narrow chart they sit directly on the
+     cushion line and the right-hand data points. A chip background was tried first — it made
+     them legible but they still occluded the series. At this width the plot is too small to
+     spend any of it on labels, so the floor moves into the legend (.c2-leg.floor, rendered
+     only when narrow) and the in-plot pair is dropped entirely. */
+  .c2-chart-zero,
+  .c2-chart-floor {
+    display: none;
+  }
+}
+/* true phone width: let the tight nowrap lines wrap instead of clipping — keep type sizes */
+@container (max-width: 440px) {
+  .c2-stat .k {
+    white-space: normal;
+  }
+}
+
+/* ════════ Needs your attention ════════ */
+.c2-needs {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  container-type: inline-size;
+}
+.c2-needs-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.c2-needs-head svg {
+  width: 14px;
+  height: 14px;
+  color: var(--warn);
+}
+.c2-needs-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.c2-needs-count {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #1b1200;
+  background: var(--warn);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+.c2-needs-overdue {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--faint);
+}
+.c2-need {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+/* The row that follows the HEAD drops its top rule — the head already draws a bottom one,
+   and two adjacent hairlines read as a double line (owner, 2026-08-24).
+   This was `.c2-need:first-of-type`, which never matched: :first-of-type means "first
+   element of its TAG type among siblings", and .c2-needs-head is a <div> too, so the head
+   was always the first div and no .c2-need ever qualified. */
+.c2-needs-head + .c2-need {
+  border-top: none;
+}
+.c2-need-ic {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  background: var(--surface2);
+  color: var(--muted);
+}
+.c2-need-ic svg {
+  width: 15px;
+  height: 15px;
+}
+.c2-need-ic.pay {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.c2-need-ic.overdue {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent);
+}
+.c2-need-ic.task {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+.c2-need-main {
+  flex: 1;
+  min-width: 200px;
+}
+.c2-need-t {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.c2-need-t b {
+  font-weight: 700;
+}
+.c2-need-d {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+.c2-need-btns {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.c2-need-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: pointer;
+  flex: none;
+}
+@media (hover: hover) {
+  .c2-need-icon-btn:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+}
+.c2-need-icon-btn.pay {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 30%, var(--line));
+}
+@media (hover: hover) {
+  .c2-need-icon-btn.pay:hover {
+    background: color-mix(in srgb, var(--good) 12%, transparent);
+  }
+}
+.c2-need-icon-btn.miss {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 30%, var(--line));
+}
+@media (hover: hover) {
+  .c2-need-icon-btn.miss:hover {
+    background: color-mix(in srgb, var(--bad) 12%, transparent);
+  }
+}
+.c2-need-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ════════ Commitments rows ════════ */
+.c2-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.c2-sec-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.c2-sec-count {
+  font-size: 11.5px;
+  color: var(--faint);
+  font-weight: 500;
+}
+.c2-sec-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.c2-seg {
+  display: flex;
+  gap: 3px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  height: 28px;
+  box-sizing: border-box;
+}
+.c2-seg button {
+  height: 22px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: 0.12s;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .c2-seg button:hover {
+    color: var(--ink);
+  }
+}
+.c2-seg button.on {
+  background: var(--selected);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+.c2-seg .pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--line);
+  color: var(--muted);
+}
+.c2-seg button.on .pill {
+  background: var(--bad);
+  color: #fff;
+}
+.c2-select {
+  height: 28px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--muted);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 11.5px;
+  padding: 0 7px;
+  cursor: pointer;
+}
+.c2-select option {
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .c2-sec-tools {
+    flex-wrap: nowrap;
+    width: 100%;
+    min-width: 0;
+  }
+  /* The whole filter rail was 28px tall with 22px buttons — well under the 44px floor this
+     codebase already tokenises as --tap-min (WCAG 2.5.5 / HIG). Grow the rail, not the type. */
+  .c2-seg {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: var(--tap-min);
+  }
+  .c2-seg button {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 0;
+    height: calc(var(--tap-min) - 6px);
+    padding-inline: 6px;
+  }
+  .c2-select--sort {
+    flex: none;
+    width: var(--tap-min);
+    height: var(--tap-min);
+    padding: 0;
+    text-indent: -999px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M3 6h14M3 12h10M3 18h6'/%3E%3Cpath d='m17 15 3 3 3-3M20 18V8'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+}
+
+.c2-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  container-type: inline-size;
+}
+/* Invisible — no border/background of its own, so it reads as ordinary trailing page space
+   (normal above a bottom tab bar) rather than a half-empty bordered box. Height is set inline
+   per-render from JS (Commitments.tsx), sized to exactly this card's own tallest-ever render
+   minus its current one — zero whenever the fullest filter is showing. */
+.c2-scroll-spacer {
+  flex: none;
+}
+/* Separator BETWEEN rows, not above each one: `.x + .x` can never draw above the first row,
+   whatever precedes it. The previous form paired `border-top` with a :first-child /
+   :first-of-type guard, and both missed here — .c2-thead is the first child and, being a
+   <div> like the rows, the first of its type too (owner, 2026-08-24). */
+.c2-item {
+  display: flex;
+  flex-direction: column;
+}
+.c2-item + .c2-item {
+  border-top: 1px solid var(--line);
+}
+.c2-item.open {
+  background: color-mix(in srgb, var(--bg) 30%, var(--surface));
+}
+
+.c2-thead {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 150px 96px 120px 18px;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 18px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.c2-thead span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.c2-thead span.r {
+  text-align: right;
+}
+
+.c2-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 150px 96px 120px 18px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 18px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.12s;
+}
+@media (hover: hover) {
+  .c2-row:hover {
+    background: color-mix(in srgb, var(--surface2) 55%, transparent);
+  }
+}
+.c2-row-ic {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  background: var(--surface2);
+  color: var(--muted);
+}
+.c2-row-ic svg {
+  width: 17px;
+  height: 17px;
+}
+.c2-item.at-risk .c2-row-ic {
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  color: var(--bad);
+}
+.c2-row-main {
+  min-width: 0;
+}
+.c2-row-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c2-row-meta {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c2-row-meta b {
+  color: var(--muted);
+  font-weight: 600;
+}
+.c2-row-meta .soon {
+  color: var(--warn);
+  font-weight: 600;
+}
+.c2-row-meta .od {
+  color: var(--bad);
+  font-weight: 600;
+}
+.c2-row-prog {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.c2-row-prog .lbl {
+  font-size: 10px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.c2-meter {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface2);
+  overflow: hidden;
+}
+.c2-meter i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--good);
+}
+.c2-meter i.goal {
+  background: var(--crypto);
+}
+.c2-row-chip {
+  display: flex;
+  justify-content: flex-end;
+}
+.c2-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2.5px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.c2-chip.short {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 14%, transparent);
+}
+.c2-chip.ok {
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+}
+.c2-chip.track {
+  color: var(--faint);
+  background: var(--surface2);
+}
+.c2-row-amt {
+  text-align: right;
+}
+.c2-row-amt .v {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.c2-row-amt .u {
+  font-size: 10px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+.c2-row-chev {
+  color: var(--faint);
+  display: grid;
+  place-items: center;
+  transition: transform 0.16s ease;
+}
+.c2-row-chev svg {
+  width: 14px;
+  height: 14px;
+}
+.c2-item.open .c2-row-chev {
+  transform: rotate(180deg);
+}
+
+@container (max-width: 780px) {
+  .c2-row,
+  .c2-thead {
+    grid-template-columns: 34px minmax(0, 1fr) 96px 120px 18px;
+  }
+  .c2-row-prog,
+  .c2-thead span:nth-child(3) {
+    display: none;
+  }
+}
+@container (max-width: 540px) {
+  .c2-row,
+  .c2-thead {
+    grid-template-columns: 34px minmax(0, 1fr) 110px 18px;
+    gap: 10px;
+  }
+  .c2-row-chip,
+  .c2-thead span:nth-child(4) {
+    display: none;
+  }
+}
+
+/* ── expanded detail ── */
+/* Equal columns, not content-sized ones. As a flex row each stat took only its own text's
+   width, so the four sat in uneven columns (measured gaps 174/142/132px) packed against
+   the left with every pixel of slack dumped on the right — 456px of it at a 1010px pane.
+   Owner, 2026-08-23: "the text instead of equal align they are aligned left". One track
+   per stat spreads them across the full row (262/261/262px, nothing left over) at the
+   same height, and adapts to 3 or 4 stats since the loan/tracker variants differ. */
+.c2-exp-figs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(18px, 3cqw, 36px);
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+.c2-exp-figs .grow {
+  flex: 1;
+}
+/* Phone: free-wrapping flex left the 4th stat ("Funding lined up") orphaned on its own line
+   under a row of three, which reads as an unrelated afterthought rather than a peer of the
+   other figures. An explicit 2×2 keeps the four paired and aligned. */
+@media (max-width: 640px) {
+  .c2-exp-figs {
+    display: grid;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+    align-items: start;
+  }
+  .c2-exp-figs .grow {
+    flex: none;
+  }
+}
+.c2-exp-sec {
+  margin-top: 16px;
+}
+/* .c2-exp-sec is shared by every detail sub-section (Overview/Schedule/Funding/Actions all use
+   it too) — position:relative belongs on a class scoped to just the timeline strip's own
+   instance, not the shared one, so this can't affect any of those other sections' own
+   absolutely-positioned children. Positioning ancestor for .c3-tip-float (the strip's
+   tooltip), which needs to escape .c2-strip-scroll's own overflow clipping. */
+.c2-strip-section {
+  position: relative;
+}
+.c2-exp-sec-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 11px;
+}
+.c2-exp-sec-h:has(select) {
+  align-items: center;
+}
+.c2-exp-sec-t {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.c2-exp-sec-note {
+  font-size: 11px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.c2-exp-sec-note.bad {
+  color: var(--bad);
+  font-weight: 600;
+}
+.c2-exp-sec-note.good {
+  color: var(--good);
+}
+.c2-note-row .c2-iconbtn {
+  opacity: 0;
+}
+@media (hover: hover) {
+  .c2-note-row:hover .c2-iconbtn {
+    opacity: 1;
+  }
+}
+.c2-note-row .c2-iconbtn:focus-visible {
+  opacity: 1;
+}
+/* Touch parity — see the .c2-iconbtn block near the bottom of this file. This selector is
+   more specific than the bare .c2-iconbtn rule there, so it needs its own escape hatch. */
+@media (hover: none) {
+  .c2-note-row .c2-iconbtn {
+    opacity: 1;
+  }
+}
+.c2-del-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+/* schedule rail */
+.c2-si {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 0 0 13px;
+}
+.c2-si:last-child {
+  padding-bottom: 0;
+}
+.c2-si-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.c2-si-dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  flex: none;
+  z-index: 1;
+  color: transparent;
+}
+.c2-si-dot svg {
+  width: 8px;
+  height: 8px;
+}
+.c2-si.paid .c2-si-dot {
+  border-color: var(--good);
+  background: var(--good);
+  color: #06231a;
+}
+.c2-si.due .c2-si-dot {
+  border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 22%, var(--surface));
+}
+.c2-si.overdue .c2-si-dot {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 22%, var(--surface));
+}
+.c2-si-line {
+  width: 2px;
+  flex: 1;
+  background: var(--line);
+  margin-top: 2px;
+  min-height: 10px;
+}
+.c2-si.paid .c2-si-line {
+  background: color-mix(in srgb, var(--good) 55%, var(--line));
+}
+.c2-si:last-child .c2-si-line {
+  display: none;
+}
+.c2-si-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  min-height: 15px;
+}
+.c2-si-label .c2-iconbtn {
+  width: 16px;
+  height: 16px;
+  margin-left: 3px;
+}
+.c2-si-label .c2-iconbtn svg {
+  width: 9px;
+  height: 9px;
+}
+.c2-si.paid .c2-si-label {
+  color: var(--muted);
+}
+.c2-si-meta {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+.c2-si-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.c2-si-amt {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.c2-si.paid .c2-si-amt {
+  color: var(--muted);
+  font-weight: 600;
+}
+.c2-si-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+.c2-si-badge.paid {
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent);
+}
+.c2-si-badge.due {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent);
+}
+.c2-si-badge.overdue {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent);
+}
+.c2-si-badge.upcoming {
+  color: var(--faint);
+  background: var(--surface2);
+}
+
+/* funding — the track/segment DOM+CSS (layout, focus ring, narrow-label hiding) now lives on
+   the shared Meter primitive (frontend/src/index.css's ui-meter rules); only the per-type
+   color mapping is domain knowledge that stays local here, keyed off the segment className
+   FundingCoverageBar passes through (the funding type, or "gap" for the unfunded remainder). */
+.ui-meter__segment.cash {
+  background: var(--liquid);
+  color: #06231a;
+}
+.ui-meter__segment.income {
+  background: color-mix(in srgb, var(--liquid) 62%, var(--bg));
+}
+.ui-meter__segment.loan {
+  background: var(--primary);
+}
+.ui-meter__segment.asset_sale {
+  background: var(--crypto);
+}
+.ui-meter__segment.windfall {
+  background: var(--contingent);
+  color: #241700;
+}
+.ui-meter__segment.gap {
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--bad) 22%, var(--surface2)),
+    color-mix(in srgb, var(--bad) 22%, var(--surface2)) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  color: var(--bad);
+  border-left: 1px dashed var(--bad);
+}
+.c2-fund-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--faint);
+  margin-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.c2-fund-typefilter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.c2-fund-typefilter-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  flex: none;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.c2-fund-typefilter-btn svg {
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
+}
+.c2-fund-typefilter-btn.active {
+  color: var(--lucius);
+  border-color: color-mix(in srgb, var(--lucius) 40%, var(--line));
+}
+.c2-fund-typefilter-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.c2-fund-headnote {
+  display: inline;
+}
+.c2-fund-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+.c2-fund-row {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+.c2-fund-row:first-child {
+  border-top: none;
+}
+.c2-fund-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+.c2-fund-dot.cash {
+  background: var(--liquid);
+}
+.c2-fund-dot.income {
+  background: color-mix(in srgb, var(--liquid) 62%, var(--bg));
+}
+.c2-fund-dot.loan {
+  background: var(--primary);
+}
+.c2-fund-dot.asset_sale {
+  background: var(--crypto);
+}
+.c2-fund-dot.windfall {
+  background: var(--contingent);
+}
+
+/* funding-bar segment hover popover — lists the individual sources behind one segment's total */
+.c2-fund-pop {
+  position: fixed;
+  z-index: var(--z-modal);
+  background: var(--modal-bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.4));
+  overflow: hidden;
+  animation: c2FundPopIn 0.12s ease;
+}
+.c2-fund-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.c2-fund-pop-head .money {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.c2-fund-pop-rows {
+  padding: 6px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.c2-fund-pop-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11.5px;
+}
+.c2-fund-pop-row .c2-fund-dot {
+  flex: none;
+  margin-top: 3px;
+}
+.c2-fund-pop-row .lbl {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c2-fund-pop-row .lbl .sub {
+  display: block;
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 400;
+}
+.c2-fund-pop-row .amt {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ink);
+}
+@keyframes c2FundPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.c2-fund-name {
+  font-size: 12.5px;
+  color: var(--ink);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 15px;
+}
+.c2-fund-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c2-fund-name .c2-iconbtn {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-left: 3px;
+}
+.c2-fund-name .c2-iconbtn svg {
+  width: 9px;
+  height: 9px;
+}
+.c2-fund-type {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.c2-fund-tagline {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.c2-fund-note {
+  color: var(--faint);
+}
+.c2-fund-when {
+  font-size: 11px;
+  color: var(--faint);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.c2-fund-when .cad {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--liquid);
+}
+.c2-fund-when-inline {
+  display: none;
+}
+.c2-fund-amt {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+.c2-fund-empty {
+  font-size: 12px;
+  color: var(--faint);
+  line-height: 1.5;
+}
+
+@container (max-width: 560px) {
+  .c2-exp-sec-h {
+    flex-wrap: wrap;
+  }
+  .c2-fund-row {
+    display: grid;
+    grid-template-columns: 12px minmax(0, 1fr) auto;
+    grid-template-areas: 'dot name amt' '. type type';
+    align-items: start;
+    row-gap: 6px;
+    column-gap: 8px;
+  }
+  .c2-fund-mid {
+    display: contents;
+  }
+  .c2-fund-dot {
+    grid-area: dot;
+    align-self: center;
+  }
+  .c2-fund-name {
+    grid-area: name;
+    align-items: start;
+  }
+  .c2-fund-name-text {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
+  }
+  .c2-fund-name .c2-iconbtn {
+    margin-top: 2px;
+  }
+  .c2-fund-type {
+    grid-area: type;
+  }
+  .c2-fund-when-standalone {
+    display: none;
+  }
+  .c2-fund-when-inline {
+    display: inline;
+    margin-left: auto;
+    padding-left: 8px;
+  }
+  .c2-fund-amt {
+    grid-area: amt;
+  }
+  .c2-fund-note {
+    display: block;
+    margin-top: 6px;
+    line-height: 1.4;
+    white-space: normal;
+  }
+}
+
+/* synced budget target */
+.c2-target {
+  grid-column: 2 / 5;
+  margin: 12px 0 4px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--liquid) 28%, var(--line));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--liquid) 5%, var(--surface2));
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.c2-target-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.c2-synced {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--liquid);
+  background: color-mix(in srgb, var(--liquid) 14%, transparent);
+  border-radius: 999px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.c2-synced svg {
+  width: 9px;
+  height: 9px;
+}
+.c2-target-lbl {
+  font-size: 11.5px;
+  color: var(--muted);
+  min-width: 0;
+  flex: 1;
+}
+@container (max-width: 560px) {
+  .c2-target-top {
+    align-items: flex-start;
+  }
+  .c2-target-lbl {
+    flex: 1 1 100%;
+    order: 3;
+    width: 100%;
+    text-align: left;
+  }
+}
+.c2-target-lbl b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.c2-target-prog {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.c2-target-meter {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--liquid) 16%, var(--surface));
+  overflow: hidden;
+}
+.c2-target-meter i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--liquid);
+}
+.c2-target-meter i.partial {
+  background: var(--warn);
+}
+.c2-target-figs {
+  font-size: 10.5px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.c2-target-figs b {
+  color: var(--ink);
+  font-weight: 700;
+}
+.c2-target-figs .under {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+/* actions checklist */
+.c2-act {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+.c2-act:first-child {
+  border-top: none;
+}
+.c2-act-check {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 2px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+  line-height: 0;
+  color: transparent;
+  transition:
+    border-color 0.12s,
+    background 0.12s,
+    color 0.12s;
+}
+.c2-act-check svg {
+  width: 11px;
+  height: 11px;
+  display: block;
+}
+@media (hover: hover) {
+  .c2-act-check:hover {
+    border-color: var(--muted);
+  }
+}
+.c2-act.done .c2-act-check {
+  border-color: var(--good);
+  background: var(--good);
+  color: #06231a;
+}
+@media (hover: hover) {
+  .c2-act.done .c2-act-check:hover {
+    border-color: var(--good);
+  }
+}
+.c2-act.missed .c2-act-check {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 16%, var(--surface));
+  color: var(--bad);
+}
+.c2-act-main {
+  flex: 1;
+  min-width: 0;
+}
+.c2-act-t {
+  font-size: 12.5px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.c2-act.done .c2-act-t {
+  color: var(--faint);
+  text-decoration: line-through;
+}
+.c2-act-meta {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 10px;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.c2-act-cat {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--surface2);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.c2-act-cat.auto {
+  color: var(--liquid);
+  background: color-mix(in srgb, var(--liquid) 12%, transparent);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: help;
+}
+.c2-act-due {
+  font-variant-numeric: tabular-nums;
+}
+.c2-act-due.od {
+  color: var(--bad);
+  font-weight: 600;
+}
+.c2-act-trail {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+}
+.c2-act-amt {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  min-width: 78px;
+  text-align: right;
+}
+.c2-act-bell {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+}
+.c2-act-bell svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+@media (hover: hover) {
+  .c2-act-bell:hover {
+    color: var(--muted);
+  }
+}
+.c2-act-bell.on {
+  color: var(--lucius);
+}
+@media (hover: hover) {
+  .c2-act-bell.on:hover {
+    color: color-mix(in srgb, var(--lucius) 82%, #fff);
+  }
+}
+.c2-act-icon-acts {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.c2-act-icon-acts .c2-need-icon-btn {
+  width: 26px;
+  height: 26px;
+}
+.c2-act-icon-acts .c2-need-icon-btn svg {
+  width: 13px;
+  height: 13px;
+}
+.c2-act-icon-acts .c2-need-icon-btn.pay.on {
+  background: color-mix(in srgb, var(--good) 16%, transparent);
+}
+@container (max-width: 560px) {
+  .c2-act-trail {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+}
+
+/* ════════ add sheet content (overlay/head are owned by ui/Modal) ════════ */
+.c2-sheet {
+  width: min(460px, 100%);
+  background: var(--modal-bg, var(--surface));
+  border: 1px solid var(--modal-border, var(--line-strong));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  overflow: hidden;
+}
+.c2-sheet-body {
+  padding: 14px 20px;
+}
+.c2-kindpick {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.c2-kindopt {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: 0.12s;
+  font-family: inherit;
+}
+@media (hover: hover) {
+  .c2-kindopt:hover {
+    border-color: var(--hover-line);
+    background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+  }
+}
+.c2-kindopt svg {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  flex: none;
+}
+.c2-kindopt-t {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.c2-kindopt-d {
+  font-size: 10.5px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+.c2-sheet-note {
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: var(--faint);
+  line-height: 1.5;
+  padding: 9px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+}
+.c2-sheet-note b {
+  color: var(--muted);
+  font-weight: 600;
+}
+.c2-sheet-foot {
+  padding: 12px 20px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+}
+.c2-sheet-lucius {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.c2-sheet-lucius svg {
+  color: var(--lucius);
+}
+
+/* ════════ toast ════════ */
+.c2-toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 9px 15px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 700;
+  animation: c2-toast-in 0.18s ease;
+}
+@keyframes c2-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+}
+
+/* commitments_v3/commitments3.css — v3 additions: the simulated Lucius side
+   panel + floating dock (lx-* vocabulary mirroring the app's lucius.css /
+   chat.css), ChangePreview-style proposed-change cards, and outcome pills.
+   Extends the c2-* vocabulary from commitments2.css. */
+
+/* v3: drop the page-header divider — the other tabs (Plan, Investments) put no
+   border under the title; the sticky blurred background already separates it. */
+.c2-page > .ui-page-header {
+  border-bottom: none;
+}
+/* Lucius ribbon action carries the spark mark */
+.c2-ribbon-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* funding-outlook timeframe segmented control */
+.c2-chart-head .c2-chart-title {
+  margin-right: auto;
+}
+.c3-hz {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px;
+}
+.c3-hz button {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .c3-hz button:hover {
+    color: var(--ink);
+  }
+}
+.c3-hz button.on {
+  color: var(--ink);
+  background: var(--selected);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+/* needs-attention rows open their commitment on click (buttons excepted) */
+.c3-need-open {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+@media (hover: hover) {
+  .c3-need-open:hover {
+    background: color-mix(in srgb, var(--ink) 4%, transparent);
+  }
+}
+@media (hover: hover) {
+  .c3-need-open:hover .c2-need-t {
+    color: var(--primary);
+  }
+}
+/* needs-lane expander (cap at 3, expand to all) */
+.c3-need-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .c3-need-more:hover {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 4%, transparent);
+  }
+}
+
+/* ── v3 row/detail additions ── */
+.c3-ccy {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--faint);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-left: 7px;
+  vertical-align: 1px;
+}
+.c2-item.c3-dim .c2-row {
+  opacity: 0.55;
+}
+/* left-align the Status column so header + pills share a left edge (pills are inset blocks; right-aligning the header text mismatched them) */
+.c2-thead span:nth-child(4) {
+  text-align: left;
+}
+.c2-row-chip {
+  justify-content: flex-start;
+}
+.c2-chip.behind {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+}
+.c3-si-base {
+  font-size: 10px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.c3-si-links {
+  display: flex;
+  gap: 8px;
+}
+.c2-link.dim2 {
+  color: var(--faint);
+  font-weight: 500;
+}
+@media (hover: hover) {
+  .c2-link.dim2:hover {
+    color: var(--ink);
+  }
+}
+.c2-link.lucius {
+  color: var(--lucius);
+}
+@media (hover: hover) {
+  .c2-link.lucius:hover {
+    color: color-mix(in srgb, var(--lucius) 82%, #fff);
+  }
+}
+.c3-linkbox-h {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.c3-txn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+}
+.c3-txn + .c3-txn {
+  border-top: 1px solid var(--line);
+}
+.c3-txn-main {
+  flex: 1;
+  min-width: 0;
+}
+.c3-txn-d {
+  display: block;
+  font-size: 12px;
+  color: var(--ink);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c3-txn-m {
+  display: block;
+  font-size: 10.5px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+.c3-txn-a {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.c3-startby {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 11%, transparent);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+.c2-tag.c3-fx {
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: help;
+  color: var(--faint);
+}
+
+/* contextual filter-empty state (inside the rows card) */
+.c3-fempty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  text-align: center;
+  padding: 40px 24px 38px;
+}
+.c3-fempty-ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--surface2);
+  color: var(--muted);
+}
+.c3-fempty-ic.good {
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+  color: var(--good);
+}
+.c3-fempty-ic svg {
+  width: 20px;
+  height: 20px;
+}
+.c3-fempty-t {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.c3-fempty-d {
+  font-size: 12.5px;
+  color: var(--faint);
+  line-height: 1.5;
+  max-width: 46ch;
+}
+.c3-fempty-btn {
+  margin-top: 5px;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .c3-fempty-btn:hover {
+    background: color-mix(in srgb, var(--ink) 6%, var(--surface2));
+  }
+}
+
+/* ── flattened detail screen (v3): no outer card — sections become cards ── */
+.c3-flat {
+  container-type: inline-size;
+}
+.c3-flat .c2-det-pad {
+  padding: 4px 0 8px;
+}
+.c3-flat .c2-exp-sec {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 18px 16px;
+  margin-top: 14px;
+}
+
+/* header overflow menu (cancel / delete) */
+.c3-menu-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+.c3-kebab {
+  width: 32px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  border-radius: var(--radius-md, 8px);
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.c3-kebab svg {
+  width: 16px;
+  height: 16px;
+}
+.c3-kebab.open {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, var(--surface2));
+}
+@media (hover: hover) {
+  .c3-kebab:hover {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 6%, var(--surface2));
+  }
+}
+.c3-menu-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+}
+.c3-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+.c3-menu-it {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  background: none;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.c3-menu-it svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--primary);
+}
+.c3-menu-it.on {
+  color: var(--primary);
+  font-weight: 600;
+}
+.c3-menu-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding: 8px 10px 2px;
+}
+/* Same items, inside the Modal-based phone sheet instead of the desktop dropdown — full-width
+   rows at a real tap-target height rather than a compact popup list. */
+.c3-menu-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.c3-menu-sheet .c3-menu-it {
+  font-size: 14px;
+  padding: 12px 10px;
+  min-height: var(--tap-min);
+}
+@media (hover: hover) {
+  .c3-menu-it:hover {
+    background: var(--hover);
+  }
+}
+.c3-menu-it.danger {
+  color: var(--bad);
+}
+.c3-menu-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 2px;
+}
+
+/* destructive-action confirm strip (below the detail header) */
+.c3-confirmbar {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--bad) 30%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bad) 6%, transparent);
+}
+
+/* action plan notes (from the real dataset) */
+.c2-act-note {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 10px;
+  line-height: 1.4;
+  max-width: 52ch;
+}
+
+/* action outcomes: "Not happening" — the counterpart to the done checkbox. Folded inline
+   into the meta row (category/due-date line) instead of its own full-width row — a plain
+   understated text link, not a bordered pill; the impact explanation rides the native title=
+   tooltip instead of a permanently-rendered hint line. */
+.c3-act-load {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: 7px;
+  vertical-align: 1px;
+  cursor: help;
+}
+
+/* not-happening action treatment */
+.c2-act.missed .c2-act-t {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--bad) 45%, transparent);
+}
+.c3-missbadge {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+/* impact card: typed consequence + a lead-in to a Lucius recovery plan */
+.c3-act-impact {
+  margin-top: 6px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--bad) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bad) 18%, transparent);
+  max-width: 62ch;
+}
+.c3-impact-line {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.c3-impact-line b {
+  color: var(--ink);
+}
+.c3-impact-line b.mask {
+  color: var(--bad);
+}
+.c3-impact-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 9px;
+}
+
+/* per-installment funding split ("Funded by") + envelope guard */
+.c2-si.has-split .c2-si-rail {
+  grid-row: 1 / span 2;
+}
+/* keep the main line compact: base · badge · actions on one row, right-aligned */
+.c3-si-metarow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+/* payment actions stay hidden until you hover the row, kept LEFT of base+badge so
+   the amount + badge stay pinned right; nothing crowds the line by default */
+.c3-si-metarow .c3-si-links {
+  order: -1;
+  display: inline-flex;
+  gap: 10px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.c3-si-links:focus-within {
+  opacity: 1;
+}
+@media (hover: hover) {
+  .c2-si:hover .c3-si-links {
+    opacity: 1;
+  }
+}
+/* bottom "more payments" expander — a clear continuation cue at the end of the window */
+.c3-si-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 9px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .c3-si-more:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+.c3-fundby {
+  grid-column: 2 / -1;
+  margin-top: 9px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+}
+.c3-fundby-h {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--muted);
+}
+.c3-fundby-mark {
+  color: var(--lucius);
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.c3-fundby-cap {
+  font-weight: 500;
+  color: var(--faint);
+  font-size: 10.5px;
+}
+.c3-fundby-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.c3-fchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 2px 9px 2px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.c3-fchip .c2-fund-dot {
+  position: static;
+  width: 7px;
+  height: 7px;
+  flex: none;
+}
+.c3-fchip b {
+  font-weight: 700;
+}
+.c3-fchip.env {
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+.c3-fchip.short {
+  border-color: color-mix(in srgb, var(--bad) 45%, transparent);
+  background: color-mix(in srgb, var(--bad) 8%, transparent);
+  color: var(--bad);
+}
+.c3-fundby-guard {
+  margin-top: 7px;
+  font-size: 10.5px;
+  color: var(--faint);
+  line-height: 1.45;
+}
+.c3-fundby-fix {
+  margin-top: 8px;
+}
+
+/* envelope vs one-time-draw tags */
+.c3-fund-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  vertical-align: 1px;
+}
+.c3-fund-tag.env {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 13%, transparent);
+}
+.c3-fund-tag.loan {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 13%, transparent);
+}
+.c3-fund-tag.cash,
+.c3-fund-tag.income {
+  color: var(--liquid);
+  background: color-mix(in srgb, var(--liquid) 13%, transparent);
+}
+.c3-fund-tag.asset_sale {
+  color: var(--crypto);
+  background: color-mix(in srgb, var(--crypto) 13%, transparent);
+}
+.c3-fund-tag.windfall {
+  color: var(--contingent);
+  background: color-mix(in srgb, var(--contingent) 13%, transparent);
+}
+
+/* disabled funding source (its unlocking action didn't happen) */
+.c3-fund-disabled {
+  opacity: 0.62;
+}
+.c3-fund-lost {
+  color: var(--bad);
+  font-weight: 600;
+}
+.c3-fund-lost-amt {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--bad) 55%, transparent);
+  color: var(--faint);
+}
+
+/* detail subtabs (Schedule / Funding / Actions) */
+.c3-dettabs {
+  margin-top: 18px;
+  height: 32px;
+  width: max-content;
+  max-width: 100%;
+}
+.c3-dettabs button {
+  height: 26px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.c3-tabn {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.c3-dettabs button.on .c3-tabn {
+  color: var(--muted);
+}
+.c3-tabdot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+.c3-tabdot.bad {
+  background: var(--bad);
+}
+@media (max-width: 440px) {
+  .c3-dettabs {
+    width: 100%;
+  }
+  .c3-dettabs button {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+    gap: 3px;
+    padding: 0 5px;
+    font-size: 10.5px;
+  }
+  .c3-dettabs .c3-tabn,
+  .c3-dettabs .c3-tabdot {
+    display: none;
+  }
+}
+.c3-det-body {
+  max-width: none;
+}
+.c3-det-body .c2-exp-sec {
+  margin-top: 12px;
+}
+
+/* actions filter dropdowns */
+.c3-act-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.c3-act-tools .c2-select {
+  height: 24px;
+  font-size: 11px;
+}
+/* Two selects + a link, none of them ever given anywhere to shrink or wrap — on a phone this
+   row simply ran out of horizontal space and "Manage with Lucius →" clipped to "Manage wi"
+   (owner-caught, unreadable in production). Same fix as the commitments-list filter row
+   earlier in this file: give the title its own line, let the tools group become its own
+   full-width row, and within it let the two selects share a row (shrinking instead of
+   overflowing) while the link — the one thing here that must stay fully readable, since it is
+   the ONLY way to add or edit a checklist item — gets a guaranteed line of its own. */
+@container (max-width: 560px) {
+  .c2-exp-sec-h:has(.c3-act-tools) {
+    flex-wrap: wrap;
+  }
+  .c3-act-tools {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 8px;
+  }
+  .c3-act-tools .c2-select {
+    flex: 1 1 0;
+    min-width: 0;
+    height: var(--tap-min);
+    font-size: 12px;
+  }
+  .c3-act-tools .c2-link.lucius {
+    flex: 1 1 100%;
+    text-align: left;
+  }
+  /* The compact icon-filter variant (phone header: title · Manage with Lucius · filter icon)
+     has none of the two-select row's width pressure — it must stay a single inline row, not
+     inherit the select-row's forced full-width wrap above. */
+  .c2-exp-sec-h:has(.c2-fund-typefilter-btn) {
+    flex-wrap: nowrap;
+  }
+  .c3-act-tools:has(.c2-fund-typefilter-btn) {
+    flex-wrap: nowrap;
+    width: auto;
+  }
+  .c3-act-tools:has(.c2-fund-typefilter-btn) .c2-link.lucius {
+    flex: none;
+  }
+}
+
+/* overview digest rows */
+.c3-ov-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 12.5px;
+  min-width: 0;
+}
+.c3-ov-row + .c3-ov-row {
+  border-top: 1px solid var(--line);
+}
+.c3-ov-date {
+  flex: none;
+  width: 92px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.c3-ov-date.od {
+  color: var(--bad);
+  font-weight: 600;
+  width: auto;
+  min-width: 92px;
+}
+.c3-ov-label {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c3-ov-desc {
+  color: var(--faint);
+}
+.c3-ov-amt {
+  flex: none;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.c3-ov-acts {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.c3-ov-acts .c2-need-icon-btn {
+  width: 26px;
+  height: 26px;
+}
+.c3-ov-acts .c2-need-icon-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Four columns (date · label · status · dual-currency amount) do not fit a phone: the label
+   collapsed to "4th · 1…" while the amount kept its full "₫938.5M · S$45,946.03". Give the
+   label its own line and let the metadata share the second one. */
+@media (max-width: 640px) {
+  .c3-ov-row {
+    flex-wrap: wrap;
+    row-gap: 3px;
+    align-items: baseline;
+  }
+  .c3-ov-label {
+    order: 1;
+    flex: 1 1 100%;
+    white-space: normal;
+    overflow: visible;
+  }
+  .c3-ov-date,
+  .c3-ov-date.od {
+    order: 2;
+    width: auto;
+    min-width: 0;
+  }
+  .c3-ov-row .c2-si-badge {
+    order: 3;
+  }
+  .c3-ov-amt {
+    order: 4;
+    margin-left: auto;
+  }
+  .c3-ov-acts {
+    order: 5;
+  }
+}
+
+/* timeline-strip hover cards */
+@media (hover: hover) {
+  .c2-strip-mark:hover {
+    z-index: 20;
+  }
+}
+/* .c2-strip-mark's own children are all position:absolute (dot fixed height, label/stem
+   height varying by lane) so the container itself has no in-flow height — a plain
+   `bottom: calc(100% + 8px)` can't resolve against a 0-height box. The real bottom offset is
+   computed inline per-marker instead (stem height + label height + gap — see timelineStrip.tsx),
+   this is just the shared visual shell. */
+/* The timeline strip's tooltip — rendered as a sibling of .c2-strip-scroll (see
+   timelineStrip.tsx) instead of a child of the hovered marker, so it's never subject to that
+   scroll container's clipping. Conditionally RENDERED via JS hover state rather than always
+   present at opacity:0, so no transition is needed. .c2-exp-sec (its positioning ancestor)
+   carries position:relative for this to anchor against. */
+/* No `top` here — `bottom` is set inline per-hover (timelineStrip.tsx computes it from real
+   DOM geometry), which is what actually anchors this above the hovered marker's stem. */
+.c3-tip-float {
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: max-content;
+  max-width: 280px;
+  padding: 8px 11px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+  font-size: 11.5px;
+  line-height: 1.35;
+  text-align: left;
+  pointer-events: none;
+}
+.c3-tip-float b {
+  color: var(--ink);
+  font-weight: 600;
+  white-space: normal;
+}
+.c3-tip-m {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.c3-tip-w {
+  color: var(--bad);
+  white-space: normal;
+  max-width: 220px;
+}
+
+/* ════════ commitments2.css classes needed by the detail screen (detail3.jsx),
+   not carried over by the earlier masthead/rows/needsLane pass — completing the
+   verbatim port for this lane. Copied byte-for-byte from commitments2.css. ════════ */
+
+/* drill-in detail screen header */
+/* display:flex;flex-direction:column renders identically to the previous block stacking (flex
+   column's default align-items:stretch fills the width exactly like a block child would) — it
+   only exists so the phone-only reorder below can move children with `order` instead of
+   touching detail.tsx's JSX (name/note editors, confirm bars, and the kebab menu all keep
+   working exactly as before; only visual position changes). */
+.c2-det-pad {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 22px 20px;
+}
+/* Reading-priority reorder for a phone user opening ONE specific commitment: they already
+   know which commitment this is (they tapped it) — the concrete numbers (Paid/Remaining/
+   Next payment/Funding) come first, then the Lucius insight ribbon reads on top of them.
+   Everything else (header, confirm bars, timeline, sub-tabs, tab body) keeps its natural
+   order — only the stat grid and ribbon swap, and the tab body is pinned last no matter what. */
+@container (max-width: 560px) {
+  .c2-det-pad > .c2-det-head {
+    order: 1;
+  }
+  .c2-det-pad > .c3-confirmbar {
+    order: 2;
+  }
+  .c2-det-pad > .c2-exp-sec {
+    order: 3;
+  }
+  .c2-det-pad > .c2-exp-figs {
+    order: 4;
+  }
+  .c2-det-pad > .c2-det-ribbon {
+    order: 5;
+  }
+  .c2-det-pad > .c3-dettabs {
+    order: 6;
+  }
+  .c2-det-pad > .c3-det-body {
+    order: 7;
+  }
+}
+.c2-det-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.c2-det-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.c2-det-name-text {
+  min-width: 0;
+}
+@container (max-width: 560px) {
+  /* The kebab sits at the end of THIS row on phone (not the tags row below), so the name
+     must stay on one line and truncate instead of wrapping — otherwise a long name still
+     pushes the kebab down, the exact thing moving it here was meant to fix. */
+  .c2-det-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 auto;
+  }
+  .c2-det-name .c3-kebab {
+    flex: none;
+    margin-left: auto;
+  }
+}
+.c2-det-name-input {
+  font-size: 18px;
+  font-weight: 700;
+  height: 34px;
+  width: min(420px, 100%);
+}
+.c2-det-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.c2-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.c2-tag.status-active {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 40%, var(--line));
+}
+.c2-tag.status-completed {
+  color: var(--faint);
+}
+.c2-det-note {
+  font-size: 12.5px;
+  color: var(--faint);
+  margin-top: 8px;
+  line-height: 1.45;
+  max-width: 64ch;
+}
+.c2-det-acts {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+/* Tried stacking name+tags+note above actions unconditionally on phone, to fix a long name
+   wrapping to 2 lines with Mark completed/kebab pinned beside line 1 only. Reverted — it paid
+   a whole extra row EVERY time, including the common case where the name fits on one line
+   (owner: "too much space is consumed here", on a title that wasn't even wrapping). A 2-line
+   name with actions pinned near its top is a rarer, milder cosmetic issue than an unconditional
+   extra row on every single commitment; there's no way to have "stack only when it actually
+   wraps" in pure CSS here (the name column's `flex:1;min-width:0` lets it always shrink to
+   fit instead of forcing a flex-wrap break, and detecting actual text-wrap needs JS). Row
+   layout — today's default — stays. */
+@container (max-width: 560px) {
+  /* The verdict chip ("Short S$X by <date>" / "On track to fund") restates EXACTLY the fact
+     the Lucius ribbon's sentence gives right below it, now that the ribbon is promoted to sit
+     immediately after this header (see the .c2-det-pad reorder above) — same number, same
+     date, one paragraph apart. On a wide desktop tags row it earns its place as a quick-glance
+     summary before the eye reaches the ribbon; on phone, where every one of kind/currency/
+     [FX]/status/verdict was already crowding one wrapping row, it's pure repetition. The FX
+     tag stays — that one is rate TRANSPARENCY (which native amount converted at what rate),
+     not a restated verdict, and this codebase treats FX-rate visibility as a trust feature,
+     not decoration. */
+  .c2-det-tags .c2-chip {
+    display: none;
+  }
+  .c2-ribbon-btn-rest {
+    display: none;
+  }
+}
+.c2-det .c2-exp-figs {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+.c2-det-ribbon {
+  border: 1px solid color-mix(in srgb, var(--lucius) 20%, var(--line));
+  border-radius: 12px;
+  margin-top: 14px;
+  padding: 10px 14px;
+}
+@container (max-width: 560px) {
+  .c2-det-pad > .c2-exp-sec {
+    margin-top: 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    padding: 14px 14px 4px;
+  }
+  .c2-det-pad > .c2-exp-figs {
+    margin-top: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 1px solid var(--line);
+    border-radius: 0 0 12px 12px;
+    padding: 14px 14px 14px;
+  }
+}
+
+/* inline edit affordances (name/note rename, schedule/funding row edit, pay/link/reschedule boxes) */
+.c2-iconbtn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: 0.12s;
+  vertical-align: middle;
+  margin-left: 4px;
+  flex: none;
+}
+.c2-iconbtn svg {
+  width: 12px;
+  height: 12px;
+}
+@media (hover: hover) {
+  .c2-iconbtn:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+@media (hover: hover) {
+  .c2-si:hover .c2-iconbtn,
+  .c2-fund-row:hover .c2-iconbtn,
+  .c2-det-name:hover .c2-iconbtn {
+    opacity: 1;
+  }
+}
+.c2-iconbtn.on {
+  opacity: 0.55;
+}
+@media (hover: hover) {
+  .c2-iconbtn.on:hover {
+    opacity: 1;
+  }
+}
+/* Keyboard parity — a tabbed-to edit button must be visible even without a hover. */
+.c2-iconbtn:focus-visible {
+  opacity: 1;
+}
+/* Touch parity: every rename/edit/delete affordance above is gated on a :hover that a finger
+   can never fire, so on a phone they render at opacity 0 forever — present in the a11y tree
+   and tappable, but invisible. Same idiom as investments/design.css's .mk-card-ask. */
+@media (hover: none) {
+  .c2-iconbtn {
+    opacity: 1;
+  }
+}
+
+.c2-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 0;
+}
+.c2-edit-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.c2-input {
+  height: 32px;
+  line-height: 30px;
+  box-sizing: border-box;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 0 10px;
+  color-scheme: dark;
+}
+.c2-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.c2-input.grow {
+  flex: 1;
+  min-width: 110px;
+}
+.c2-input.amt {
+  width: 96px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.c2-input.date {
+  width: 132px;
+}
+.c2-edit-desc {
+  width: 100%;
+  height: auto;
+  min-height: 60px;
+  line-height: 1.4;
+  padding: 8px 10px;
+  resize: vertical;
+  font-family: inherit;
+}
+/* Multi-line note editor inside the mobile bottom-sheet Modal — .c2-input's own height:32px
+   is sized for a single-line field, wrong for a textarea. */
+.c2-note-sheet-textarea {
+  width: 100%;
+  height: auto;
+  min-height: 96px;
+  padding: 8px 10px;
+  resize: vertical;
+  font-family: inherit;
+}
+.c2-edit-btns {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.c2-mini-btn {
+  height: 28px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.12s;
+}
+@media (hover: hover) {
+  .c2-mini-btn:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+}
+.c2-mini-btn.pri {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+@media (hover: hover) {
+  .c2-mini-btn.pri:hover {
+    background: color-mix(in srgb, var(--primary) 88%, #fff);
+  }
+}
+.c2-mini-btn.danger {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 35%, var(--line));
+  background: transparent;
+}
+@media (hover: hover) {
+  .c2-mini-btn.danger:hover {
+    background: color-mix(in srgb, var(--bad) 10%, transparent);
+  }
+}
+
+.c2-addbox {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 40%, var(--surface));
+  padding: 10px 12px;
+  margin: 2px 0 12px;
+}
+.c2-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.c2-field-hint {
+  font-size: 11px;
+  color: var(--faint);
+  font-style: italic;
+}
+
+/* timeline strip — lollipop markers */
+.c2-strip-key {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  vertical-align: baseline;
+}
+.c2-strip-key.out {
+  background: var(--primary);
+}
+.c2-strip-key.bad {
+  background: var(--bad);
+}
+.c2-strip-key.in {
+  background: transparent;
+  border: 2px solid var(--good);
+  box-sizing: border-box;
+}
+.c2-strip {
+  position: relative;
+  height: 68px;
+  margin-top: 4px;
+}
+@container (max-width: 560px) {
+  /* More vertical room on phone — stems anchor from the bottom, so the extra height is
+     headroom above the amount labels rather than a repositioning of anything. */
+  .c2-strip {
+    height: 92px;
+  }
+  .c2-strip-months {
+    height: 20px;
+  }
+}
+.c2-strip-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 1px;
+  background: var(--line-strong);
+}
+.c2-strip-shade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 10px;
+  border-left: 1px dashed color-mix(in srgb, var(--bad) 55%, transparent);
+  background: color-mix(in srgb, var(--bad) 6%, transparent);
+  border-radius: 0 8px 0 0;
+}
+/* Payment AND funding-draw markers share ONE rail line (owner: "we shouldn't show below the
+   line, either on the line and above the line, not below") — both dot styles sit at the same
+   fixed height, straddling the rail. Payments get one fixed full-height stem; draws alternate
+   between two fixed heights by chronological order (inline `bottom`/`height` styles — see
+   PAY_STEM/DRAW_STEM_ON_LINE/DRAW_STEM_ABOVE in timelineStrip.tsx) so two draws next to each
+   other never land at the same height. */
+.c2-strip-mark {
+  position: absolute;
+  bottom: 6px;
+  transform: translateX(-50%);
+}
+.c2-strip-mark .dot {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.c2-strip-mark.pay .dot {
+  background: var(--primary);
+  border: 2px solid var(--bg);
+}
+.c2-strip-mark.pay.bad .dot {
+  background: var(--bad);
+}
+.c2-strip-mark.draw .dot {
+  background: var(--bg);
+  border: 2px solid var(--good);
+}
+.c2-strip-mark .stem {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--primary) 55%, transparent);
+}
+.c2-strip-mark.pay.bad .stem {
+  background: color-mix(in srgb, var(--bad) 55%, transparent);
+}
+.c2-strip-mark.draw .stem {
+  background: color-mix(in srgb, var(--good) 45%, transparent);
+}
+.c2-strip-mark .amt {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.c2-strip-mark.pay.bad .amt {
+  color: var(--bad);
+}
+.c2-strip-mark .lbl {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--good);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* The label centres on its own marker (`left: 50%` + `translateX(-50%)`), so anything
+   inside it shifts the AMOUNT off the dot. With the count in flow, a marker carrying
+   "+1" put its dot under the gap between the figure and the badge while a marker
+   without one centred correctly — the same row of labels read as inconsistently
+   left-aligned (owner, 2026-08-23). Taking the badge out of flow centres every
+   amount on its dot, with or without a count. */
+.c2-strip-mark .lbl .cnt {
+  position: absolute;
+  left: 100%;
+  margin-left: 3px;
+  font-weight: 500;
+  color: var(--faint);
+}
+.c2-strip-months {
+  position: relative;
+  height: 16px;
+  margin-top: 6px;
+}
+.c2-strip-months span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.c2-strip-months span.gap {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+/* Legend moved to its own row, separate from the section title — sharing one row wrapped
+   badly once the title grew (title used to say "on the timeline"; the legend also lists
+   three keys). */
+.c2-strip-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+/* The strip's own scroll container — every calendar month gets a fixed minimum pixel width
+   (MONTH_PX in timelineStrip.tsx) rather than the whole span being squeezed into the card's
+   width, so a long plan renders WIDER than the card and scrolls horizontally instead of
+   cramming markers and month labels into unreadable density. */
+/* padding-top, NOT margin-top, for the tooltip's clearance above the rail. `overflow-x: auto`
+   forces the used value of overflow-y to `auto` too, per the CSS Overflow spec — you cannot
+   have one axis scrollable and the other genuinely `visible`, no matter what overflow-y is
+   set to. That means a hovered marker's tooltip (which sits well above its own dot, and is a
+   DESCENDANT of this scrolling box) gets clipped at THIS element's own top edge — margin lives
+   outside the box and does nothing to move that clip boundary. Padding does: it's inside the
+   box, so the tooltip has real room to render before hitting the edge that clips it. */
+/* No extra top padding needed here anymore — the tooltip renders OUTSIDE this scrolling
+   element entirely (as a sibling, see .c3-tip-float / timelineStrip.tsx's showTip), so it
+   never needs clearance from this box's own clipping. */
+.c2-strip-scroll {
+  overflow-x: auto;
+  margin: 8px -4px 0;
+  padding: 0 4px 10px;
+}
+
+/* ════════ Phone touch-target floor ═══════════════════════════════════════════
+   Every control below was under the 44px this codebase already tokenises as --tap-min
+   (WCAG 2.5.5 / HIG). Placed at the END of the file so each rule still overrides the base
+   definition it targets — and so the base rules stay the first match for the CSS-shape
+   guards in Commitments.layout.test.ts. Type sizes are untouched; only hit boxes grow. */
+@media (max-width: 640px) {
+  /* Timeframe pills on the cushion chart (were ~22px tall). */
+  .c3-hz button {
+    min-height: calc(var(--tap-min) - 8px);
+    padding: 0 12px;
+  }
+  /* Needs-lane actions ("Mark done", "Confirm paid", …) — .ui-btn--sm renders ~30px. */
+  .c2-need-btns .ui-btn {
+    min-height: var(--tap-min);
+  }
+  .c2-need-icon-btn {
+    width: var(--tap-min);
+    height: var(--tap-min);
+  }
+  /* Inline edit/delete affordances — keep the 12px glyph, grow only the hit box. */
+  .c2-iconbtn {
+    width: var(--tap-min);
+    height: var(--tap-min);
+    margin-left: 0;
+  }
+  .c3-dettabs {
+    height: var(--tap-min);
+  }
+  .c3-dettabs button {
+    height: calc(var(--tap-min) - 6px);
+  }
+
+  /* The needs-lane row wraps its actions onto a second line for the two-button variants
+     ("Confirm paid" + "Not this"); without this they land ragged under the icon column. */
+  .c2-need-btns {
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+
+  /* A table header over what is, at this width, a two-column list is pure overhead. */
+  .c2-thead {
+    display: none;
+  }
+}

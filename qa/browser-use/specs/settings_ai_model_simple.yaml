@@ -1,0 +1,70 @@
+# Spec: SETTINGS-AI-02 — fast smoke of Settings → AI Model after the 2026-08-05 redesign.
+#
+# REWRITTEN for the redesign: the previous version drove an expand-chevron row and asserted a
+# an older spend control with a Budget field, a "By source" Show-all link
+# and a Daily-spend sparkline — none of which the redesigned section has. SETTINGS-AI-01 is the
+# thorough one; this is the cheap "did it render and is the default sane" check.
+id: SETTINGS-AI-02
+acceptance_ids:
+  - E1
+  - E2
+  - E17
+title: "Settings → AI Model renders: configured providers default-first, and a spend panel"
+description: >
+  A short smoke: the AI Model section loads inside the Settings overlay, lists configured
+  providers as a flat hairline list with the default first and marked, and shows the AI spend
+  panel with its five-window control. Mutates nothing.
+
+acceptance_criteria:
+  - AC1: The AI Model section renders inside the Settings overlay with no error state
+  - AC2: The providers panel is a flat list, default first, with a filled radio and Default badge
+  - AC3: Every listed provider shows a status badge
+  - AC4: The AI spend panel is present with its window control and stat row
+  - AC5: No JavaScript errors
+
+browser_use_task: |
+  Navigate to {app_url}. Wait 3 seconds.
+  Click "Settings" in the left sidebar. Wait 2 seconds.
+  Click "AI Model" in the Settings section rail. Wait 3 seconds.
+
+  1. Confirm the section rendered — you should see a heading "AI Model" and a panel captioned
+     "AI providers". There must be no "Could not load" error. (AC1)
+     Record: SECTION_RENDERED = yes/no
+     Record: ERROR_VISIBLE = yes/no, ERROR_TEXT = text if any
+
+  2. Look at the providers panel. (AC2, AC3)
+     Record: LIST_IS_FLAT = yes/no  (hairline rows in one card, not a grid of tiles)
+     Record: FIRST_PROVIDER = the first row's name
+     Record: FIRST_ROW_RADIO_FILLED = yes/no
+     Record: FIRST_ROW_BADGE = the badge text on the first row (expected "Default")
+     For every row, note its badge.
+     Record: ALL_ROWS_HAVE_BADGE = yes/no
+     Record: ROW_BADGES = list of "name — badge"
+
+  3. Scroll down to the "AI spend" panel. (AC4)
+     Record: SPEND_PANEL_PRESENT = yes/no
+     Record: SPEND_WINDOWS = the options in its segmented control
+             (expected exactly: Today, Yesterday, 7 days, 30 days, All time)
+     Record: SPEND_STATS = the stat labels shown
+
+  4. Check the browser console for JavaScript errors. (AC5)
+     Record: JS_ERROR = yes/no, JS_ERROR_TEXT = first error if any
+
+  Decision:
+  - If SECTION_RENDERED = no: FAIL "AI Model section did not render"
+  - If ERROR_VISIBLE = yes: FAIL f"Error state shown: {ERROR_TEXT}"
+  - If LIST_IS_FLAT = no: FAIL "Provider list is not a flat hairline list"
+  - If FIRST_ROW_RADIO_FILLED = no: FAIL "First provider row has no filled radio"
+  - If FIRST_ROW_BADGE does not contain "Default": FAIL f"First row badge is {FIRST_ROW_BADGE}, expected Default"
+  - If ALL_ROWS_HAVE_BADGE = no: FAIL f"A provider row has no status badge: {ROW_BADGES}"
+  - If SPEND_PANEL_PRESENT = no: FAIL "AI spend panel missing"
+  - If SPEND_WINDOWS != ["Today", "Yesterday", "7 days", "30 days", "All time"]:
+      FAIL f"Spend windows are {SPEND_WINDOWS}, expected Today / Yesterday / 7 days / 30 days / All time"
+  - If JS_ERROR = yes: FAIL f"JavaScript error: {JS_ERROR_TEXT}"
+  - Otherwise: PASS f"AI Model renders — default is {FIRST_PROVIDER}, {len(ROW_BADGES)} providers, spend windows {SPEND_WINDOWS}"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "SETTINGS-AI-02-model-section.png"
+  note: >
+    Read-only. Uses QA data seeded by `make qa-data`.

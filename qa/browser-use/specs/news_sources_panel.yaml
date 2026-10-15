@@ -1,0 +1,112 @@
+# Spec: SRCP-01 — News sources panel (INT9 Phase C)
+# Covers: MonitorsWorkspace.tsx's new "News sources" rail item + NewsSourcesPanel.tsx
+#         (NewsSourceRow.tsx health chip/cadence/switch/delete, AddNewsSourceForm.tsx).
+id: SRCP-01
+timeout_seconds: 480
+max_steps: 45
+acceptance_ids:
+  - SRCP-1
+  - SRCP-5
+  - SRCP-6
+  - SRCP-9
+  - SRCP-10
+  - SRCP-11
+  - SRCP-13
+  - SRCP-16
+  - SRCP-17
+  - SRCP-18
+title: "News sources panel — rail placement, sections, health chips, toggle/cadence, add/delete"
+description: >
+  Verifies the News sources Settings rail item renders the two-section table (Built-in / Your
+  feeds) with live counts, health chips, the On switch's optimistic PATCH, a cadence change, the
+  add-feed form's happy path AND a real SSRF-rejected 422, the delete-confirm flow on a
+  just-added user feed, that builtins never show a delete icon, and that the table scrolls
+  horizontally rather than reflowing on a narrow viewport.
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load. Open the Intel tab (left sidebar, may be
+  labeled "Intel" or "Watchlist"), then open "Watchlists & monitors" (or the equivalent button
+  that opens the monitors workspace modal).
+
+  Step 1 (AC SRCP-1). In the workspace's left rail, under the "SETTINGS" section, confirm there
+  is a "News sources" item directly below "Monitoring & alerts". Click it. Confirm the main pane
+  now shows a "News sources" heading, a subtitle mentioning "headlines, filings, and breaking
+  news", and a table. Take a screenshot (name it sources-panel).
+  Record: SRCP-1 = "pass" or "fail" with why.
+
+  Step 2 (AC SRCP-5, SRCP-6). Confirm the table has a "Built-in sources · N" divider row
+  followed by several rows, then a "Your feeds · N" divider row (N may be 0, showing "You
+  haven't added any feeds yet." if so). For at least one built-in row, confirm its Health column
+  shows a colored chip with a short label like "Fast", "Slow", "Stalled", "No data yet", or "No
+  data in 7d" — hover it (or note its title attribute if visible) and confirm a longer detail
+  tooltip appears mentioning either "Median"/"p75" or a plain sentence about data freshness.
+  Record: SRCP-5 = "pass" or "fail", SRCP-6 = "pass" or "fail".
+
+  Step 3 (AC SRCP-9). Pick any built-in row's "On" switch. Note whether it is currently on or
+  off, then click it. Confirm the switch visually flips immediately (before any network delay
+  would be noticeable). Wait a moment and confirm it settles (stays flipped, or reverts with a
+  "Could not update — try again." message if the backend rejected it — either is an acceptable
+  pass, since this is a real backend, not a mock). Click it again to restore the original state.
+  Record: SRCP-9 = "pass" or "fail" with what you observed.
+
+  Step 4 (AC SRCP-10). Find that same row's Cadence dropdown (showing Hot/Fast/Slow) and the
+  small text beneath it reading "no more than every <duration>". Change the dropdown to a
+  different value. Confirm the small text beneath updates to a new duration matching typical
+  values (~90s for Hot, ~5m for Fast, ~30m for Slow) — or observe it stays associated with
+  whatever the server returned. Take a screenshot (name it sources-cadence). Change it back if
+  you changed it.
+  Record: SRCP-10 = "pass" or "fail".
+
+  Step 5 (AC SRCP-11, SRCP-13). Scroll to the "Add feed" form at the bottom (Feed name + Feed URL
+  fields, "Add feed" button — button should be disabled until both fields have text). First,
+  type a name like "QA Test Feed" and a URL pointing at a NON-public address, e.g.
+  "http://127.0.0.1:9/feed.xml" (a loopback address — this should be rejected as unsafe by the
+  server's SSRF guard). Click "Add feed". Confirm an error message appears near the URL field
+  (verbatim text mentioning "not a safe" or similar) and the URL field shows a red/error border —
+  this is SRCP-13. Take a screenshot (name it sources-add-422).
+  Now clear the URL field and enter a real public RSS URL, e.g.
+  "https://feeds.bbci.co.uk/news/rss.xml", keep the name "QA Test Feed", and click "Add feed"
+  again. Confirm the form clears and a new row named "QA Test Feed" appears under "Your feeds"
+  (this may take a moment since the server validates URL reachability) — this is SRCP-11.
+  Record: SRCP-11 = "pass" or "fail", SRCP-13 = "pass" or "fail".
+
+  Step 6 (AC SRCP-16, SRCP-17). Find the "QA Test Feed" row you just added under "Your feeds".
+  Confirm it has a small delete/remove icon in its last column (title "Remove this feed") — this
+  is the delete affordance user rows get. Now look at any BUILT-IN row (e.g. under "Built-in
+  sources") and confirm its last column is EMPTY — no delete icon at all (SRCP-17).
+  Click the delete icon on "QA Test Feed". Confirm a confirm dialog opens titled exactly
+  `Delete "QA Test Feed"?` with body text mentioning "Lucius stops fetching this feed
+  immediately" and a button labeled "Delete feed". Click "Delete feed". Confirm the row
+  disappears from the table and the "Your feeds · N" count decrements by one.
+  Record: SRCP-16 = "pass" or "fail", SRCP-17 = "pass" or "fail".
+
+  Step 7 (AC SRCP-18). Resize the browser window (or emulate a narrow viewport) to roughly
+  375-420px wide if your tooling supports it. Confirm the sources table becomes horizontally
+  scrollable WITHIN its own container (you can scroll the table left/right with a horizontal
+  scrollbar or swipe) rather than the whole page/modal shifting sideways or columns wrapping
+  awkwardly. Take a screenshot (name it sources-mobile). If your tooling cannot resize the
+  viewport, record "skip: could not resize viewport" instead.
+  Record: SRCP-18 = "pass", "fail", or "skip: <reason>".
+
+  Decision:
+  Count how many of SRCP-1, SRCP-5, SRCP-6, SRCP-9, SRCP-10, SRCP-11, SRCP-13, SRCP-16, SRCP-17,
+  SRCP-18 are "fail". If 0 are fail (skips are OK), return "PASS: all checked criteria satisfied
+  — SRCP-1=<>, SRCP-5=<>, SRCP-6=<>, SRCP-9=<>, SRCP-10=<>, SRCP-11=<>, SRCP-13=<>, SRCP-16=<>,
+  SRCP-17=<>, SRCP-18=<>". If 1 or more are fail, return "FAIL: <N> criteria failed — <list which
+  and why>".
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "SRCP-01-news-sources.png"
+  note: >
+    Requires ANTHROPIC_API_KEY (or another configured browser-use LLM) — this spec was authored
+    and validated structurally (fields present, matches the newest spec's id/timeout/max_steps/
+    acceptance_ids/browser_use_task/expected shape — see watchlist_topic_news_sources.yaml) but a
+    graded run was NOT executed in the authoring environment because no LLM key was available
+    there. Equivalent behavioral coverage for every acceptance id above exists as deterministic
+    vitest DOM tests (NewsSourceRow.test.tsx, AddNewsSourceForm.test.tsx,
+    NewsSourcesPanel.test.tsx — 43 tests) plus the deterministic visual-qa geometry gate
+    (`make ui-gate`). Step 5's 422 case (SRCP-13) and Step 6's delete flow (SRCP-16) exercise the
+    REAL backend (SSRF guard rejecting a loopback URL, then a genuine public feed URL and a real
+    DELETE) rather than a mock — the one part of this spec that is NOT already covered by the
+    unit-test mocks, so it is the highest-value step for an actual graded run.

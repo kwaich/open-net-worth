@@ -1,0 +1,2270 @@
+[
+  {
+    "type": "net_worth",
+    "label": "Net Worth",
+    "icon": "▲",
+    "tone": "lucius",
+    "field_schema": [
+      {
+        "key": "net_worth",
+        "label": "Net worth",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "assets",
+        "label": "Assets",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "liabilities",
+        "label": "Liabilities",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "market_positions",
+        "label": "Market positions",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "cash",
+        "label": "Cash (bank/e-wallet)",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "settlement_cash",
+        "label": "Brokerage/exchange settlement cash (negative = margin)",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "fixed_deposit",
+        "label": "Fixed deposits",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "retirement",
+        "label": "Retirement",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "property",
+        "label": "Property",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "receivable",
+        "label": "Loans receivable",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "holding",
+    "label": "Holding",
+    "icon": "◆",
+    "tone": "invest",
+    "field_schema": [
+      {
+        "key": "symbol",
+        "label": "Symbol",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "account",
+        "label": "Account",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "asset_class",
+        "label": "Asset class",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "quantity",
+        "label": "Quantity",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "price",
+        "label": "Price",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "value_base",
+        "label": "Value",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "cost_base",
+        "label": "Cost basis",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "unrealized_base",
+        "label": "Unrealized P&L",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "day_change_base",
+        "label": "Day change",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "instrument",
+    "label": "Security",
+    "icon": "◈",
+    "tone": "invest",
+    "field_schema": [
+      {
+        "key": "symbol",
+        "label": "Symbol",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "asset_class",
+        "label": "Asset class",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "asset_subclass",
+        "label": "Asset subclass",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "sector",
+        "label": "Sector",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "quote_currency",
+        "label": "Quote currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "latest_price",
+        "label": "Latest price",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "dividend_rate_annual",
+        "label": "Annual dividend rate",
+        "type": "pct",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "account",
+    "label": "Account",
+    "icon": "⬡",
+    "tone": "cash",
+    "field_schema": [
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "kind",
+        "label": "Kind",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "type",
+        "label": "Type",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "balance",
+        "label": "Balance",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "balance_base",
+        "label": "Balance (base)",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "cleared_balance_base",
+        "label": "Cleared balance",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "custodian",
+        "label": "Custodian",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "transaction",
+    "label": "Transaction",
+    "icon": "↕",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "date",
+        "label": "Date",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "kind",
+        "label": "Kind",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "category",
+        "label": "Category",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "amount_base",
+        "label": "Amount (base)",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "amount",
+        "label": "Amount",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "original_amount",
+        "label": "Original charge",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "original_currency",
+        "label": "Original currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "from_amount",
+        "label": "From amount",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "from_currency",
+        "label": "From currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "to_amount",
+        "label": "To amount",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "to_currency",
+        "label": "To currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "memo",
+        "label": "Memo",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "payee",
+        "label": "Payee",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "account",
+        "label": "Account",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "from_account",
+        "label": "From account",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "to_account",
+        "label": "To account",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "category",
+    "label": "Category",
+    "icon": "▣",
+    "tone": "invest",
+    "field_schema": [
+      {
+        "key": "key",
+        "label": "Key",
+        "type": "id",
+        "sensitive": false,
+        "showInPopover": false
+      },
+      {
+        "key": "label",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "group",
+        "label": "Group",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "month",
+        "label": "Month",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "assigned",
+        "label": "Assigned",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "activity",
+        "label": "Activity",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "available",
+        "label": "Available",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "target",
+        "label": "Target",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "kind",
+        "label": "Kind",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "budgeted",
+        "label": "Budgeted",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "budget_month",
+    "label": "Budget Month",
+    "icon": "◱",
+    "tone": "credit",
+    "field_schema": [
+      {
+        "key": "month",
+        "label": "Month",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "ready_to_assign",
+        "label": "Ready to assign",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "pre_budget_baseline",
+        "label": "Pre-budget baseline",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "held_in_envelopes",
+        "label": "Held in envelopes",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "held_outside_envelopes",
+        "label": "Held outside envelopes",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "card_spend_not_covered",
+        "label": "Card spend not covered this month",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "assigned_in_future_months",
+        "label": "Assigned in future months",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "flow",
+        "label": "Flow (carried-in / inflow / cash overspending)",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": false
+      },
+      {
+        "key": "cash_overspending",
+        "label": "Cash overspending",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "group_count",
+        "label": "Groups",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "target",
+    "label": "Target",
+    "icon": "◎",
+    "tone": "retire",
+    "field_schema": [
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "target_amount_base",
+        "label": "Target amount",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "target_date",
+        "label": "Target date",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "current_base",
+        "label": "Current",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "remaining_base",
+        "label": "Remaining",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "required_monthly_base",
+        "label": "Required monthly",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "months_remaining",
+        "label": "Months remaining",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "allocation_slice",
+    "label": "Allocation",
+    "icon": "◭",
+    "tone": "invest",
+    "field_schema": [
+      {
+        "key": "axis",
+        "label": "Axis",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "selector",
+        "label": "Selector",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "value_base",
+        "label": "Value",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "holdings",
+        "label": "Holdings",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "returns",
+    "label": "Returns",
+    "icon": "↗",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "period",
+        "label": "Period",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "twr",
+        "label": "TWR",
+        "type": "pct",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "mwr",
+        "label": "MWR",
+        "type": "pct",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "period_gain_base",
+        "label": "Period gain",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "start_value",
+        "label": "Start value",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "end_value",
+        "label": "End value",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "payee",
+    "label": "Payee",
+    "icon": "◉",
+    "tone": "invest",
+    "field_schema": [
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "default_categories",
+        "label": "Default categories",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "txn_count",
+        "label": "Transactions",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "hidden",
+        "label": "Hidden",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "watchlist",
+    "label": "Watchlist",
+    "icon": "☆",
+    "tone": "crypto",
+    "field_schema": [
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "item_count",
+        "label": "Items",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "is_auto_sync",
+        "label": "Auto sync",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "automation",
+    "label": "Automation",
+    "icon": "◷",
+    "tone": "credit",
+    "field_schema": [
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "instructions",
+        "label": "Instructions",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "trigger",
+        "label": "Trigger",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "next_run_at",
+        "label": "Next run",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "skill",
+    "label": "Skill",
+    "icon": "⚡",
+    "tone": "lucius",
+    "field_schema": [
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "enabled",
+        "label": "Enabled",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "commitment",
+    "label": "Commitment",
+    "icon": "⊙",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "kind",
+        "label": "Kind",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "created_at",
+        "label": "Created",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "notification",
+    "label": "Notification",
+    "icon": "◮",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "summary",
+        "label": "Summary",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "type",
+        "label": "Type",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "severity",
+        "label": "Severity",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "portfolio_impact",
+        "label": "Portfolio impact",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "read",
+        "label": "Read",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "created_at",
+        "label": "Created",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "alert",
+    "label": "Alert",
+    "icon": "⚑",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "ticker",
+        "label": "Ticker",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "op",
+        "label": "Op",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "value",
+        "label": "Value",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "label",
+        "label": "Label",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "asset_class",
+        "label": "Asset class",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "created_at",
+        "label": "Created",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "income",
+    "label": "Income",
+    "icon": "⥃",
+    "tone": "invest",
+    "field_schema": [
+      {
+        "key": "symbol",
+        "label": "Symbol",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "income_kind",
+        "label": "Kind",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "gross_amount",
+        "label": "Gross amount",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "tax_withheld",
+        "label": "Tax withheld",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "quantity",
+        "label": "Quantity",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "amount_per_unit",
+        "label": "Amount per unit",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "is_drp",
+        "label": "Reinvested",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "paid_at",
+        "label": "Paid",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "created_at",
+        "label": "Created",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "lot",
+    "label": "Lot",
+    "icon": "▭",
+    "tone": "invest",
+    "field_schema": [
+      {
+        "key": "symbol",
+        "label": "Symbol",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "kind",
+        "label": "Kind",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "acquired_at",
+        "label": "Acquired",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "original_qty",
+        "label": "Original qty",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "remaining_qty",
+        "label": "Remaining qty",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "unit_cost",
+        "label": "Unit cost",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "cost_currency",
+        "label": "Cost currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "fees",
+        "label": "Fees",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "created_at",
+        "label": "Created",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "grant",
+    "label": "Grant",
+    "icon": "❖",
+    "tone": "invest",
+    "field_schema": [
+      {
+        "key": "symbol",
+        "label": "Symbol",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "type",
+        "label": "Type",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "grant_date",
+        "label": "Grant date",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "total_units",
+        "label": "Total units",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "tax_event",
+        "label": "Tax event",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "created_at",
+        "label": "Created",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "vest",
+    "label": "Vest",
+    "icon": "⟠",
+    "tone": "invest",
+    "field_schema": [
+      {
+        "key": "symbol",
+        "label": "Symbol",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "date",
+        "label": "Vest date",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "units",
+        "label": "Units",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "fmv_per_unit",
+        "label": "FMV per unit",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "fmv_currency",
+        "label": "FMV currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "price_paid_per_unit",
+        "label": "Price paid per unit",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "units_withheld",
+        "label": "Units withheld",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "created_at",
+        "label": "Created",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "connector",
+    "label": "Connector",
+    "icon": "⇄",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "kind",
+        "label": "Provider",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "enabled",
+        "label": "Enabled",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "report",
+    "label": "Report",
+    "icon": "▦",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "type",
+        "label": "Type",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "uses_period",
+        "label": "Accepts period",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "disposal",
+    "label": "Disposal",
+    "icon": "▱",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "symbol",
+        "label": "Symbol",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "disposed_at",
+        "label": "Disposed",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "quantity",
+        "label": "Quantity",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "proceeds_per_unit",
+        "label": "Proceeds per unit",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "proceeds_currency",
+        "label": "Proceeds currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "disposal_fees",
+        "label": "Disposal fees",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "method",
+        "label": "Method",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "is_taxable",
+        "label": "Taxable",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "cost_basis_known",
+        "label": "Cost basis known",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "realized_gain",
+        "label": "Realized gain",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "created_at",
+        "label": "Created",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "envelope",
+    "label": "Envelope",
+    "icon": "◫",
+    "tone": "credit",
+    "field_schema": [
+      {
+        "key": "key",
+        "label": "Key",
+        "type": "id",
+        "sensitive": false,
+        "showInPopover": false
+      },
+      {
+        "key": "label",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "group",
+        "label": "Group",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "month",
+        "label": "Month",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "categories",
+        "label": "Linked categories",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "assigned",
+        "label": "Assigned",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "activity",
+        "label": "Activity",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "available",
+        "label": "Available",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "target",
+        "label": "Target",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "available_for_payment",
+        "label": "Available for payment",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "underfunded",
+        "label": "Underfunded",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "installment",
+    "label": "Installment",
+    "icon": "◔",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "label",
+        "label": "Label",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "commitment_name",
+        "label": "Commitment",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "due_date",
+        "label": "Due",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "amount",
+        "label": "Amount",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "funding_source",
+    "label": "Funding source",
+    "icon": "⊞",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "label",
+        "label": "Label",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "commitment_name",
+        "label": "Commitment",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "type",
+        "label": "Type",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "amount",
+        "label": "Amount",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "available_date",
+        "label": "Available",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "cadence",
+        "label": "Cadence",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "disabled",
+        "label": "Disabled",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "commitment_action",
+    "label": "Commitment event",
+    "icon": "⌂",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "label",
+        "label": "Label",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "commitment_name",
+        "label": "Commitment",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "category",
+        "label": "Category",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "due_date",
+        "label": "Due",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "start_by",
+        "label": "Start by",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "amount",
+        "label": "Amount",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "counterparty",
+        "label": "Counterparty",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "profile",
+    "label": "Profile",
+    "icon": "◍",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "base_currency",
+        "label": "Base currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "nationalities",
+        "label": "Nationalities",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "countries_of_residence",
+        "label": "Countries of residence",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "tax_residencies",
+        "label": "Tax residencies",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "employment_types",
+        "label": "Employment types",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "retirement_target_age",
+        "label": "Retirement target age",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "concentration_limit_pct",
+        "label": "Concentration limit",
+        "type": "pct",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "position",
+    "label": "Position",
+    "icon": "▤",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "symbol",
+        "label": "Symbol",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "account",
+        "label": "Account",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "quantity",
+        "label": "Quantity",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "cost_basis",
+        "label": "Cost basis",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "cost_currency",
+        "label": "Cost currency",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "bucket",
+        "label": "Bucket",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "acquired_at",
+        "label": "Acquired",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "option_contract",
+    "label": "Option contract",
+    "icon": "⬢",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "underlying",
+        "label": "Underlying",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "account",
+        "label": "Account",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "option_type",
+        "label": "Type",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "side",
+        "label": "Side",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "strike",
+        "label": "Strike",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "expiry",
+        "label": "Expiry",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "contracts",
+        "label": "Contracts",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "multiplier",
+        "label": "Multiplier",
+        "type": "qty",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "asset_brief",
+    "label": "Research brief",
+    "icon": "❐",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "symbol",
+        "label": "Symbol",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "portfolio_impact",
+        "label": "Portfolio impact",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "refresh_stage",
+        "label": "Refresh stage",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "news_source",
+    "label": "News source",
+    "icon": "◰",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "label",
+        "label": "Label",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "kind",
+        "label": "Kind",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "enabled",
+        "label": "Enabled",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "cadence",
+        "label": "Cadence",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "notes",
+        "label": "Notes",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "asset",
+    "label": "Asset",
+    "icon": "⬥",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "category",
+        "label": "Category",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "value",
+        "label": "Value",
+        "type": "money",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "valued_on",
+        "label": "Valued on",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "share_pct",
+        "label": "Share",
+        "type": "pct",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "notes",
+        "label": "Notes",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      }
+    ]
+  },
+  {
+    "type": "document",
+    "label": "Document",
+    "icon": "▥",
+    "tone": "neutral",
+    "field_schema": [
+      {
+        "key": "id",
+        "label": "Vault id",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": false
+      },
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "kind",
+        "label": "Kind",
+        "type": "enum",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "filename",
+        "label": "File name",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "year",
+        "label": "Year",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "added_at",
+        "label": "Added",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "account_name",
+        "label": "Account",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "asset_name",
+        "label": "Asset",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "statement_date",
+        "label": "Statement date",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "transaction_date",
+        "label": "Transaction date",
+        "type": "date",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "private",
+        "label": "Private",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "tags",
+        "label": "Tags",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": true
+      },
+      {
+        "key": "contents",
+        "label": "Contents",
+        "type": "text",
+        "sensitive": false,
+        "showInPopover": false
+      }
+    ]
+  }
+]

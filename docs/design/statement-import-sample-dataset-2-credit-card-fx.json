@@ -1,0 +1,242 @@
+{
+  "_about": {
+    "purpose": "Sample dataset #2 — a CREDIT CARD statement (Citibank Rewards Card, base currency SGD) with FOREIGN-CURRENCY charges. Complements dataset #1 (a VND bank account). A card statement differs from a bank account in ways the UI must handle: (a) charges are billed in the card's base currency but often ORIGINATE in a foreign currency (USD/EUR/JPY/GBP) with an FX conversion — so every such row carries an original_amount/original_currency; (b) card-specific metadata (statement date, payment due date, minimum payment, credit limit, amount due, rewards points); (c) special row kinds: card payments (a transfer FROM a bank account), refunds/credits, interest, fees, cashback; (d) a payment-status banner. Identifying details masked.",
+    "how_to_read": "Same structure as dataset #1: statement (extracted) + ledger_now (existing) + reconciliation (computed review). Plus a card 'payment_banner' block and an _edge_cases_catalog at the end for the exotic cases that don't each need a full row.",
+    "currency_note": "Base = SGD (2 decimals, S$). Foreign charges show the settled SGD amount as the primary figure + the original foreign amount as a secondary line. JPY is a ZERO-DECIMAL currency (¥3200, not ¥32.00) — the UI must render foreign amounts with the right precision per currency.",
+    "states_covered_here": ["foreign_charge_usd", "foreign_charge_eur", "foreign_charge_jpy_zero_decimal", "foreign_charge_gbp", "matched_foreign_with_fx_drift", "card_payment_transfer_matched", "refund_credit", "interest_charge", "annual_fee", "cashback_credit", "duplicate_cross_source_email_plus_statement", "low_confidence_needs_eyes", "reconcile_via_card_balance", "card_payment_banner"]
+  },
+
+  "accounts": [
+    { "id": "acc_citi", "name": "Citi Rewards Card", "currency": "SGD", "kind": "liability", "type": "credit_card", "color": "#eab308", "last_four": "5678", "statement_close_day": 14, "payment_due_day": 1 },
+    { "id": "acc_dbs", "name": "DBS Multiplier (SGD)", "currency": "SGD", "kind": "asset", "color": "#3b82f6" }
+  ],
+
+  "categories": [
+    { "id": "cat_subs", "label": "Subscriptions", "color": "#8b5cf6" },
+    { "id": "cat_startup", "label": "Startup Costs", "color": "#f97316" },
+    { "id": "cat_travel", "label": "Travel", "color": "#06b6d4" },
+    { "id": "cat_shopping", "label": "Shopping", "color": "#ec4899" },
+    { "id": "cat_fees", "label": "Bank Fees", "color": "#94a3b8" }
+  ],
+
+  "statement": {
+    "file": "eStatement_Jul2026.pdf",
+    "format": "pdf",
+    "account_detected": { "account_id": "acc_citi", "how": "card number ending ·1234 matched your Citi Rewards Card", "needs_account": false },
+    "meta": {
+      "currency": "SGD",
+      "issuer": "Citibank",
+      "product": "Citi Rewards Card",
+      "card_number_masked": "4•••-••••-••••-1116",
+      "period_start": "2026-06-15",
+      "period_end": "2026-07-14",
+      "statement_date": "2026-07-14",
+      "payment_due_date": "2026-08-01",
+      "previous_balance": 1240.50,
+      "new_charges": 388.60,
+      "payments_and_credits": -1297.50,
+      "closing_balance": 331.60,
+      "minimum_payment": 50.00,
+      "credit_limit": 15000.00,
+      "available_credit": 14668.40,
+      "rewards": { "earned_this_cycle": 1554, "balance": 48210, "unit": "points" },
+      "sign_convention": "card"
+    },
+    "reconcile": {
+      "status": "ok",
+      "method": "card_balance",
+      "message": "Statement parses clean — previous balance + charges − payments = closing balance.",
+      "check": "1240.50 + 388.60 − 1297.50 = 331.60 ✓"
+    },
+    "payment_banner": {
+      "state": "paid_in_full_last_cycle",
+      "message": "You paid last cycle's S$1,240.50 in full on 06-28 — nice. This new S$331.60 balance is due 01 Aug 2026.",
+      "variants_the_ui_must_support": [
+        { "state": "due_soon", "example": "S$331.60 due in 6 days (01 Aug 2026). Minimum S$50.00." },
+        { "state": "overdue", "example": "Overdue by 4 days — S$331.60 was due 01 Aug 2026." },
+        { "state": "statement_missing_for_cycle", "example": "Your 14 Jul 2026 statement isn't uploaded yet — upload it to confirm this cycle's balance." },
+        { "state": "credit_balance", "example": "The card owes YOU S$42.00 (a credit balance from a refund)." }
+      ]
+    },
+    "instructions": { "text": "", "remembered": false },
+    "cost": { "ai_read_usd": 0.048, "from_memory": false, "note": "A PDF is read by Lucius (vision/text) — a small one-time cost. The learned format is remembered for next time." },
+
+    "rows": [
+      { "index": 0, "date": "2026-06-16", "amount": -24.50, "currency": "SGD", "original_amount": -18.20, "original_currency": "USD", "description": "ANTHROPIC 3.0 SAAS ANTHROPIC.COM CA", "fx_rate": 1.3462 },
+      { "index": 1, "date": "2026-06-18", "amount": -10.80, "currency": "SGD", "original_amount": -8.00, "original_currency": "USD", "description": "OPENROUTER, INC. OPENROUTER.AI", "fx_rate": 1.3500 },
+      { "index": 2, "date": "2026-06-22", "amount": -65.20, "currency": "SGD", "original_amount": -45.00, "original_currency": "EUR", "description": "SNCF INTERNET PARIS FR", "fx_rate": 1.4489 },
+      { "index": 3, "date": "2026-06-25", "amount": -28.40, "currency": "SGD", "original_amount": -3200, "original_currency": "JPY", "description": "FAMILYMART TOKYO JP", "fx_rate": 0.008875, "_note": "JPY is zero-decimal: ¥3,200, not ¥32.00" },
+      { "index": 4, "date": "2026-06-28", "amount": -22.10, "currency": "SGD", "original_amount": -12.99, "original_currency": "GBP", "description": "SPOTIFY UK LONDON GB", "fx_rate": 1.7013 },
+      { "index": 5, "date": "2026-06-28", "amount": 1240.50, "currency": "SGD", "description": "PAYMENT RECEIVED - THANK YOU / DBS IBG", "_note": "a card payment: a POSITIVE credit that pays down the balance; it's the landing leg of a transfer DBS → Citi" },
+      { "index": 6, "date": "2026-07-02", "amount": 42.00, "currency": "SGD", "description": "REFUND UNIQLO SINGAPORE SG", "_note": "a refund/credit — a merchant returning money" },
+      { "index": 7, "date": "2026-07-05", "amount": -15.90, "currency": "SGD", "original_amount": -11.99, "original_currency": "USD", "description": "NETFLIX.COM LOS GATOS CA", "fx_rate": 1.3261 },
+      { "index": 8, "date": "2026-07-10", "amount": -192.60, "currency": "SGD", "description": "ANNUAL MEMBERSHIP FEE", "_note": "a card fee — new, no match" },
+      { "index": 9, "date": "2026-07-12", "amount": 15.00, "currency": "SGD", "description": "CASHBACK REWARD REDEMPTION", "_note": "a cashback credit" },
+      { "index": 10, "date": "2026-07-13", "amount": -18.30, "currency": "SGD", "original_amount": -13.60, "original_currency": "USD", "description": "1PASSWORD SUBSCRIPTN CA", "fx_rate": 1.3456, "confidence": 0.58, "_note": "a garbled/low-confidence PDF row" }
+    ]
+  },
+
+  "ledger_now": [
+    { "id": "txn_anthropic", "date": "2026-06-16", "kind": "expense", "description": "Anthropic — Claude API", "from_account_id": "acc_citi", "amount": -24.30, "currency": "SGD", "original_amount": -18.20, "original_currency": "USD", "category": "cat_startup", "cleared": false, "source": "agent", "added_by": "Email Logger", "_note_for_design": "booked from the email receipt with an estimated SGD (S$24.30) but the SAME original USD ($18.20). The statement settled at S$24.50. Matched by the ORIGINAL-amount fingerprint ($18.20 == $18.20) despite the S$0.20 settled drift → strong link, Off-by S$0.20." },
+    { "id": "txn_payment", "date": "2026-06-28", "kind": "transfer", "description": "Credit card payment — Citi", "from_account_id": "acc_dbs", "to_account_id": "acc_citi", "from_amount": 1240.50, "to_amount": 1240.50, "currency": "SGD", "category": null, "cleared": true, "source": "manual", "added_by": "You", "_note_for_design": "the payment already booked as a transfer DBS → Citi. The statement's 'PAYMENT RECEIVED' credit is the SAME movement → transfer_leg_echo, links (don't double-count)." },
+    { "id": "txn_netflix", "date": "2026-07-05", "kind": "expense", "description": "Netflix subscription", "from_account_id": "acc_citi", "amount": -15.90, "currency": "SGD", "category": "cat_subs", "cleared": false, "source": "agent", "added_by": "Email Logger", "_note_for_design": "already booked from email at the exact settled figure → clean strong match, no drift." }
+  ],
+
+  "reconciliation": {
+    "verdict": {
+      "coverage": { "ok": true, "headline": "Every statement transaction will be in your ledger", "detail": "3 linked to entries you already had · 8 imported new", "linked": 3, "imported_new": 8 },
+      "amounts": { "ok": false, "headline": "Off by S$0.20", "detail": "1 kept at your original figure (choose Merge to adopt settled)", "kept_count": 1, "delta_by_currency": { "SGD": -0.20 }, "drifted_row_indexes": [0] }
+    },
+    "chip_counts": { "all": 11, "matched": 3, "needs_you": 0, "weak_match": 0, "new": 8, "not_on_statement": 0 },
+
+    "rows": [
+      {
+        "row_index": 0, "band": "matched_strong", "suggested_action": "merge",
+        "design_note": "STATE: matched_foreign_with_fx_drift. Same USD original ($18.20) on both sides → matched by the original-amount fingerprint, even though the SETTLED SGD differs (statement S$24.50 vs your S$24.30). Off-by S$0.20. The row shows BOTH: settled S$24.50 primary + −$18.20 secondary.",
+        "headline": "✓ Already recorded — will link",
+        "statement_side": { "category": "Unsorted", "description": "ANTHROPIC 3.0 SAAS…", "amount": -24.50, "currency": "SGD", "original": { "amount": -18.20, "currency": "USD" } },
+        "ledger_now": { "id": "txn_anthropic", "line": "— 06-16 · Citi Rewards Card · Startup Costs · via agent · −S$24.30 (−$18.20)", "clickable": true },
+        "after_import": { "records": 1, "title": "Anthropic — Claude API", "date": "06-16", "category": "Startup Costs", "amount": -24.50, "original": "−$18.20", "badges": ["cleared ✓", "reference attached"], "delta": { "amount": { "from": -24.30, "to": -24.50 } } },
+        "off_by": { "amount": 0.20, "currency": "SGD", "tooltip": "Statement settled −S$24.50 · yours says −S$24.30 (both −$18.20) — Merge adopts the settled figure." }
+      },
+      {
+        "row_index": 1, "band": "new", "suggested_action": "import_new",
+        "design_note": "STATE: foreign_charge_usd, new. OpenRouter $8.00 → S$10.80. No match → imports new. Shows settled + original.",
+        "statement_side": { "category": "Unsorted", "description": "OPENROUTER, INC…", "amount": -10.80, "currency": "SGD", "original": { "amount": -8.00, "currency": "USD" } },
+        "ledger_now": null,
+        "after_import": { "records": 1, "title": "OPENROUTER, INC.", "amount": -10.80, "original": "−$8.00" }
+      },
+      {
+        "row_index": 2, "band": "new", "suggested_action": "import_new",
+        "design_note": "STATE: foreign_charge_eur, new. A €45.00 SNCF (French rail) charge → S$65.20.",
+        "statement_side": { "category": "Unsorted", "description": "SNCF INTERNET PARIS FR", "amount": -65.20, "currency": "SGD", "original": { "amount": -45.00, "currency": "EUR" } },
+        "ledger_now": null,
+        "after_import": { "records": 1, "title": "SNCF INTERNET PARIS", "amount": -65.20, "original": "−€45.00" }
+      },
+      {
+        "row_index": 3, "band": "new", "suggested_action": "import_new",
+        "design_note": "STATE: foreign_charge_jpy_zero_decimal. ¥3,200 (NO decimals) → S$28.40. The UI must render ¥3,200, not ¥32.00.",
+        "statement_side": { "category": "Unsorted", "description": "FAMILYMART TOKYO JP", "amount": -28.40, "currency": "SGD", "original": { "amount": -3200, "currency": "JPY" } },
+        "ledger_now": null,
+        "after_import": { "records": 1, "title": "FAMILYMART TOKYO", "amount": -28.40, "original": "−¥3,200" }
+      },
+      {
+        "row_index": 4, "band": "new", "suggested_action": "import_new",
+        "design_note": "STATE: foreign_charge_gbp, new. £12.99 → S$22.10.",
+        "statement_side": { "category": "Unsorted", "description": "SPOTIFY UK LONDON GB", "amount": -22.10, "currency": "SGD", "original": { "amount": -12.99, "currency": "GBP" } },
+        "ledger_now": null,
+        "after_import": { "records": 1, "title": "SPOTIFY UK LONDON", "amount": -22.10, "original": "−£12.99" }
+      },
+      {
+        "row_index": 5, "band": "matched_strong", "suggested_action": "merge",
+        "design_note": "STATE: card_payment_transfer_matched (transfer_leg_echo). The 'PAYMENT RECEIVED' credit is the landing leg of the DBS → Citi transfer already booked. A POSITIVE row on a card (reduces debt). Links, never double-books.",
+        "headline": "Already booked as a transfer",
+        "statement_side": { "label": "Transfer ← DBS Multiplier", "description": "PAYMENT RECEIVED / DBS IBG", "amount": 1240.50, "currency": "SGD" },
+        "ledger_now": { "id": "txn_payment", "line": "— 06-28 · Transfer · DBS Multiplier → Citi Rewards Card · added by you · S$1,240.50", "clickable": true },
+        "after_import": { "records": 1, "title": "Credit card payment — Citi", "identity": "Transfer · DBS Multiplier → Citi Rewards Card", "amount": 1240.50, "badges": ["linked ✓"] },
+        "off_by": null
+      },
+      {
+        "row_index": 6, "band": "new", "suggested_action": "import_new",
+        "design_note": "STATE: refund_credit. A POSITIVE row that isn't a payment — a merchant refund. Books as income/credit to the card (reduces what you owe). No match.",
+        "headline": null,
+        "statement_side": { "category": "Unsorted", "description": "REFUND UNIQLO SINGAPORE", "amount": 42.00, "currency": "SGD", "hint": "refund" },
+        "ledger_now": null,
+        "after_import": { "records": 1, "title": "REFUND UNIQLO SINGAPORE", "amount": 42.00, "badges": ["credit"] }
+      },
+      {
+        "row_index": 7, "band": "matched_strong", "suggested_action": "merge",
+        "design_note": "STATE: matched foreign, NO drift. Netflix already booked from email at the exact settled figure (S$15.90) → clean link, no off-by.",
+        "headline": "✓ Already recorded — will link",
+        "statement_side": { "category": "Unsorted", "description": "NETFLIX.COM LOS GATOS", "amount": -15.90, "currency": "SGD", "original": { "amount": -11.99, "currency": "USD" } },
+        "ledger_now": { "id": "txn_netflix", "line": "— 07-05 · Citi Rewards Card · Subscriptions · via agent · −S$15.90", "clickable": true },
+        "after_import": { "records": 1, "title": "Netflix subscription", "category": "Subscriptions", "amount": -15.90, "badges": ["cleared ✓", "reference attached"] },
+        "off_by": null
+      },
+      {
+        "row_index": 8, "band": "new", "suggested_action": "import_new",
+        "design_note": "STATE: annual_fee. A card fee — new, no match. Categorizes to Bank Fees (suggested by a ✦ hint, not forced).",
+        "statement_side": { "category": "Bank Fees", "category_source": "hint", "description": "ANNUAL MEMBERSHIP FEE", "amount": -192.60, "currency": "SGD" },
+        "ledger_now": null,
+        "after_import": { "records": 1, "title": "ANNUAL MEMBERSHIP FEE", "category": "Bank Fees", "amount": -192.60, "badges": ["✦ suggested category"] }
+      },
+      {
+        "row_index": 9, "band": "new", "suggested_action": "import_new",
+        "design_note": "STATE: cashback_credit. A rewards redemption credit (positive).",
+        "statement_side": { "category": "Unsorted", "description": "CASHBACK REWARD REDEMPTION", "amount": 15.00, "currency": "SGD", "hint": "reward" },
+        "ledger_now": null,
+        "after_import": { "records": 1, "title": "CASHBACK REWARD REDEMPTION", "amount": 15.00, "badges": ["credit"] }
+      },
+      {
+        "row_index": 10, "band": "new", "suggested_action": "skip",
+        "design_note": "STATE: low_confidence_needs_eyes. A garbled row Lucius read with low confidence (58%). Offered but DEFAULTED TO SKIP (never silently imported). Shows a 'Needs your eyes · 58%' flag with Skip/Include.",
+        "needs_eyes": true, "confidence": 0.58,
+        "headline": "Needs your eyes · 58%",
+        "statement_side": { "category": "Unsorted", "description": "1PASSWORD SUBSCRIPTN CA (low confidence)", "amount": -18.30, "currency": "SGD", "original": { "amount": -13.60, "currency": "USD" } },
+        "ledger_now": null,
+        "controls": ["Skip (default)", "Include"]
+      }
+    ],
+
+    "not_on_statement": { "message": "In your ledger, not on this statement — 0", "net": 0, "core": [], "boundary": { "rows": [] } }
+  },
+
+  "_edge_cases_catalog": {
+    "note": "Exotic cases the designer must be able to represent, each with a compact example. Some are rare enough that they don't warrant a full row above, but the UI must not break on them.",
+
+    "multi_currency_statement_unroutable_currency": {
+      "context": "A consolidated multi-currency statement (broker like IBKR, or Wise) prints per-currency sections against ONE account. Each row routes to the wallet of ITS currency. If the user has no wallet for a currency, that row is OFFERED but cannot default-book.",
+      "example_row": { "date": "2026-07-03", "amount": -120.00, "currency": "CHF", "description": "SWISS RAIL SBB", "routing": "no CHF wallet — pick an account or it stays skipped", "flag": "no_account_for_currency" }
+    },
+
+    "split_transaction": {
+      "context": "A single statement charge the user splits across categories (e.g. a supermarket run that's part groceries, part household).",
+      "example": { "date": "2026-07-08", "amount": -128.40, "currency": "SGD", "description": "FAIRPRICE FINEST", "splits": [ { "category": "Groceries", "amount": -98.40 }, { "category": "Household", "amount": -30.00 } ], "note": "Σ splits must equal the leg amount (±0.01). Category shows 'Split' with an expander." }
+    },
+
+    "cross_source_duplicate_email_plus_statement": {
+      "context": "The SAME charge was already logged from an email receipt AND appears on the statement — a near-duplicate across sources. Must link (merge), not double-book.",
+      "example": { "statement": { "description": "GRAB* SG RIDE", "amount": -12.80 }, "ledger": { "description": "Grab ride to airport", "amount": -12.80, "source": "email" }, "band": "matched_strong", "action": "merge" }
+    },
+
+    "negative_or_credit_balance": {
+      "context": "A card that owes the USER money (credit balance) — after a big refund or overpayment. Balances and the payment banner must handle a negative 'owed' amount gracefully.",
+      "example_meta": { "closing_balance": -42.00, "banner": "The card owes YOU S$42.00 (credit balance)." }
+    },
+
+    "interest_and_late_fee": {
+      "context": "When a card isn't paid in full, an interest charge + possibly a late fee appear. New rows, categorize to Bank Fees.",
+      "example_rows": [ { "description": "FINANCE CHARGE / INTEREST", "amount": -18.45 }, { "description": "LATE PAYMENT FEE", "amount": -100.00 } ]
+    },
+
+    "installment_plan_row": {
+      "context": "A big purchase converted to a monthly installment shows a recurring installment line, not the full charge.",
+      "example": { "description": "INSTALMENT 3/12 - APPLE STORE", "amount": -183.25, "note": "the UI shouldn't treat this as a new full purchase; it's a scheduled installment." }
+    },
+
+    "same_day_same_amount_ambiguity": {
+      "context": "Two statement rows on the same day for the same amount (e.g. two ₫500,000 top-ups) vs one or two ledger entries. The match picker + 1:1 assignment must let the user disambiguate; a merge must never point two rows at one entry.",
+      "example": { "statement_rows": ["06-04 −₫500,000", "06-04 −₫500,000"], "ledger": ["06-04 −₫500,000 (only one)"], "expected": "one links, the other imports new; picker offers the swap." }
+    },
+
+    "reversed_or_pending_then_settled": {
+      "context": "A pending authorization later settles at a slightly different amount (tips, fuel, hotel holds). The settled statement row should match the pending ledger entry despite the small drift (Off-by).",
+      "example": { "ledger_pending": -50.00, "statement_settled": -58.00, "band": "needs_you", "off_by": 8.00 }
+    },
+
+    "non_latin_and_very_long_descriptions": {
+      "context": "Vietnamese/Thai/Chinese descriptions and long dotted reference strings. Must wrap/truncate gracefully, never overflow into neighbouring columns; the raw string is shown but the user isn't expected to parse it.",
+      "example": "MBVCB.14776323953.6172BFTVG2637VUA.thanh toan banh mochi.CT tu 000000•••892 LE Q. M. toi 7000000000004 VU T. T. E. tai TECHCOMBANK"
+    },
+
+    "zero_or_partial_data_rows": {
+      "context": "A parsed row with a missing amount / unreadable date → surfaced as a 'skipped' row with a reason, never silently dropped. The skipped list is its own quiet section.",
+      "example": { "line": 37, "reason": "couldn't read the amount", "failed": true }
+    },
+
+    "statement_does_not_reconcile": {
+      "context": "No balance column, or the balance chain breaks → the statement is NOT claimed complete. The completeness badge is absent, the coverage verdict is cautious, and more rows land in 'Needs you'. The UI must visibly downgrade its confidence, not fake a green check.",
+      "example_meta": { "reconcile": { "status": "unknown", "message": "Couldn't verify this statement is complete (no running balance) — review carefully." } }
+    }
+  }
+}

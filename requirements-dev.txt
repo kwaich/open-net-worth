@@ -1,0 +1,29 @@
+# Development tooling — lint / type-check / test / hooks.
+# Per docs/ENGINEERING_GUIDE.md §5. Install with:
+#   .venv/bin/python3 -m pip install -r requirements-dev.txt
+-r requirements.txt
+
+# Lint + format (replaces black/isort/flake8)
+ruff==0.15.15
+
+# Static type checker (lenient config in pyproject.toml)
+mypy==1.19.1
+types-python-dateutil==2.9.0.20251115
+types-PyYAML==6.0.12.20250915
+
+# Test runner + async support (already used by tests/conftest.py)
+pytest==8.4.2
+pytest-asyncio==1.2.0
+# Coverage measurement (`pytest --cov=backend`); drives the 90%+ coverage goal.
+pytest-cov==7.1.0
+# TestClient (fastapi.testclient) needs httpx; pinned to the installed version
+httpx==0.28.1
+
+# Architecture: enforce the dependency rule (api/ai -> services -> db -> core).
+# Contracts live in pyproject.toml [tool.importlinter]; run via `lint-imports`
+# (wired into `make lint` / `make imports` + the CI lint job). See P1-A6 /
+# .claude/rfcs/phase1/a4-inversion.md.
+import-linter==2.3
+
+# Git hooks
+pre-commit==4.3.0

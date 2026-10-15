@@ -1,0 +1,74 @@
+# Spec: CC-03 — Stop is scoped to the conversation you are looking at
+# Covers: acceptance B5 in docs/qa/acceptance/concurrent-conversations.md
+#
+# Easy to get wrong and expensive when wrong: a Stop button that aborts a turn
+# the user cannot see. Before this change only one turn could exist, so "stop
+# the turn" and "stop THIS turn" were the same sentence.
+id: CC-03
+acceptance_ids:
+  - CONC-STOP-SCOPED
+title: "Concurrent conversations: Stop cancels only the viewed conversation's turn"
+timeout_seconds: 600
+max_steps: 80
+
+description: >
+  With two conversations streaming at once, pressing Stop while viewing one must
+  cancel that one and leave the other running to completion. A failure here means
+  Stop is reaching for a single global turn rather than the viewed slice's own
+  abort controller.
+
+acceptance_criteria:
+  - AC1: Two conversations can stream at the same time
+  - AC2: Stop while viewing B ends B's turn
+  - AC3: A's turn is unaffected and still completes
+  - AC4: A's reply is complete, not truncated by B's Stop
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the app to finish loading.
+  Open Lucius (a chat/spark button on a wide viewport, or the Lucius slot in the
+  bottom tab bar on a narrow one).
+
+  STEP 1 — start a slow turn in CONVERSATION A.
+  Click "New chat" in the conversation sidebar.
+  Type exactly:
+  list all of my accounts and their balances
+  Press Enter. Do NOT wait for it to finish.
+
+  STEP 2 — start a second turn in CONVERSATION B.
+  Within a few seconds, while A is still streaming, click "New chat" again.
+  If "New chat" is disabled or does nothing while A streams, return
+  "FAIL: cannot start a second conversation while one is streaming".
+  In this new CONVERSATION B, type exactly:
+  what were my three largest expenses last month and why
+  Press Enter.
+
+  Both conversations should now be working at once.
+
+  STEP 3 — Stop only B.
+  While still viewing CONVERSATION B and while it is still streaming, find the
+  Stop control. It appears in a bar under the panel header reading something like
+  "Working on this conversation" with a Stop button next to it.
+  Click Stop.
+
+  Confirm B stopped: its streaming indicator should end promptly.
+
+  STEP 4 — check A survived.
+  Open the conversation list and click CONVERSATION A.
+  Wait up to 60 seconds.
+
+  Evaluate:
+  - If A shows a complete, coherent reply, return
+    "PASS: stop was scoped; A completed - <first 100 chars of A's reply>"
+  - If A's reply is missing, empty, or stops mid-sentence, return
+    "FAIL: stopping B also killed A - <what you saw>"
+  - If A is still shown as working after 60 seconds with no text at all, return
+    "FAIL: A appears stalled after B was stopped"
+  - If an error mentioning API key, model, or configuration appears, return
+    "SKIP: AI not configured - <error text>"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CC-03-stop-scope.png"
+  note: >
+    SKIP is acceptable without ANTHROPIC_API_KEY. Even then the spec proves the
+    two conversations could both be STARTED, which was impossible before.

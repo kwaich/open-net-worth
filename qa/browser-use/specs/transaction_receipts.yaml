@@ -1,0 +1,123 @@
+id: TXN-REC-01
+title: "Transaction Receipts — attach, view, and remove receipt evidence on a transaction"
+acceptance_ids:
+  - TXN-REC-01  # Empty state
+  - TXN-REC-07  # Attach image
+  - TXN-REC-08  # Attach PDF
+  - TXN-REC-11  # View receipt
+  - TXN-REC-14  # Remove confirmation
+  - TXN-REC-15  # Cancel disarms
+  - TXN-REC-16  # Confirm removes
+  - TXN-REC-18  # State isolation on drawer close/reopen
+  - TXN-REC-19  # State isolation via key reset
+
+acceptance_criteria:
+  - AC1: A transaction with no receipts shows the empty state — "No receipts attached yet." and "+ Attach receipt" button
+  - AC2: Attaching a JPG image shows loading state, completes, and displays the receipt row with thumbnail
+  - AC3: Attaching a PDF shows the PDF icon (📄) glyph instead of an image thumbnail
+  - AC4: Clicking a receipt filename opens a modal viewer showing the file
+  - AC5: The viewer's close button (X) dismisses the modal and returns to the list
+  - AC6: Clicking "Remove" on a receipt row shows two-step confirmation — Confirm (red) and Cancel buttons
+  - AC7: Clicking "Cancel" disarms the row without removing the receipt
+  - AC8: Clicking "Confirm" removes the receipt from the list
+  - AC9: Switching between transactions doesn't leak armed/viewing state
+  - AC10: React key on ReceiptsSection ensures fresh state per row
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  STEP 1 — Verify empty state.
+  1. Click the "Accounts" tab.
+  2. Wait 2 seconds for accounts to load.
+  3. Click any transaction to open its detail drawer (look for a transaction from, e.g., 2026-06-15).
+  4. Scroll down to find the "Receipts" section (between the split/category block and "Provenance").
+  5. Verify it shows "No receipts attached yet." and a "+ Attach receipt" button.
+  6. Take a screenshot of the empty state.
+
+  STEP 2 — Attach a JPG image.
+  7. Click "+ Attach receipt".
+  8. In the file picker, select the available fixture "test-receipt.png".
+  9. Wait for the button to show "Attaching…" (loading state).
+  10. Wait ~3 seconds for the upload to complete.
+  11. Verify the button returns to "+ Attach receipt" and a new receipt row appears.
+  12. Verify the row shows an image thumbnail (the actual PNG rendered), the filename "test-receipt.png", a date like "Aug 21, 2026", and a "Remove" button.
+  13. Take a screenshot of the image receipt row.
+
+  STEP 3 — Attach a PDF.
+  14. Click "+ Attach receipt" again.
+  15. In the file picker, select the available fixture "test-receipt.pdf".
+  16. Wait for "Attaching…" to appear and complete (~3 seconds).
+  17. Verify a second receipt row appears with the 📄 glyph (PDF icon, not an image).
+  18. Verify the row shows "test-receipt.pdf", today's date, and a "Remove" button.
+  19. Verify the section header now reads "Receipts (2)".
+  20. Take a screenshot of the list with both image and PDF rows.
+
+  STEP 4 — View the image receipt by clicking its filename.
+  21. Click on the "test-receipt.png" filename (the blue link text).
+  22. Wait 1 second for the modal to open.
+  23. Verify a modal appears with the title "test-receipt.png" at the top.
+  24. Verify the PNG image is rendered inside the modal (readable size).
+  25. Verify a "↓ Download original" button appears in the modal footer.
+  26. Take a screenshot of the viewer open.
+
+  STEP 5 — Close the viewer.
+  27. Click the X button (close icon) in the top right of the modal.
+  28. Wait 1 second.
+  29. Verify the modal closes and the receipts list is still visible with both rows intact.
+
+  STEP 6 — Two-step remove on the PNG row.
+  30. Click the "Remove" button on the PNG receipt row.
+  31. Verify the button is replaced by two inline buttons: "Confirm" (red/danger) and "Cancel".
+  32. Take a screenshot of the armed state.
+
+  STEP 7 — Cancel the removal.
+  33. Click "Cancel".
+  34. Verify the "Confirm" and "Cancel" buttons are replaced by the original "Remove" button.
+  35. Verify the PNG row is still in the list (not removed).
+
+  STEP 8 — Confirm removal of the PDF row.
+  36. Click "Remove" on the PDF row.
+  37. Verify it arms with "Confirm" and "Cancel".
+  38. Click "Confirm".
+  39. Wait ~2 seconds for the deletion to complete.
+  40. Verify the PDF row disappears from the list.
+  41. Verify the section header now reads "Receipts (1)" (only PNG remains).
+  42. Take a screenshot of the list after removal.
+
+  STEP 9 — State isolation: close and reopen drawer.
+  43. Click the X to close the transaction detail drawer.
+  44. Wait 1 second.
+  45. Click a DIFFERENT transaction to open its detail drawer.
+  46. Wait 1 second and scroll to the Receipts section.
+  47. Verify that this transaction has no receipts (its own empty state or different list).
+  48. Close this drawer.
+  49. Click back on the FIRST transaction (the one with 1 PNG receipt remaining).
+  50. Wait 1 second and scroll to Receipts.
+  51. Verify the PNG receipt is still in the list, and no modal/armed state leaked from step 9.
+
+  STEP 10 — Verify the React key isolation (row switch without drawer close).
+  52. The drawer is still open on the first transaction showing the PNG receipt.
+  53. Open a DIFFERENT transaction's drawer (switching the `txn` prop; the ReceiptsSection should be re-mounted via key).
+  54. Wait 1 second and scroll to Receipts on this new transaction.
+  55. Verify this transaction's receipts are fresh (its own empty state or list), never showing the PNG from the previous row.
+  56. Verify no armed state, no viewing modal, no in-flight attach persists.
+
+  Decision:
+  - If any check fails or a state from step 1 leaks to step 9/10:
+    return "FAIL: <what was missing or incorrect>"
+  - Else:
+    return "PASS: Transaction receipts attach, view, remove, and state isolation all working"
+
+max_steps: 60
+timeout_seconds: 120
+available_file_paths:
+  - qa/browser-use/fixtures/test-receipt.png
+  - qa/browser-use/fixtures/test-receipt.pdf
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "TXN-REC-01-receipts-list.png"
+  note: >
+    This spec covers empty state, attach (image + PDF), view, remove with two-step
+    confirmation, and React key-based state isolation across row switches. File
+    handling is via the fixture file picker (not manual file browsing on the host).

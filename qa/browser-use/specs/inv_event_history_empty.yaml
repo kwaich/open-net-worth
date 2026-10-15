@@ -1,0 +1,25 @@
+# Deterministic component fixture for the mutually-exclusive zero-event state.
+id: INV-HIST-EMPTY-01
+acceptance_ids:
+  - EQ-VEST-HISTORY-EMPTY
+title: "Equity vest history — honest empty state"
+description: >
+  A component fixture supplies a grant view with zero persisted vest events and
+  verifies that the history panel renders its empty copy without deriving a fake
+  Released/Awaiting release row from grant totals.
+setup_script: "verify_inv_event_history_empty.py"
+fixture_only: true
+fixture:
+  type: "Vitest component fixture"
+  source: "frontend/src/components/tabs/investments/EquityTab.history.test.tsx"
+  command: "npm --prefix frontend test -- --run EquityTab.history"
+  isolation: "The mocked view model contains no vest events and makes no network request."
+acceptance_criteria:
+  - AC1: Vest history says No vest history yet when persisted event history is empty
+  - AC2: No Released or Awaiting release row is invented from grant totals
+browser_use_task: |
+  This mutually-exclusive zero-event state is executed by the deterministic
+  component fixture declared above; no browser task is needed.
+expected:
+  pass_condition: "deterministic fixture passes"
+  note: "The executable evidence is the no-network component render."

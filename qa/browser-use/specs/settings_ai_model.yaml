@@ -1,0 +1,158 @@
+# Spec: SETTINGS-AI-01 — Settings → AI Model, after the 2026-08-05 overlay redesign.
+#
+# REWRITTEN for the redesign. The previous version drove an expand-chevron row with an inline
+# editor and a "Saved ✓" flash; that row is gone. A provider row is now:
+#   radio (THE default control) · name · endpoint/model meta · status badge ·
+#   "Set as default" (when it isn't) · enable toggle · Edit (opens a modal)
+# and the spend panel has five time windows, a cost timeline, and three bar breakdowns.
+# Reference: frontend/design_handoffs/settings_handoff/ and docs/qa/acceptance/settings-redesign.md
+id: SETTINGS-AI-01
+acceptance_ids:
+  - E1
+  - E2
+  - E3
+  - E4
+  - E5
+  - E8
+  - E9
+  - E12
+  - E13
+  - E17
+title: "Settings → AI Model: the radio IS the default, the editor is a modal, and spend breaks down three ways"
+description: >
+  Verifies the redesigned AI Model section: only CONFIGURED providers are listed (default
+  first), the row radio sets the default, the default cannot be disabled, Edit opens a modal
+  rather than expanding the row, the routing profile is a radio group with a sentence each,
+  and AI spend windows into Today / Yesterday / 7 days / 30 days / All time with a cost timeline
+  plus by-surface, by-provider and by-model breakdowns.
+
+acceptance_criteria:
+  - AC1: The providers panel lists only configured providers, default first
+  - AC2: The default row carries a filled radio and a "Default" badge
+  - AC3: Clicking a non-default row's radio makes it the default and moves it to the top
+  - AC4: The default provider's enable toggle is disabled, and explains itself
+  - AC5: Edit opens a MODAL (not an inline expansion) with per-provider fields
+  - AC6: A saved API key shows as dots with "leave blank to keep it" — never echoed back
+  - AC7: Routing profile is a radio group of three, each with an explanatory sentence
+  - AC8: The "Allow local models" help text changes when it is toggled
+  - AC9: Memory shows a fact count and a Review… modal
+  - AC10: Task models lists 12 tasks in three groups
+  - AC11: AI spend has five time windows, five stats, a cost timeline, and three bar breakdowns
+  - AC12: No JavaScript errors
+
+browser_use_task: |
+  Navigate to {app_url}. Wait 3 seconds.
+  Click "Settings" in the left sidebar. Wait 2 seconds.
+  In the Settings dialog, click "AI Model" in the left-hand section rail. Wait 3 seconds.
+
+  STEP 1 — Provider list shape. (AC1, AC2)
+  Look at the "AI providers" panel. It is a flat list of rows inside ONE card — rows separated
+  by hairlines, NOT a grid of cards or tiles.
+  Record: LIST_IS_FLAT = yes/no
+  Read the FIRST row. It should have a filled radio on the left and a "Default" badge.
+  Record: DEFAULT_PROVIDER = its name
+  Record: FIRST_ROW_HAS_FILLED_RADIO = yes/no
+  Record: FIRST_ROW_HAS_DEFAULT_BADGE = yes/no
+  Count the rows and note each name + badge.
+  Record: PROVIDER_ROWS = list of "name — badge"
+
+  STEP 2 — The default cannot be disabled. (AC4)
+  On the FIRST (default) row, find the on/off toggle switch.
+  Record: DEFAULT_TOGGLE_DISABLED = yes/no  (is it greyed out / not clickable?)
+  Try clicking it. If a toast appears, record its text.
+  Record: DEFAULT_TOGGLE_TOAST = text or "none"
+  (Expected: it is disabled, and/or it says to set another provider as default first.)
+
+  STEP 3 — Edit opens a MODAL. (AC5, AC6)
+  On any row, click "Edit". Wait 2 seconds.
+  Record: EDIT_OPENED_MODAL = yes/no — did a centred dialog appear ON TOP, rather than the
+          row expanding in place?
+  Record: MODAL_TITLE = its title (expected "Edit provider")
+  Look at the API key field, if the provider has one.
+  Record: KEY_FIELD_TEXT = its placeholder or value
+  Record: KEY_HELP_TEXT = the help line under it
+  (If a key is saved, the field must show dots — e.g. "•••••••• (saved)" — and the help must
+   say the key is kept if left blank. The real key must NEVER be visible.)
+  Record: REAL_KEY_VISIBLE = yes/no — can you read an actual API key anywhere?
+  Close the modal with Cancel. Wait 1 second.
+
+  STEP 4 — The radio sets the default. (AC3)
+  Find a row that is NOT the default (empty radio). Record its name as TEST_PROVIDER.
+  Click its RADIO (not the "Set as default" button — the radio IS the control).
+  Wait 3 seconds.
+  Record: TEST_PROVIDER_NOW_FIRST = yes/no
+  Record: TEST_PROVIDER_HAS_DEFAULT_BADGE = yes/no
+  Now restore: click the radio on the DEFAULT_PROVIDER row to set it back. Wait 3 seconds.
+  Record: ORIGINAL_DEFAULT_RESTORED = yes/no
+
+  STEP 5 — Routing profile is a radio group with sentences. (AC7, AC8)
+  Scroll to the "Model routing" panel.
+  Record: ROUTING_OPTIONS = the three option names (expected Cheapest / Balanced / Fastest)
+  Record: ROUTING_HAS_SENTENCES = yes/no — does each option carry an explanatory sentence
+          under its name (rather than being a bare dropdown)?
+  Find the "Allow local models" row. Read its help text.
+  Record: LOCAL_HELP_BEFORE = the help text
+  Toggle it. Wait 2 seconds. Read the help text again.
+  Record: LOCAL_HELP_AFTER = the help text
+  Toggle it BACK to its original state. Wait 2 seconds.
+  (The help must DIFFER between the two states — it describes the consequence, not the control.)
+
+  STEP 6 — Memory. (AC9)
+  Scroll to the "Memory" panel.
+  Record: MEMORY_FACT_COUNT_LINE = the line under "Stored memories"
+  Click "Review…". Wait 2 seconds.
+  Record: MEMORY_MODAL_TITLE = the modal title (expected "Stored memories (N)")
+  Record: FORGET_EVERYTHING_PRESENT = yes/no
+  Close the modal.
+
+  STEP 7 — Task models. (AC10)
+  Scroll to "Task models" and click "Customise…". Wait 2 seconds.
+  Record: TASK_GROUPS = the group headings (expected Assistant / Insights / Statement import)
+  Count the individual task rows (each has a label and a dropdown).
+  Record: TASK_COUNT = the number (expected 12)
+  Record: CHAT_IS_A_TASK = yes/no — is there a task called just "Chat"? (Expected NO — chat
+          runs on the default provider and is deliberately not routable here.)
+  Click "Done".
+
+  STEP 8 — AI spend. (AC11)
+  Scroll to the "AI spend" panel.
+  Record: SPEND_WINDOWS = the segmented-control options
+          (expected Today / Yesterday / 7 days / 30 days / All time)
+  Record: SPEND_STATS = the five stat labels
+          (expected Total spend / Turns / Tokens in / Tokens out / Cache hits)
+  Record: COST_TREND = yes/no — is there a compact timeline labelled "Cost trend" with visible
+          average and peak dollar costs?
+  Record: SPEND_BREAKDOWNS = the bar-chart section headings
+          (expected "By surface", "By provider", "By model")
+  Click "30 days". Wait 3 seconds.
+  Record: SPEND_UPDATED = yes/no — did the numbers change or reload?
+  Record: PROJECTED_LINE_PRESENT = yes/no — is there a "Projected … / month est." line?
+
+  STEP 9 — Console. (AC12)
+  Check the browser console for JavaScript errors.
+  Record: JS_ERROR = yes/no, JS_ERROR_TEXT = first error if any
+
+  Decision:
+  - If LIST_IS_FLAT = no: FAIL "Provider list is not a flat hairline list"
+  - If FIRST_ROW_HAS_FILLED_RADIO = no or FIRST_ROW_HAS_DEFAULT_BADGE = no: FAIL "Default row shape wrong"
+  - If DEFAULT_TOGGLE_DISABLED = no and DEFAULT_TOGGLE_TOAST = "none": FAIL "The default provider can be disabled"
+  - If EDIT_OPENED_MODAL = no: FAIL "Edit expanded the row instead of opening a modal"
+  - If REAL_KEY_VISIBLE = yes: FAIL "A stored API key is echoed back into the editor"
+  - If TEST_PROVIDER_NOW_FIRST = no or TEST_PROVIDER_HAS_DEFAULT_BADGE = no: FAIL "Row radio did not set the default"
+  - If ORIGINAL_DEFAULT_RESTORED = no: FAIL "Could not restore the original default provider"
+  - If ROUTING_HAS_SENTENCES = no: FAIL "Routing profile is not a radio group with explanations"
+  - If LOCAL_HELP_BEFORE = LOCAL_HELP_AFTER: FAIL "Allow-local-models help text does not change with its state"
+  - If FORGET_EVERYTHING_PRESENT = no: FAIL "Stored-memories modal has no Forget everything"
+  - If TASK_COUNT != 12: FAIL f"Expected 12 routable tasks, saw {TASK_COUNT}"
+  - If CHAT_IS_A_TASK = yes: FAIL "Chat is listed as a routable task; it must not be"
+  - If "By provider" not in SPEND_BREAKDOWNS: FAIL f"Spend is missing the by-provider breakdown: {SPEND_BREAKDOWNS}"
+  - If JS_ERROR = yes: FAIL f"JavaScript error: {JS_ERROR_TEXT}"
+  - Otherwise: PASS f"AI Model OK — {len(PROVIDER_ROWS)} configured providers, radio sets default, modal editor, {TASK_COUNT} tasks, spend breaks down by {SPEND_BREAKDOWNS}"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "SETTINGS-AI-01-providers.png"
+  note: >
+    Uses QA data seeded by `make qa-data`; needs no provider API keys of its own (it never
+    sends a turn). Steps 4 and 5 MUTATE instance config (default provider, allow-local) and
+    both restore it — that is safe against the disposable QA clone, never the live book.

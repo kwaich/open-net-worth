@@ -1,0 +1,359 @@
+/* artifact-viewer.css — the shared "open artifact" header + body (ArtifactViewer.tsx), used by
+   the home tab's side panel and (via ArtifactFullscreen.tsx) the true edge-to-edge fullscreen
+   takeover — not a Modal; see artifact-fullscreen.css. */
+
+.artifact-viewer {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.artifact-viewer-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* macOS desktop window (no title bar, index.css): the expanded takeover covers the top of the
+   window, so its header becomes the title strip — 48px with the lights centred in it, draggable
+   with its controls carved out, content starting clear of the lights. (The docked panel starts
+   under the strip instead, dock-artifact-panel.css.) Unlayered like the rest of this file, so it
+   lives here rather than in index.css's legacy layer. */
+html[data-desktop-chrome='mac'] .artifact-fullscreen > .artifact-viewer > .artifact-viewer-head {
+  box-sizing: border-box;
+  height: 48px;
+  padding-block: 0;
+  padding-left: 92px;
+  -webkit-app-region: drag;
+}
+html[data-desktop-chrome='mac'][data-desktop-fullscreen]
+  .artifact-fullscreen
+  > .artifact-viewer
+  > .artifact-viewer-head {
+  padding-left: 10px;
+}
+html[data-desktop-chrome='mac']
+  .artifact-fullscreen
+  .artifact-viewer-head
+  :is(button, a, input, select, textarea, label, summary, [role='button'], [role='tab']) {
+  -webkit-app-region: no-drag;
+}
+
+.artifact-viewer-view-toggle {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-md);
+  background: var(--surface2);
+}
+.artifact-viewer-view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.artifact-viewer-view-toggle button.on {
+  background: var(--selected);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+@media (hover: hover) {
+  .artifact-viewer-view-toggle button:hover:not(.on) {
+    color: var(--ink);
+  }
+}
+
+.artifact-viewer-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+}
+.artifact-viewer-title-t {
+  font-weight: 600;
+  color: var(--ink);
+}
+.artifact-viewer-title-meta {
+  color: var(--muted);
+}
+
+.artifact-viewer-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Mobile bottom-sheet header (owner, 2026-08-13) ──
+   X / centered title / kebab, replacing the desktop's icon-button row — see
+   artifact-fullscreen.css for the sheet shape itself (rounded top corners, inset from the
+   status bar) this header sits inside of. */
+.artifact-viewer-head--mobile {
+  justify-content: space-between;
+  padding: 10px 8px;
+}
+.artifact-viewer-title--mobile {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.artifact-viewer-mobile-menu-wrap {
+  position: relative;
+  flex: none;
+}
+.artifact-viewer-mobile-menu {
+  right: 0;
+  min-width: 200px;
+}
+
+/* Positioning context for the dropdown menu below — .artifact-viewer-copy itself can't carry
+   it (its own overflow:hidden, needed for the pill's rounded-corner clip, would clip a menu
+   popping out below it too). */
+.artifact-viewer-copy-wrap {
+  position: relative;
+}
+.artifact-viewer-copy {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.artifact-viewer-copy-btn,
+.artifact-viewer-copy-caret {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  /* Explicit 0, not just "no border-radius declared" — some global button reset elsewhere
+     apparently gives every <button> its own default radius, which showed as a visible
+     rounded corner at the INNER seam between these two segments (owner report, real device)
+     even though the OUTER pill shape already comes from .artifact-viewer-copy's own
+     border-radius + overflow:hidden clip, which only affects the outer edge, not this. */
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.artifact-viewer-copy-btn {
+  padding: 0 10px;
+  height: 30px;
+}
+.artifact-viewer-copy-caret {
+  width: 24px;
+  height: 30px;
+  justify-content: center;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+}
+@media (hover: hover) {
+  .artifact-viewer-copy-btn:hover,
+  .artifact-viewer-copy-caret:hover {
+    background: var(--hover-surface);
+  }
+}
+.artifact-viewer-copy-btn:disabled,
+.artifact-viewer-copy-caret:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.artifact-viewer-copy-menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-dropdown) - 1);
+}
+.artifact-viewer-copy-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: var(--shadow-lg);
+}
+.artifact-viewer-copy-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 9px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .artifact-viewer-copy-menu button:hover {
+    background: var(--hover);
+  }
+}
+.artifact-viewer-copy-menu button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.artifact-viewer-menu-check {
+  margin-left: auto;
+  flex: none;
+  color: var(--accent);
+}
+.artifact-viewer-menu-divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--line);
+}
+
+.artifact-viewer-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .artifact-viewer-icon-btn:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+}
+
+.artifact-viewer-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.artifact-viewer-body .ui-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  text-align: center;
+}
+
+.artifact-viewer-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: var(--bg);
+}
+/* Until its page loads (ArtifactFrame): a cover in the sheet's own background sits over the
+   frame, so its white canvas never flashes. The frame itself is never hidden — iOS does not
+   wire up touch scrolling for an iframe that loads while `visibility: hidden`. */
+.artifact-viewer-frame-cover {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  pointer-events: none;
+}
+
+.artifact-viewer-source {
+  min-height: 100%;
+  padding: 14px 0;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+/* One row per SOURCE line (not one giant <pre>) — each row is its own flex box, so a long
+   line wraps independently while its OWN number stays pinned to the row's top instead of
+   drifting out of sync with wrapped visual lines (owner report, real device: long lines need
+   to wrap instead of forcing the whole view to scroll horizontally). */
+.artifact-viewer-source-line {
+  display: flex;
+  align-items: flex-start;
+  padding: 0 16px;
+}
+.artifact-viewer-source-lineno {
+  flex: none;
+  width: 34px;
+  margin-right: 16px;
+  padding-right: 12px;
+  text-align: right;
+  border-right: 1px solid var(--line);
+  color: var(--faint);
+  user-select: none;
+}
+.artifact-viewer-source-linecode {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Syntax colors — built from the app's own semantic tokens (not a bespoke palette) so the
+   highlight stays correct across light/dark/warm themes automatically. `pr-` prefixed: see
+   the class-rewrite in ArtifactViewer.tsx — Prism's own un-namespaced token class names
+   (.property, .selector, .string, ...) collided with unrelated existing classes elsewhere in
+   this app's stylesheet (owner report, real device: unexplained background bands). */
+.artifact-viewer-source .pr-token.pr-comment,
+.artifact-viewer-source .pr-token.pr-prolog,
+.artifact-viewer-source .pr-token.pr-doctype {
+  color: var(--faint);
+}
+.artifact-viewer-source .pr-token.pr-tag,
+.artifact-viewer-source .pr-token.pr-tag .pr-token.pr-punctuation {
+  color: var(--bad);
+}
+.artifact-viewer-source .pr-token.pr-attr-name {
+  color: var(--warn);
+}
+.artifact-viewer-source .pr-token.pr-attr-value,
+.artifact-viewer-source .pr-token.pr-string {
+  color: var(--good);
+}
+.artifact-viewer-source .pr-token.pr-property,
+.artifact-viewer-source .pr-token.pr-selector,
+.artifact-viewer-source .pr-token.pr-keyword,
+.artifact-viewer-source .pr-token.pr-atrule {
+  color: var(--accent);
+}
+.artifact-viewer-source .pr-token.pr-punctuation {
+  color: var(--muted);
+}
+.artifact-viewer-source .pr-token.pr-number,
+.artifact-viewer-source .pr-token.pr-boolean,
+.artifact-viewer-source .pr-token.pr-function {
+  color: var(--warn);
+}

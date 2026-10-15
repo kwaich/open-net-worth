@@ -1,0 +1,69 @@
+# Spec: CONN-01 — Connectors tab loads and shows connector cards
+# Covers: GET /api/connectors → Connectors.tsx grid; ConnectorCard render;
+#         ConnectorDetailModal opens without blank/crash (Yodlee/Email cards).
+id: CONN-01
+acceptance_ids:
+  - CONN-LOAD
+  - CONN-DETAIL-OPENS
+title: "Connectors tab loads connector cards and detail modal opens without crash"
+description: >
+  The Connectors tab must render a grid of connector cards (at minimum Email,
+  Telegram, and the web-search DuckDuckGo card). Opening a connector card's
+  detail modal must not produce a blank overlay or JS error. This spec covers
+  the basic render path for GET /api/connectors and the ConnectorDetailModal.
+
+acceptance_criteria:
+  - AC1: The Connectors tab loads without a visible error or blank page
+  - AC2: At least two connector cards are visible (any combination of Email,
+         Telegram, DuckDuckGo, Yodlee, SimpleFIN, etc.)
+  - AC3: Clicking one connector card opens a detail modal that has a title
+         and is not blank
+  - AC4: The modal can be dismissed
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open the Connectors tab.
+  In the left sidebar, find and click the item labelled "Connectors"
+  (it may show just an icon when the sidebar is collapsed; look for the
+  word "Connectors" or a plug/connector icon). Wait for the tab content
+  to load.
+
+  Step 2 — Count connector cards.
+  How many connector cards are visible? They typically appear as rectangular
+  cards with a name like "Email", "Telegram", "DuckDuckGo", "Yodlee",
+  "SimpleFIN", "GoCardless", "Slack", "Discord", etc.
+  If fewer than 2 cards are visible, return "FAIL: fewer than 2 connector cards visible".
+
+  Step 3 — Open one card's detail.
+  Click on any connector card (e.g. "Email" or "DuckDuckGo" or the first one
+  you see). A modal or detail panel should open.
+
+  Step 4 — Check the modal.
+  Is the modal:
+    a) Visible and has a non-blank title (a connector name)?
+    b) Or is it blank, all-white, showing an error, or not present at all?
+
+  Step 5 — Close the modal.
+  Click the X or close button, press Escape, or click outside the modal to
+  dismiss it. Confirm it closes.
+
+  Decision:
+  - If at least 2 cards were visible AND the modal had a non-blank title AND
+    it closed cleanly:
+    return "PASS: connectors tab ok — saw <N> cards, modal title was <title>"
+  - If fewer than 2 cards were shown:
+    return "FAIL: only <N> connector cards visible"
+  - If the modal was blank or showed an error:
+    return "FAIL: connector detail modal was blank or errored for <card name>"
+  - If the Connectors tab itself showed an error or blank page:
+    return "FAIL: Connectors tab failed to load — <error text>"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CONN-01-connectors-tab.png"
+  note: >
+    No API key or connector credentials are required — this spec only checks
+    that the read path (GET /api/connectors) and the modal render work.
+    The demo dataset does not configure any real connector credentials so all
+    cards will show "Not configured" status — that is expected and acceptable.

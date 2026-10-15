@@ -1,0 +1,70 @@
+# Spec: CDS-ACCOUNT-MODAL-01 — the Add/Edit Account modal's "Linked to" list.
+# Covers: AccountModal.tsx (Region 3).
+id: CDS-ACCOUNT-MODAL-01
+acceptance_ids:
+  - CDS-UI-13
+  - CDS-UI-14
+  - CDS-UI-15
+title: "Account modal shows a read-only 'Linked to' list with Unlink, no Connected toggle"
+description: >
+  Editing an account shows a "Linked to" list (one row per connector link, with an Unlink
+  button) or, when unlinked, plain text saying so. There is no "Connected" toggle anywhere
+  in the modal, and Unlink removes only that one entry without closing the modal.
+
+acceptance_criteria:
+  - "AC1: Editing a manually-tracked (never-linked) account shows Not linked to a connector. and no list"
+  - "AC2: Editing an account with at least one connector link shows a Linked to list with a provider label, name, and mask per row, plus an Unlink button"
+  - "AC3: No Connected switch/checkbox exists anywhere in the modal"
+  - "AC4: Clicking Unlink removes that row immediately, without closing the modal or reloading the page"
+
+browser_use_task: |
+  Navigate to {app_url}/accounts and wait for the page to load.
+
+  Step 1 — Open any account's edit modal.
+  Click on any account in the sidebar/list, open its "More actions" (kebab) menu, and click
+  "Edit account". Wait for the modal to open.
+
+  Step 2 — Find the Options section.
+  Scroll down inside the modal to the "Options" section (it sits above "Locked" / "On
+  budget"). Look for a "Linked to" heading.
+  If not found anywhere in the modal: return "FAIL: no 'Linked to' section found in the Account modal"
+
+  Step 3 — Check the Connected toggle is gone.
+  Scan the whole modal for a switch/checkbox/toggle labelled "Connected". There should be
+  none.
+  Record CONNECTED_TOGGLE = "present" or "absent".
+
+  Step 4 — Check the empty or populated state.
+  Under "Linked to": is there a plain sentence saying "Not linked to a connector." (empty
+  case), OR one or more rows each with a provider name and an "Unlink" button (populated
+  case)?
+  Record LINKED_STATE = "empty_copy", "populated_rows", or "neither".
+
+  Step 5 — If populated, test Unlink.
+  If LINKED_STATE = "populated_rows", note how many rows there are, then click "Unlink" on
+  the first one. Wait 2 seconds.
+  Check: did that row disappear, the modal stay open (not closed), and the page NOT reload?
+  Record UNLINK_RESULT = "row_removed_modal_open" or "modal_closed" or "no_change".
+  If LINKED_STATE was "empty_copy", skip this step (record UNLINK_RESULT = "n/a").
+
+  Decision:
+  - If LINKED_STATE = "neither":
+    return "FAIL: neither the empty copy nor a populated list rendered under 'Linked to'"
+  - If CONNECTED_TOGGLE = "present":
+    return "FAIL: a Connected toggle is still present in the modal"
+  - If UNLINK_RESULT = "modal_closed":
+    return "FAIL: clicking Unlink closed the whole modal instead of just removing the row"
+  - If UNLINK_RESULT = "no_change":
+    return "FAIL: clicking Unlink had no visible effect"
+  - Otherwise:
+    return "PASS: Account modal's Linked-to list renders correctly and Unlink behaves in place"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CDS-ACCOUNT-MODAL-01-linked-to.png"
+  note: >
+    A freshly-seeded demo book has no linked accounts, so LINKED_STATE will read
+    "empty_copy" for every account — that alone still verifies AC1 and AC3. For AC2/AC4,
+    seed at least one Account.external_ids entry beforehand (see
+    docs/qa/screenshots/connectors-data-sources/ for the populated-state screenshot taken
+    against a manually-seeded instance).

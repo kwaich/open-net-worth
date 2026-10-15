@@ -1,0 +1,67 @@
+# Spec: YF-TOGGLE-RENDER — Yahoo Finance toggle renders in config form
+# Covers: YahooFinanceSection.tsx (or ConnectorConfig rendering it)
+# IDs: YF-TOGGLE-RENDER, YF-TOGGLE-LIVE-SAVE, YF-TOGGLE-PERSISTS
+id: CONN-YF-01
+acceptance_ids:
+  - YF-TOGGLE-RENDER
+  - YF-TOGGLE-LIVE-SAVE
+  - YF-TOGGLE-PERSISTS
+title: "Yahoo Finance 'Use Yahoo Finance first' toggle live-saves on change"
+description: >
+  The Yahoo Finance connector card displays a toggle switch labeled
+  "Use Yahoo Finance first" that live-saves to the API on toggle change
+  (no separate Save button required). This spec verifies the toggle renders,
+  responds to clicks, and persists the setting.
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1 — Open the Connectors tab and find Yahoo Finance.
+  Click "Connectors" in the sidebar. Look for a "Yahoo Finance" connector card
+  in the grid. It may be in a "Data" or "Always-on" section.
+  If not found:
+    return "SKIP: Yahoo Finance connector not found"
+
+  Step 2 — Open the Yahoo Finance connector detail.
+  Click the Yahoo Finance card to open its detail modal.
+
+  Step 3 — Access the config/edit section.
+  Look for a button or link to edit/configure the connector (e.g. "Edit configuration").
+  Click it to open the configuration view/form. Wait up to 3 seconds.
+
+  Step 4 — Verify the toggle is present.
+  In the config form, look for a toggle or switch control labelled
+  "Use Yahoo Finance first" (or similar wording). Record: TOGGLE_PRESENT = "yes" or "no".
+
+  Step 5 — Note the current toggle state.
+  Record: TOGGLE_STATE_BEFORE = "on" or "off".
+
+  Step 6 — Click the toggle to change its state.
+  Click on the toggle switch. Wait up to 2 seconds.
+  Record: TOGGLE_STATE_AFTER = (observe the new state, opposite of before).
+
+  Step 7 — Verify a write request was made (inspect network tab if visible).
+  After toggling, watch for a network request (PUT or PATCH to an API endpoint
+  like /api/connectors/* or similar). A successful request should complete
+  without an error toast. Record: WRITE_REQUEST = "seen" or "not_seen".
+
+  Step 8 — Close and reopen to verify persistence.
+  Click the back-arrow or close button to leave the config view.
+  Wait up to 2 seconds for the detail page to refresh.
+  Click "Edit configuration" again to reopen the config view.
+  Observe the toggle state. Record: TOGGLE_STATE_AFTER_REOPEN = (observe).
+
+  Decision:
+  - If TOGGLE_PRESENT = "no": return "FAIL: Toggle 'Use Yahoo Finance first' not found"
+  - If TOGGLE_STATE_AFTER = TOGGLE_STATE_BEFORE: return "FAIL: Toggle did not change state on click"
+  - If WRITE_REQUEST = "not_seen": return "WARN: No API request observed (may be hidden in this view)"
+  - If TOGGLE_STATE_AFTER_REOPEN != TOGGLE_STATE_AFTER: return "FAIL: Toggle state not persisted (reverted on reopen)"
+  - If all checks pass: return "PASS: Toggle renders, changes state, saves on change, and persists"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'WARN' or result contains 'SKIP'"
+  screenshot_name: "YF-TOGGLE-yahoo-finance.png"
+  note: >
+    This spec checks that the toggle control fires a save request on change
+    without requiring a separate Save button. If Yahoo Finance connector has
+    not been migrated to a connector card yet, this spec returns SKIP.

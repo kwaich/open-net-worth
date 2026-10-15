@@ -1,0 +1,53 @@
+# Spec: PLAN-ENV-01 — Envelope merge/split + Manage categories (envelope≠category P4)
+# Exercises the P4 payoff on the isolated QA clone: merging two envelopes moves assigned
+# money and folds categories; splitting restores a 1:1 row; the Manage categories modal
+# lists classification + envelope membership. WRITES to the isolated clone only.
+id: PLAN-ENV-01
+timeout_seconds: 600
+max_steps: 55
+acceptance_ids:
+  - BUD-ENV-1TO1-NOCHANGE
+  - BUD-ENV-BADGE
+  - BUD-ENV-MERGE
+  - BUD-ENV-UNLINK-1TO1
+  - BUD-CATMGR-LIST
+  - PLAN-OUTSIDE
+  - PLAN-CATMGR-V2
+acceptance_criteria:
+  - AC1: Default (post-migration) budget rows render with no "N categories" badge anywhere
+  - AC2: Merging envelope A into envelope B shows one combined row with a "2 categories" badge and B's assigned includes A's money
+  - AC3: Unlinking the category back out removes the badge, leaves the category envelope-less (no new envelope minted), and it surfaces in Outside envelopes → Unbudgeted
+  - AC4: The "Manage categories" modal lists all 4 kinds (Expense/Inflow/Transfer/Investment) with kind/envelope membership
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1: Open Plan → Budget. Confirm the envelope table renders and that NO row shows an
+  "N categories" badge (post-migration default is 1:1). Take a screenshot.
+
+  Step 2: Pick two ordinary envelope rows in the same non-locked group (avoid any group named
+  "Commitments" and the Uncategorized row) — call them A (the first) and B (the second). Note
+  A's and B's "Assigned" amounts. Open A's row menu (the ⋯ kebab at the right of the row's
+  name area — hover the row if needed) and click "Merge into…". In the modal, pick B in the
+  "MERGE INTO" selector, confirm the "What happens:" bullets mention money moving, and click
+  "Merge envelopes". Take a screenshot of the modal before confirming.
+
+  Step 3: Verify the merge. A's row is gone; B's row now shows a "2 categories" badge next to
+  its name, and B's Assigned equals (A's previous assigned + B's previous assigned), allowing
+  ±0.01 rounding. Take a screenshot of the merged row.
+
+  Step 4: Unlink it back out. Open B's kebab — it should now contain a "Remove from envelope"
+  section listing member categories. Click the entry matching A's original category. Confirm the
+  "Remove {category} from {envelope}?" modal (it explains the category moves to Outside envelopes,
+  nothing is deleted, and B keeps all its assigned money) by clicking "Remove from envelope".
+  Verify NO new envelope row appears for that category — instead, scroll to the bottom of the
+  table and confirm it now appears inside the "Outside envelopes" → Unbudgeted rows
+  (labeled-but-unlinked spending), and B's badge disappears (back to a plain row) while B's
+  Assigned is unchanged from step 3. Take a screenshot of both the toast ("… unlinked from … —
+  find it under Unbudgeted to link elsewhere") and the Outside-envelopes section.
+
+  Step 5: Manage categories. In the Budget toolbar find and click "Manage categories".
+  Verify the modal lists categories with a Kind column showing all 4 kinds (Expense/Inflow/
+  Transfer/Investment via the filter chips), an Envelope column (names or "Not budgeted"), a
+  Hidden toggles. Take a screenshot. Close with "Done".
+
+  Report PASS/FAIL per AC with observed values (A/B names + amounts).

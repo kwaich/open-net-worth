@@ -1,0 +1,4 @@
+Date,Description,Amount,Category,Reference
+2026-06-01,Grocer,-42.15,Food,qa-import-001
+2026-06-02,Salary,2500.00,Income,qa-import-002
+2026-06-03,Taxi,-18.40,Transport,qa-import-003

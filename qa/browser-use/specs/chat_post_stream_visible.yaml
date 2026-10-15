@@ -1,0 +1,67 @@
+# Spec: CH-03 — Post-stream follow-up chips and cost row scroll into view
+# Covers: ResizeObserver catch-all scroll pin in ChatPanel (follow-up chips +
+#         cost/copy row appearing AFTER streaming ends trigger a final scroll-to-bottom).
+# Requires ANTHROPIC_API_KEY to be set; SKIP otherwise.
+id: CH-03
+acceptance_ids:
+  - CHAT-SCROLL-DURING-STREAM
+  - CHAT-FOLLOWUP-CHIPS
+title: "Follow-up suggestion chips and cost row are visible after Lucius replies"
+description: >
+  After Lucius finishes streaming a reply the ChatPanel appends a row of
+  follow-up suggestion chips and a token-cost chip below the reply bubble.
+  These appear after the last streaming token lands, which is AFTER the normal
+  useLayoutEffect scroll fires. A ResizeObserver catch-all must scroll the panel
+  to make them visible. This spec verifies the post-stream elements are not stuck
+  below the fold.
+
+acceptance_criteria:
+  - AC1: The chat panel opens and a message can be sent
+  - AC2: Lucius returns a non-empty reply
+  - AC3: After the reply, at least one follow-up chip OR a cost row is visible
+         (not hidden below the composer)
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open chat.
+  Find and click the chat button (speech bubble icon or "Ask Lucius" label),
+  usually near the top-right. Wait for the chat panel to open.
+
+  Step 2 — Check for API key.
+  If you see any message in the chat area mentioning "API key", "not configured",
+  or "Settings → AI Model", return "SKIP: AI not configured — cannot test post-stream elements".
+
+  Step 3 — Send a short question.
+  Click the input at the bottom of the chat panel.
+  Type: what is my net worth?
+  Press Enter to send.
+
+  Step 4 — Wait for the reply.
+  Wait up to 45 seconds for a reply to finish streaming (the streaming indicator
+  or cursor disappears and the reply text is stable).
+  If no reply arrives within 45 seconds, return "FAIL: no reply received in time".
+  If an error or setup-hint message appears, return "SKIP: AI not configured".
+
+  Step 5 — Check post-stream elements.
+  After the reply finishes streaming, look at the bottom of the chat message list.
+  Can you see any of the following below Lucius's reply:
+    - Small chips or buttons with suggested follow-up questions (e.g. "Tell me
+      more", "Break it down by account", or similar short prompt chips)?
+    - A small cost or token-count row (e.g. "123 in · 45 out · ~$0.001")?
+
+  Decision:
+  - If you can see at least one suggestion chip or the cost row below the reply:
+    return "PASS: post-stream elements visible — <describe what you saw>"
+  - If the reply exists but the chips/cost row are cut off or not visible at all:
+    return "FAIL: reply visible but post-stream chips/cost row hidden below fold"
+  - If you cannot find any of those elements after waiting 10 extra seconds:
+    return "FAIL: post-stream elements did not appear"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CH-03-chat-post-stream-visible.png"
+  note: >
+    SKIP is acceptable when ANTHROPIC_API_KEY is not configured. The spec
+    validates the scroll behavior that keeps suggestion chips in view after
+    the streaming cursor clears.

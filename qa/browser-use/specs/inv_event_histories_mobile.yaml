@@ -1,0 +1,36 @@
+id: INV-HIST-MOBILE-01
+acceptance_ids:
+  - EQ-VEST-HISTORY-RESPONSIVE
+  - INC-15
+title: "Investment event histories — phone layout"
+description: >
+  Uses the same deterministic disposable-data fixture as INV-HIST-01 at a real
+  phone viewport. It verifies the event tables collapse to readable two-column
+  rows without horizontal clipping and that their actions remain reachable.
+setup_script: "seed_inv_event_histories.py"
+viewport:
+  width: 390
+  height: 844
+acceptance_criteria:
+  - AC1: Vest history is readable without horizontal page scrolling
+  - AC2: Release status and Mark released remain visible and tappable
+  - AC3: Recent income keeps date, holding, net, and delivery visible
+  - AC4: Both Show all controls remain visible and tappable
+browser_use_task: |
+  Navigate to {app_url} at the supplied phone viewport and wait for the app.
+  Open Investments, then Equity Compensation, then scroll to Vest history.
+  Confirm QAHIST rows use a compact two-column layout: date and status on the
+  first line, holding and Mark released on the second. Confirm no row or control
+  is clipped beyond the viewport and click Show all successfully.
+
+  Open Income and scroll to Recent income. Confirm QAHIST rows keep the received
+  date and native/base net amount on the first line, holding and Cash/Reinvested
+  on the second, without horizontal page scrolling. Click Show all successfully.
+
+  Return "PASS: INV-HIST-MOBILE-01 — both histories readable and interactive"
+  only if every check passes. Otherwise return "FAIL: INV-HIST-MOBILE-01 — <reason>".
+max_steps: 30
+timeout_seconds: 240
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "INV-HIST-MOBILE-01-investment-event-histories-phone.png"

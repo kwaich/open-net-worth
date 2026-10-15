@@ -1,0 +1,36 @@
+id: account-quick-create
+title: Account quick create and full edit details
+acceptance_ids:
+  - AM-QC-1
+  - AM-QC-2
+  - AM-QC-4
+  - AM-ADV-1
+  - AM-ADV-2
+acceptance_criteria:
+  - "AM-QC-1: Create starts with exactly four essentials"
+  - "AM-QC-2: One submit safely records today's opening balance"
+  - "AM-QC-4: Success advances to the detailed edit view"
+  - "AM-ADV-1: Edit restores the full two-column details layout"
+  - "AM-ADV-2: No derived classification controls are editable"
+browser_use_task: |
+  Navigate to {app_url}/accounts and wait for the page to load.
+
+  Open the Accounts tab and add an unlinked account named "QA Everyday".
+  Choose Cash, SGD, and enter a current balance of 125.50. Confirm that the
+  initial modal only asks for name, account type, currency, and current balance,
+  with no balance date or advanced fields visible. Submit once and verify the
+  account is created and selected, the modal changes to Edit account, and a
+  Starting Balance of SGD 125.50 is shown in the wide two-column edit layout.
+  Verify Colour is directly below Currency and Institution, Last 4 digits, Note,
+  and Interest rate (APY) are already visible, with no Advanced details toggle.
+  Enter "QA Bank" for Institution, "9876" for Last 4 digits, and
+  "QA identification note" for Note. Confirm there is no editable Account kind,
+  band, spendability, budget-membership, locked, or on-budget field. Save,
+  reopen Edit account, and verify those three values persisted.
+  Return exactly "PASS: account quick create" when every check passes. Otherwise
+  return "FAIL:" followed by the first unmet condition.
+expected:
+  pass_condition: "result contains 'PASS: account quick create'"
+  screenshot_name: "account-quick-create.png"
+max_steps: 30
+timeout_seconds: 180

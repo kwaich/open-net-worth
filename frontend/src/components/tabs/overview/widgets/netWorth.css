@@ -1,0 +1,673 @@
+/* Overview v2 — Net worth widget group (hero, net-worth numbers/chart,
+   allocation, reachability, venues breakdowns). Class names are ported
+   1:1 from the design handoff's overview_v2b/overview.css (`.ov-hero-nw`,
+   `.ov-kpi*`, `.ov-nums-*`, `.ov-bars-legend`, `.ov-leg-item`) — the card
+   chrome (background/border/padding) is NOT re-declared here since
+   WidgetShell's Panel already supplies it; only the inner content layout is
+   owned by this file. */
+
+/* NO parent `gap` (the prototype doesn't have one either — every spacing
+   here comes from each child's OWN margin-top, matching the prototype
+   exactly). A parent flex `gap` STACKS ADDITIVELY with a child's own
+   margin — it doesn't replace it — so the earlier `gap: 16px` here was
+   quietly adding itself on top of `.ov-hero-delta`'s own `margin-top: 9px`
+   (25px total instead of 9px) and every other section gap in this card,
+   which is why the whole widget read as too tall/loose. */
+.ov-hero {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ── headline: total + delta chip (item 1) ─────────────────────────────── */
+
+/* 23px / bold / 25px line-height — exact values from the owner's design
+   tool inspector on the real "S$617,480" element, not the prototype file's
+   own 31px (which this port had been using, scaled down to 28px). */
+.ov-hero-nw {
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 25px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-hero--nums .ov-hero-nw {
+  font-size: 22px;
+}
+
+@container ovcard (max-width: 220px) {
+  .ov-hero-nw {
+    font-size: 18px;
+    line-height: 20px;
+  }
+}
+
+.ov-hero-delta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 9px;
+  font-size: 13px;
+  /* NOT flex-wrap: wrap — the design keeps this on one line always. */
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.ov-hero-delta .ov-hero-attrib {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* HeroNumbers puts the headline number and its delta chip on one baseline
+   row instead of stacked — .ov-hero-figure is that inline wrapper. */
+.ov-hero-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ov-hero-figure .ov-hero-delta {
+  margin-top: 0;
+}
+
+.ov-delta-chip {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-delta-chip.pos {
+  color: var(--good);
+}
+
+.ov-delta-chip.neg {
+  color: var(--bad);
+}
+
+.ov-hero-attrib {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.ov-hero-attrib b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ── composition-mode legend (item 4) ──────────────────────────────────── */
+
+.ov-bars-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.ov-leg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-leg-item i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.ov-leg-item i.ov-leg-line {
+  width: 14px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+
+/* ── KPI strip: full Hero widget (item 2) — 2 clickable stat cells ────── */
+
+/* Row-height equalization (grid.ts) makes an early column drop safe here. */
+.ov-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 12px;
+  gap: 12px var(--space-6, 16px);
+  flex: none;
+}
+
+@container ovcard (max-width: 260px) {
+  .ov-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ov-kpi {
+  min-width: 0;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  border-radius: 6px;
+}
+
+button.ov-kpi {
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  button.ov-kpi:hover .ov-kpi-l {
+    color: var(--muted);
+  }
+}
+
+.ov-kpi-l {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  transition: color 0.12s;
+}
+
+.ov-kpi-l svg {
+  flex: none;
+}
+
+.ov-kpi-v {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+  /* Prevents "-S$15,109.61" wrapping right after the minus sign. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-kpi-v.pos {
+  color: var(--good);
+}
+
+.ov-kpi-v.neg {
+  color: var(--bad);
+}
+
+.ov-kpi-s {
+  display: block;
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 3px;
+}
+
+/* ── numbers-only widget (networth-nums): compact 2-stat grid ─────────── */
+
+/* See `.ov-kpis` — same generous-early-drop rationale, now safe because of
+   grid.ts's row-height equalization. `.ov-nums-v` is 19px (vs. `.ov-kpi-v`'s
+   16px), so it needs even more room per column before ellipsis kicks in. */
+.ov-nums-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+}
+
+@container ovcard (max-width: 280px) {
+  .ov-nums-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ov-nums-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0;
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  min-width: 0;
+}
+
+button.ov-nums-cell {
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  button.ov-nums-cell:hover .ov-nums-k {
+    color: var(--muted);
+  }
+}
+
+.ov-nums-k {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--faint);
+  transition: color 0.12s;
+}
+
+.ov-nums-v {
+  font-size: 19px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  /* See .ov-kpi-v — a negative figure's leading "-" is a valid line-break point
+     by the UA's own rules; without this it can wrap onto its own line. Clipped
+     with ellipsis so an overflow never bleeds into the next cell. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-nums-v.pos {
+  color: var(--good);
+}
+
+.ov-nums-v.neg {
+  color: var(--bad);
+}
+
+.ov-chart-skeleton {
+  flex: 1;
+  min-height: 120px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--surface2, rgba(255, 255, 255, 0.03)) 25%,
+    var(--line) 50%,
+    var(--surface2, rgba(255, 255, 255, 0.03)) 75%
+  );
+  background-size: 200% 100%;
+  animation: ov-shimmer 1.4s ease infinite;
+}
+
+@keyframes ov-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.ov-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  container: ovlegend / inline-size;
+}
+
+.ov-breakdown-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+/* A legend row that opens something (Top merchants' pie) — a real button, reset to read like
+   the plain row, with a ≥32px target. */
+button.ov-breakdown-row--go {
+  width: 100%;
+  min-height: 32px;
+  margin: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.ov-breakdown-row--go:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (hover: hover) {
+  button.ov-breakdown-row--go:hover .ov-breakdown-label {
+    color: var(--ink);
+    text-decoration: underline;
+  }
+}
+
+button.ov-breakdown-row--go:active {
+  opacity: 0.7;
+}
+
+/* What is owed, under the shares it is not part of — its own line, no percentage. */
+.ov-breakdown-owed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.ov-breakdown-owed .ov-breakdown-label {
+  color: var(--muted);
+}
+
+.ov-breakdown-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+.ov-breakdown-label {
+  /* The row's IDENTITY — same rule as everywhere else this pass touched:
+     it must never be the thing that disappears. `flex: 1` alone (no floor)
+     let it shrink to a single letter before its unprotected sibling
+     (`.ov-breakdown-value`, no shrink/overflow handling at all) ever gave
+     up an inch. `min-width` is a real floor, not 0; ellipsis is a safety
+     net for a genuinely long payee/venue name past that floor. */
+  flex: 1 1 auto;
+  min-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A money figure never shrinks or ellipsizes ("S$221,321.…" reads as a wrong number);
+   in a narrow legend it switches to its compact form and the LABEL gives way instead. */
+.ov-breakdown-value {
+  color: var(--muted);
+  flex: none;
+  white-space: nowrap;
+}
+
+.ov-breakdown-value-compact {
+  display: none;
+}
+
+@container ovlegend (max-width: 300px) {
+  .ov-breakdown-value-full {
+    display: none;
+  }
+  .ov-breakdown-value-compact {
+    display: inline;
+  }
+}
+
+.ov-breakdown-pct {
+  color: var(--faint);
+  min-width: 44px;
+  text-align: right;
+}
+
+@container ovcard (max-width: 260px) {
+  .ov-breakdown-pct {
+    display: none;
+  }
+}
+
+/* List mode: a proportional stacked bar above the legend rows (handoff's
+   Stacked component, its alloc-bar class). Pie mode: a center-labelled donut
+   beside its own legend (handoff's Donut + Legend components). Bar mode
+   reuses these same breakdown colors via Chart.js directly, no extra markup
+   here. */
+.ov-breakdown-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ov-breakdown-bar {
+  display: flex;
+  flex: none;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 2px;
+}
+
+.ov-breakdown-bar i {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+}
+
+.ov-breakdown-pie {
+  display: flex;
+  /* `flex-wrap: wrap` below makes this a MULTI-LINE flex container — in that
+     mode `align-items` only positions items WITHIN their own line; it's
+     `align-content` that positions the line(s) as a group within the box's
+     total cross-axis space, and it defaults to `stretch`. With a short
+     legend there's only ONE line (donut + legend side by side), and
+     `align-content: stretch` was making that single line consume the FULL
+     100%-tall box — so `align-items` centering within an already-full-height
+     line was a no-op.
+     `align-items: flex-start` (a prior attempt at this exact rule) pins the
+     donut to the TOP of its line — but the line's own height is set by the
+     TALLER item (a long legend, e.g. 10 venue rows ≈350px vs. the donut's
+     fixed ≈180px), so the donut ends up flush at the top with a large gap
+     below it even after the line itself is centered in the box — a widget
+     with a long legend looked "stuck at the top" next to one with a short
+     legend that centered properly. `safe center` here centers the donut
+     against its OWN line's real height (whatever the legend dictates), same
+     `safe` fallback as `align-content` above: it degrades to start-aligned
+     only if centering would actually clip content. */
+  align-items: safe center;
+  /* `safe center`, not plain `center` (which was tried and reverted): a
+     PLAIN `center` would center the line(s) within this row's real
+     100%-tall box regardless of whether they actually fit, so once a long
+     legend list wrapped onto multiple lines tall enough to fill the box,
+     centering would push the first line (with the donut) down/off the top
+     instead of starting flush at it. `safe` centers ONLY when the content
+     fits within the available box; the moment it doesn't, it falls back to
+     start-aligned automatically — giving a SHORT legend (Reachability's
+     2-3 rows) proper vertical centering against its taller row-mate
+     without reintroducing the long-legend regression. */
+  align-content: safe center;
+  gap: clamp(16px, 4cqi, 40px);
+  flex-wrap: wrap;
+  /* A REAL height (the widget's actual available box, via the .ov-fit
+     ancestor's own flex constraint), not content-sized — so the legend's
+     max-height below resolves against the true box instead of a guessed
+     constant, and only scrolls when its content genuinely exceeds it. */
+  height: 100%;
+}
+
+.ov-breakdown-pie .ov-breakdown-list {
+  flex: 1 1 150px;
+  min-width: 0;
+  /* Bounded to the row's REAL height (see .ov-breakdown-pie above), not an
+     arbitrary px guess — so this only scrolls when the legend genuinely
+     doesn't fit the widget's actual box. */
+  max-height: 100%;
+  overflow-y: auto;
+  /* Explicit, not left to default: per spec, a non-`visible` value on ONE
+     overflow axis makes `visible` on the OTHER axis compute to `auto`
+     instead — so `overflow-y: auto` alone was silently turning on
+     horizontal scrolling too, surfacing an unwanted scrollbar for any
+     residual sub-pixel overflow. Every row's own overflow/ellipsis
+     already handles a value that doesn't fit; nothing here should ever
+     need horizontal scroll. */
+  overflow-x: hidden;
+  /* The row itself is top-aligned (donut stays pinned at the top even when
+     the legend is long and scrolling) — but a SHORT legend should center
+     itself against the donut's own height, not sit flush at its top edge. */
+  align-self: center;
+}
+
+/* A narrow card (a phone, or a 4-col card) can't fit the donut AND a legend row beside it —
+   the row's amount and percent then spill past the card edge. Stack instead: the legend takes
+   the full width under the donut. */
+@container ovcard (max-width: 420px) {
+  .ov-breakdown-pie .ov-breakdown-list {
+    flex-basis: 100%;
+  }
+  .ov-breakdown-pie {
+    justify-content: center;
+  }
+}
+
+.ov-breakdown-donut-wrap {
+  position: relative;
+  flex: none;
+}
+
+.ov-breakdown-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.ov-breakdown-donut-value {
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-breakdown-donut-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* ── Ranked list (RankedList.tsx — Top merchants) ─────────────────────────────
+   One row per item, biggest first: name · amount · share · ›, its own bar underneath sized
+   against the biggest row. Same type scale as the breakdown legend above. The whole row is
+   the tap target (≥44px), never just a bar. */
+.ov-ranked {
+  container: ovranked / inline-size;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ov-ranked-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-areas:
+    'label amt pct go'
+    'track track track go';
+  column-gap: 10px;
+  row-gap: 6px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 0;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+
+.ov-ranked li:last-child .ov-ranked-row {
+  border-bottom: 0;
+}
+
+button.ov-ranked-row {
+  cursor: pointer;
+}
+
+button.ov-ranked-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (hover: hover) {
+  button.ov-ranked-row:hover .ov-ranked-label,
+  button.ov-ranked-row:hover .ov-ranked-go {
+    color: var(--ink);
+  }
+}
+
+button.ov-ranked-row:active {
+  opacity: 0.7;
+}
+
+.ov-ranked-label {
+  grid-area: label;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text, var(--ink));
+}
+
+.ov-ranked-amt {
+  grid-area: amt;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.ov-ranked-amt-compact {
+  display: none;
+}
+
+.ov-ranked-pct {
+  grid-area: pct;
+  min-width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+}
+
+.ov-ranked-go {
+  grid-area: go;
+  color: var(--faint);
+}
+
+.ov-ranked-track {
+  grid-area: track;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+.ov-ranked-track i {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 2px;
+}
+
+@container ovranked (max-width: 300px) {
+  .ov-ranked-amt-full {
+    display: none;
+  }
+  .ov-ranked-amt-compact {
+    display: inline;
+  }
+}
+
+@container ovranked (max-width: 220px) {
+  .ov-ranked-pct {
+    display: none;
+  }
+}

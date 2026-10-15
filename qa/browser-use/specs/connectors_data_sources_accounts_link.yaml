@@ -1,0 +1,76 @@
+# Spec: CDS-LINK-01 — linking/unlinking a provider account from the Connectors tab's
+# Accounts list, and the "+ Create account…" hand-off.
+# Covers: ConnectorAccountsList.tsx, AccountModal.tsx's `prefill` prop.
+id: CDS-LINK-01
+acceptance_ids:
+  - CDS-UI-5
+  - CDS-UI-6
+  - CDS-UI-7
+  - CDS-UI-8
+title: "Connectors Accounts list: link an existing account, create-and-link, unlink"
+description: >
+  A provider's Accounts list row offers a Select to link an unlinked provider account to an
+  existing app account (or create a new one), and an Unlink button once linked. Every
+  status the endpoint can report must show mapped copy, never a blank panel or a raw status
+  string.
+
+acceptance_criteria:
+  - "AC1: An unlinked provider-account row shows a Link to an account Select"
+  - "AC2: Choosing an existing account links it — the row switches to Linked to <name> with an Unlink button, with no page reload"
+  - "AC3: Choosing Create account opens the Add Account modal prefilled with the provider account's name/currency/last-four, already on the details step"
+  - "AC4: Saving that modal creates the account and immediately shows it as linked"
+  - "AC5: Clicking Unlink on a linked row returns it to the unlinked Select state, no confirm dialog"
+  - "AC6: A non-ok status (not configured, paused, error) shows mapped human copy, never a blank area or a raw status string like auth_error"
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1 — Open a provider's Accounts list.
+  Click "Connectors" in the sidebar, then open a bank/broker provider that has at least one
+  account in its Accounts list (try Plaid first; if its Accounts section shows "No accounts
+  yet" or an empty/error state, note that and still evaluate what IS visible per the
+  Decision section below).
+
+  Step 2 — If a row is present, check its unlinked state.
+  If any row shows a dropdown (not "Linked to …"), click it. Confirm it offers a
+  "Link to an account…" placeholder and at least one real account option, plus a final
+  "+ Create account…" option.
+  Record LINK_SELECT = "present" or "absent" (if no unlinked row exists, record "n/a").
+
+  Step 3 — Link to an existing account (only if an unlinked row exists).
+  Choose an existing account option (not "+ Create account…"). Wait up to 3 seconds.
+  Check: does the row now read "Linked to \"<some account name>\"" with an "Unlink" button?
+  Record LINK_RESULT = "linked" or "unchanged".
+
+  Step 4 — Unlink it back.
+  Click "Unlink" on that same row. Wait up to 3 seconds.
+  Check: does NO confirm dialog appear, and does the row return to a Select?
+  Record UNLINK_RESULT = "unlinked_no_confirm", "unlinked_with_confirm", or "unchanged".
+
+  Step 5 — Check the empty/error copy is human, never raw.
+  Look at the Accounts section text. Is there any literal status-code-looking string
+  visible (e.g. "not_configured", "auth_error", "connect_error")?
+  Record RAW_STATUS_VISIBLE = "yes" or "no".
+
+  Decision:
+  - If the Accounts section was blank with no rows AND no readable message at all:
+    return "FAIL: Accounts section renders neither rows nor an empty-state message"
+  - If RAW_STATUS_VISIBLE = "yes":
+    return "FAIL: a raw status string is shown to the user instead of mapped copy"
+  - If LINK_SELECT = "present" and LINK_RESULT != "linked":
+    return "FAIL: choosing an existing account did not link it"
+  - If UNLINK_RESULT = "unlinked_with_confirm":
+    return "FAIL: Unlink showed a confirm dialog (spec says it must not)"
+  - If UNLINK_RESULT = "unchanged" and LINK_RESULT = "linked":
+    return "FAIL: Unlink did not return the row to its unlinked state"
+  - Otherwise:
+    return "PASS: Accounts list link/unlink behaves per spec, with human-readable status copy throughout"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CDS-LINK-01-accounts-link-unlink.png"
+  note: >
+    A freshly-seeded demo book has no provider accounts to link, so Steps 2-4 may be
+    "n/a" — Step 5 (no raw status strings) is the always-applicable check. For full
+    coverage, seed at least one Account.external_ids entry beforehand so a real
+    "Linked to …" row exists to unlink.

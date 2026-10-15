@@ -1,0 +1,11 @@
+{
+  "name": "overview-loads",
+  "title": "Overview tab loads and shows net worth",
+  "tab": "overview",
+  "body": "The Overview tab is the app's landing page. For the demo dataset it should render a net-worth summary and allocation visuals without errors or blank states. Take a screenshot, read the Overview, scroll if needed to confirm the allocation visual, then report.",
+  "criteria": [
+    { "id": "ov-net-worth", "text": "The Overview shows a clearly-labeled net-worth figure (a money amount)." },
+    { "id": "ov-no-blank", "text": "The page is not blank or stuck on a spinner — real content (cards/charts) is visible." },
+    { "id": "ov-allocation", "text": "An allocation / breakdown visual (chart or bands) is present." }
+  ]
+}

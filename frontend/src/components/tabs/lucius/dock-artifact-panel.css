@@ -1,0 +1,30 @@
+/* dock-artifact-panel.css — the docked floating chat's own artifact side panel
+   (DockArtifactPanel.tsx). Fills the ENTIRE remaining viewport (owner, 2026-08-13: "it needs
+   to fill the rest of the viewport" — a capped width left a large dead gap) except the two
+   things that must stay reachable: the app's own left nav rail (--lx-sidebar-w, index.css —
+   "except the nav bar for sure") and the dock itself on the right, tracked live via
+   --chat-width (the same var ChatPanel.tsx already keeps updated for exactly this "inset
+   yourself by however wide the dock currently is" purpose — see ui/Modal.tsx's own use of
+   it). Same z-index tier as .lx-side (var(--z-overlay), lucius.css) — a sibling overlay
+   beside the dock, not stacked above/below it. */
+
+.dock-artifact-panel {
+  position: fixed;
+  top: 0;
+  left: var(--lx-sidebar-w, 0px);
+  right: var(--chat-width, 0px);
+  bottom: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+}
+
+/* The Mac app keeps its title strip (window buttons, back/forward, ticker) above the panel
+   rather than covering it: the panel starts under the 48px strip (owner, 2026-10-05). The web
+   keeps the full-height panel. */
+html[data-desktop-chrome='mac'] .dock-artifact-panel {
+  top: 48px;
+}

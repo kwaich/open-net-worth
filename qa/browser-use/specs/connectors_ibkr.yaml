@@ -1,0 +1,79 @@
+# Spec: CONN-IBKR-01 — IBKR connector card opens and shows the Flex token config section
+# Covers: Connectors.tsx grid → ConnectorDetailModal/ConnectorCard for 'ibkr';
+#         IbkrSection.tsx renders Flex token field + Flex query ID field;
+#         no blank modal, no JS error.
+id: CONN-IBKR-01
+acceptance_ids:
+  - CONN-IBKR-CONFIG-RENDERS
+title: "IBKR connector card opens and shows Flex token config section without blank/crash"
+description: >
+  The Connectors tab must include an Interactive Brokers (IBKR) card. Opening
+  that card's detail section must render the IBKR configuration fields — at
+  minimum a "Flex token" password input and a "Flex query ID" text input.
+  The section must not be blank or show a JavaScript error. No real IBKR
+  credentials are required; the spec only checks that the UI config surface
+  mounts without crashing.
+
+acceptance_criteria:
+  - AC1: The Connectors tab loads and an "Interactive Brokers" card is visible
+  - AC2: Opening/expanding the IBKR card shows a non-blank config section
+  - AC3: A "Flex token" input field (password/secret type) is present in the section
+  - AC4: A "Flex query ID" text input is present in the section
+  - AC5: No JavaScript error overlay or blank white region
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1 — Open the Connectors tab.
+  In the left sidebar, find and click the item labelled "Connectors" (look for
+  a plug/connector icon or the word "Connectors"). Wait up to 5 seconds.
+
+  Step 2 — Find the Interactive Brokers card.
+  Scroll through the connector cards. Look for one labelled "Interactive Brokers"
+  or "IBKR". It may be in a "Data" section or in the main grid.
+  If you cannot find it after scrolling:
+    return "FAIL: Interactive Brokers / IBKR connector card not found on Connectors tab"
+
+  Step 3 — Open the card detail.
+  Click on the "Interactive Brokers" / "IBKR" card to open its detail view or
+  expand its configuration section. Wait up to 4 seconds for content to appear.
+
+  Step 4 — Check for blank/error.
+  Is the opened section completely blank (white, no text, no inputs)?
+  Is there a JavaScript error overlay or stack trace?
+  If either: record SECTION_STATE = "blank_or_error".
+  Otherwise: record SECTION_STATE = "has_content".
+
+  Step 5 — Check for the Flex token field.
+  Look for an input labelled "Flex token" (it should be a password-type field
+  that shows placeholder dots or says "Paste Flex token" or similar).
+  Record: FLEX_TOKEN_FIELD = "present" or "absent".
+
+  Step 6 — Check for the Flex query ID field.
+  Look for an input labelled "Flex query ID" (a text field for the numeric query
+  ID, e.g. placeholder "e.g. 123456").
+  Record: FLEX_QUERY_FIELD = "present" or "absent".
+
+  Decision:
+  - If the IBKR card was not found: return the FAIL from Step 2.
+  - If SECTION_STATE = "blank_or_error":
+    return "FAIL: IBKR connector section is blank or shows an error"
+  - If FLEX_TOKEN_FIELD = "absent":
+    return "FAIL: Flex token input field not found in IBKR section"
+  - If FLEX_QUERY_FIELD = "absent":
+    return "FAIL: Flex query ID input field not found in IBKR section"
+  - If all checks pass:
+    return "PASS: IBKR connector section renders — Flex token field present, Flex query ID field present"
+
+  Note: No IBKR credentials are needed. The fields may show "Not configured"
+  status or a placeholder — that is expected and acceptable. The spec only
+  checks that the UI config surface (IbkrSection.tsx) mounts without crashing.
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CONN-IBKR-01-ibkr-connector.png"
+  note: >
+    No API key or IBKR credentials are required. The IbkrSection.tsx component
+    calls GET /api/ibkr/status on mount; in a demo/fresh environment this
+    returns {configured: false, has_token: false} which is a valid state.
+    The spec only checks that the section renders without crashing.

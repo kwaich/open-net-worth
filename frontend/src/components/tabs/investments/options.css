@@ -1,0 +1,112 @@
+/* ── Options sub-tab styles ───────────────────────────────────────────────
+ * All .mk-* shared foundation classes (mk-subt, mk-panel, mk-panel-head,
+ * mk-panel-title, mk-panel-sub, mk-panel-body, mk-panel-spacer,
+ * mk-field-help) are defined once in design.css which is
+ * imported by InvestmentsTab.tsx — they are NOT repeated here.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+/* Options table */
+.opt-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  min-width: 660px;
+}
+.opt-tbl thead th {
+  text-align: left;
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 600;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.opt-tbl thead th.num {
+  text-align: right;
+}
+.opt-tbl td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.opt-tbl tbody tr:last-child td {
+  border-bottom: none;
+}
+.opt-tbl td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Cell content helpers */
+.opt-under {
+  font-weight: 700;
+  color: var(--ink);
+}
+.opt-strat {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 7px;
+}
+.opt-note {
+  font-size: 10.5px;
+  color: var(--faint);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+.opt-contract {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* DTE chip (days-to-expiry) */
+.opt-dte {
+  display: inline-block;
+  margin-left: 7px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  padding: 1px 6px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.opt-dte.soon {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+}
+
+/* Write flow (options-e2e): toolbar, row actions, modal helper lines */
+.opt-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+.opt-row-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+.opt-form-preview {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+.opt-close-line {
+  font-size: 12.5px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+/* The Close/Delete actions cell holds BUTTONS, not a monetary value — opt it out of
+   the global privacy-mode table mask (index.css blanket rule masks every non-first
+   tbody cell with an absolutely-positioned '***' overlay that would sit ON TOP of
+   the buttons and swallow their clicks). Found by the deterministic options E2E
+   under demo privacy mode. */
+body.hide-amounts .opt-tbl td.opt-row-actions::after {
+  content: none;
+}
+body.hide-amounts .opt-tbl td.opt-row-actions {
+  color: inherit !important;
+  user-select: auto;
+}

@@ -1,0 +1,71 @@
+# Keep the build context small and — critically — never bake a local live
+# instance's data into an image layer. Only what the Dockerfile actually COPYs
+# (requirements.txt, backend/, frontend/, docs-site/) matters for the build; everything else
+# here just speeds up the context upload.
+
+.git/
+.github/
+
+# Python
+.venv/
+.venv-py39-backup/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.import_linter_cache/
+.coverage
+coverage.json
+htmlcov/
+
+# Frontend and docs-site — both are rebuilt fresh in the frontend-builder stage, never
+# reused from the host. The sources themselves must stay in the context: the Dockerfile
+# COPYs docs-site/ to build the in-app /docs bundle.
+frontend/node_modules/
+frontend/dist/
+docs-site/node_modules/
+docs-site/dist/
+docs-site/dist-embed/
+docs-site/.astro/
+
+# Runtime data — same rule as .gitignore: never let a local live instance's
+# database/secrets/sessions/caches into the build context. Only the repo's own
+# tracked seed/reference content is let back in.
+backend/data/*
+!backend/data/extensions/
+!backend/data/tax_jurisdictions/
+backend/cache/
+backend/logs/
+backend/dev-data/
+backend/data_backup_*/
+
+# Local env / secrets — never baked into an image.
+.env
+*.local.*
+
+# Docs, tests, QA, scratch — not needed to run the app EXCEPT docs/product/
+# (backend/services/product_docs.py reads it at runtime for the in-app Help
+# corpus — core/paths.py::PRODUCT_DOCS_DIR, a path fixed relative to the repo
+# root, mirroring EXAMPLES_DIR/SHIPPED_EXTENSIONS_DIR/TAX_JURISDICTIONS_DIR) and
+# docs-site/ itself, which the frontend-builder stage builds into the same
+# in-app Help corpus (dist-embed/) — excluding it breaks that COPY entirely.
+docs/*
+!docs/product/
+tests/
+qa/
+scratch/
+.superpowers/
+.claude/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Stale local wheel-build copies of the assets the image builds fresh — must never shadow them.
+backend/_bundled/
+dist/

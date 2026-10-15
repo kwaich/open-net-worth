@@ -1,0 +1,43 @@
+id: CMD-01
+title: "Crypto market data failover — honest live, saved, and unavailable states"
+description: >
+  Visible companion for the ordinary Yahoo-live asset and Settings rollback
+  views. The deterministic CMD-01 runner owns every provider-failure scenario;
+  it tears down before this separate browser-use backend starts, so this YAML
+  never claims to operate or observe its saved-data/unavailable fixtures.
+acceptance_ids:
+  - CMD-01-YAHOO-LIVE
+  - CMD-01-SETTINGS-SECRET-AND-ROLLBACK
+timeout_seconds: 360
+max_steps: 20
+browser_use_task: |
+  This is a separate browser-use instance from the deterministic CMD-01
+  preflight. Do not assume a preflight provider scenario survives here and do
+  not attempt to call internal QA APIs. Use only internal app navigation and do
+  not open external links.
+
+  1. Open a supported-major crypto asset detail (Bitcoin). On normal live data,
+     verify the subtle facts disclaimer identifies live price data with a human
+     provider label (Yahoo Finance or CoinGecko) and freshness label, while the
+     price history card shows a real chart with multiple observed points. Healthy
+     data must not be promoted into a banner. It must never claim a provider only
+     in an opaque code or show a fabricated two-point history.
+  2. Open Settings, then Data, and inspect the first `Market data` panel. Verify
+     it describes Yahoo Finance as the supported-major tape and CoinGecko as
+     fallback/search/facts, shows provider health, has a password-style Demo API
+     key field, and does not display any saved key text. Do not enter a secret.
+  3. Turn off `Use Yahoo Finance first for supported major crypto`. Verify the
+     `Rollback active` banner explains that CoinGecko is currently tried first.
+     Reload and verify it remains active. Turn it back on before finishing.
+
+  Return PASS only when these Yahoo-live and Settings controls are honest and
+  legible. Return FAIL with the exact missing, misleading, or secret-disclosing
+  state. Saved-data, unavailable, metadata-failure, and mobile evidence belong
+  to the deterministic Playwright run, not this companion.
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CMD-01-crypto-market-data-failover.png"
+  note: >
+    `make qa-e2e SPECS="CMD-01"` always runs the deterministic Playwright
+    production-build preflight first, then boots this separate visible-review
+    instance. This companion may require the configured browser-use key.

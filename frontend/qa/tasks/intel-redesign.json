@@ -1,0 +1,14 @@
+{
+  "name": "intel-redesign",
+  "title": "Intelligence tab — redesigned brief, feed, watchlists cockpit & monitors",
+  "tab": "intel",
+  "body": "Exercise the redesigned Intelligence tab end-to-end against the demo dataset, judging both that it works and that the UX is clear. The tab has three layers: (1) a 'Lucius brief' executive-summary card at the top (a header band with an 'Ask Lucius' button and a timestamp; a plain-language narrative plus a 'Today' P&L stat and a period-vs-benchmark stat; a 'Today's drivers' movers strip; and a two-column digest titled 'NEEDS YOUR ATTENTION' and 'NEW OPPORTUNITIES'); (2) a story feed on the left with a filter bar (All / Risk / Alerts / Opportunities / Macro / Topics) grouped into 'Needs attention' / 'Active' / 'Monitoring' sections — if there are no stories yet, a cold-start empty state with starter-topic chips and a 'Scan now' button appears instead; (3) a right sidebar with a Watchlists cockpit (a 'Manage all' link, a list-switcher dropdown button showing the active list name + item count + 'N lists', 'Tickers' and 'Topics' tabs, and compact rows) and a 'Monitoring' panel (Active/Paused status, 'Next scan' cadence, expandable to show interval selects and notification channels). Clicking 'Manage all' (or the cockpit header) opens a full-screen 'Watchlists & monitors' workspace with a left rail (All monitors / each watchlist / Monitoring & alerts settings) and a main pane. Do NOT delete any watchlist or data. It is safe to open dropdowns, switch tabs, open the workspace, and close it.",
+  "criteria": [
+    { "id": "intel-brief", "text": "The 'Lucius brief' card renders at the top with a header (incl. an 'Ask Lucius' control + timestamp), a narrative line, a 'Today' stat, and the two digest columns 'NEEDS YOUR ATTENTION' and 'NEW OPPORTUNITIES'." },
+    { "id": "intel-no-crash", "text": "The tab renders without an error boundary ('Something went wrong in Intel') and without a blank/broken screen." },
+    { "id": "intel-feed", "text": "Either a story feed with a working filter bar + grouped sections is shown, OR (if there are no signals) a clear cold-start empty state with starter-topic chips and a 'Scan now' button." },
+    { "id": "intel-cockpit", "text": "The right sidebar shows a Watchlists cockpit with a list-switcher dropdown that opens to show the lists, and 'Tickers' / 'Topics' tabs that switch." },
+    { "id": "intel-monitoring", "text": "The 'Monitoring' panel shows an Active/Paused status and a next-scan cadence, and expands to reveal cadence + notification-channel controls." },
+    { "id": "intel-workspace", "text": "Clicking 'Manage all' opens the full-screen 'Watchlists & monitors' workspace with a left rail (All monitors / watchlists / settings) and a main pane, and it can be closed." }
+  ]
+}

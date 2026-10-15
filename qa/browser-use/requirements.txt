@@ -1,0 +1,15 @@
+# browser-use QA harness — Python 3.11+ only (NOT the app venv)
+# See README.md for setup instructions.
+
+browser-use==0.12.9
+playwright>=1.49.0
+
+# Anthropic SDK is pulled in transitively by browser-use, but pin it so
+# we know which version we tested against.
+anthropic>=0.76.0
+
+# YAML spec files
+pyyaml>=6.0.1
+
+# Rich console output for PASS/FAIL table
+rich>=13.7.0

@@ -1,0 +1,83 @@
+# Spec: CONN-EMAIL-STATUS — Email connector with error shows correct "Error" status
+# Covers: A connector with a connection error displays status="Error" (not contradictory state)
+# Verifies: when email IMAP config is invalid/unreachable, the connector card shows
+#           a "Error" status badge (not "Enabled", "Disabled", or blank)
+id: CONN-EMAIL-STATUS
+acceptance_ids:
+  - CONN-ENABLE-TOGGLE-CONFIGURED
+title: "Email connector displays Error status when connection fails"
+description: >
+  When the email connector (IMAP) is configured but the connection fails
+  (e.g. invalid credentials, unreachable host), the Connectors tab must display
+  the connector with a status badge showing "Error" — never "Enabled" or
+  "Disabled" or no status. This is a regression guard: the UI must correctly
+  reflect the actual connection state from GET /api/connectors[email].
+
+acceptance_criteria:
+  - AC1: Email connector card is visible in Connectors tab
+  - AC2: Email connector is configured (has IMAP credentials filled in)
+  - AC3: The connector's health.status field indicates an error (from backend health check)
+  - AC4: The status badge on the card displays "Error" (or "Needs attention" with error detail)
+  - AC5: The badge is styled with an error/warning color (red/amber, not green)
+  - AC6: No contradictory badges (e.g. not both "Error" and "Enabled" simultaneously)
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  1. Ensure it has loaded.
+
+  2. Go to Connectors tab (sidebar → Connectors).
+
+  3. Look for the Email connector card (labeled "Email" or "Email (IMAP)").
+     Record: EMAIL_CARD_FOUND = yes/no
+
+  4. If EMAIL_CARD_FOUND = no: create a minimal email config to trigger the error state:
+     a) Click Configure on any non-existent email connector
+     b) Enter placeholder IMAP credentials (e.g. host="invalid.example.com", user="test")
+     c) Leave the password empty or enter a dummy value
+     d) Click Save/Enable and wait for a connection attempt
+
+  5. With the Email connector card visible, check its status badge. (AC4, AC5)
+     - Is a "Error" badge visible?
+     - Or is it showing "Needs attention" with error detail below?
+     - What color is the badge (red/amber for error, green for success)?
+     Record: STATUS_BADGE = badge text shown, BADGE_COLOR = color
+
+  6. Check if any other badge (e.g. "Enabled", "Disabled", "Configured") is also visible
+     on the same card. (AC6)
+     Record: OTHER_BADGES = list of badges, or "none"
+
+  7. Open the browser DevTools Network tab. Inspect the GET /api/connectors response.
+     Look for the email connector entry. Does it have a health.status field? (AC3)
+     Record: API_HEALTH_STATUS = value shown (e.g. "error", "disabled", "enabled", "degraded")
+
+  8. Does API_HEALTH_STATUS match the UI badge text? (AC4)
+     Record: STATUS_MATCHES_API = yes/no
+
+  9. Click "Details" on the Email connector card to open the modal.
+     In the modal, is any error message or status explanation visible?
+     Record: DETAIL_MODAL_SHOWS_ERROR = yes/no, ERROR_DETAIL_TEXT = detail shown
+
+  10. Check for any JS errors in DevTools console.
+      Record: JS_ERROR = yes/no
+
+  Decision:
+  - If EMAIL_CARD_FOUND = no and unable to configure: FAIL "Email connector not available to test"
+  - If STATUS_BADGE not in ("Error", "Needs attention", "Disabled"): FAIL f"Unexpected status badge: {STATUS_BADGE}"
+  - If BADGE_COLOR not in ("red", "amber", "orange"): FAIL f"Status badge color is {BADGE_COLOR} (expected error color)"
+  - If "Enabled" in OTHER_BADGES (alongside error badge): FAIL f"Contradictory badges: {OTHER_BADGES} (Error + Enabled at same time)"
+  - If STATUS_MATCHES_API = no: FAIL f"UI badge {STATUS_BADGE} does not match API health.status {API_HEALTH_STATUS}"
+  - If DETAIL_MODAL_SHOWS_ERROR = no: WARN "Detail modal doesn't show error explanation (acceptable if badge is clear)"
+  - If JS_ERROR = yes: FAIL "JavaScript error in connector status handling"
+  - Otherwise: PASS f"Email connector error status displays correctly — badge={STATUS_BADGE}, color={BADGE_COLOR}, matches API"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CONN-EMAIL-STATUS-error-badge.png"
+  note: >
+    This spec validates that the email connector (or any connector with a failed
+    health check) displays a clear error state in the UI, not a contradictory
+    or confusing status. The demo instance will not have email configured,
+    so the test may need to manually configure invalid credentials to trigger
+    an error. A "Not configured" state (when no credentials are filled) should
+    also be handled correctly (distinct from "Error").

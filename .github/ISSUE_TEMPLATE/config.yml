@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/open-net-worth-ai/open-net-worth/security/advisories/new
+    about: Please report security vulnerabilities privately — see SECURITY.md — not as a public issue.
+  - name: Documentation / usage question
+    url: https://github.com/open-net-worth-ai/open-net-worth/discussions
+    about: For "how do I do X" questions, check the in-app /help tab or the docs site first; use Discussions for anything not answered there.

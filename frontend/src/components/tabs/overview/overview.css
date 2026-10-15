@@ -1,0 +1,2614 @@
+/* Overview v2 redesign module CSS (ov-* classes) — the widget-dashboard
+   foundation shared by every widget group. Ported from the design handoff's
+   `overview_v2b/overview.css`, stripped of the standalone-shell scaffolding
+   (html/body, *{}, the prototype's own nav rail / Tweaks panel / LuciusSide —
+   none of that ships; the real RouterShell + LuciusDock host this tab) and
+   scoped to real app tokens. Per-widget-group styles live in their own
+   `widgets/<group>.css` files, imported below, so parallel lanes never edit
+   this file.
+
+   Responsive strategy (ADR 2026-07-22-overview-tab-redesign-faithful-port.md,
+   decision 9): container queries per card (independently-resizable cards, the
+   Plan-tab precedent) layered under a `max-width: 640px` viewport breakpoint
+   that collapses the whole grid to a single stacked column and hides drag/
+   resize affordances (mobile uses the GridCard move-up/move-down buttons
+   instead). */
+
+@import './widgets/netWorth.css';
+@import './widgets/overviewCashflowCore.css';
+@import './widgets/cashflowPlanning.css';
+@import './widgets/investing.css';
+@import './widgets/trackingBudgeting.css';
+@import './widgets/reports.css';
+@import './widgets/content.css';
+@import './widgets/spendingPace.css';
+
+/* Global safety net, ported from the prototype's `.onw-root button svg, ...`
+   (overview.css:11, scoped here to `.ov-page` since the prototype's own
+   standalone-shell root doesn't exist in the real app) — an SVG inside a
+   button/link/label is a flex item the instant its container is any flavor
+   of flex/inline-flex, and WITHOUT an explicit `flex: none` it defaults to
+   `flex: 0 1 auto` (shrinkable). Its intrinsic size then comes from its
+   `width`/`height` HTML attributes rather than a CSS box, which several
+   browsers resolve to a near-zero flex-basis under real size pressure —
+   collapsing the icon to invisible/unclickable instead of clipping or
+   wrapping. This was missing from the port entirely (root cause of the
+   calendar widget's prev/next month icons vanishing) — one rule fixes every
+   icon-in-button across the tab, not just that one widget. */
+.ov-page button svg,
+.ov-page a svg,
+.ov-page [role='button'] svg,
+.ov-page label svg {
+  flex: none;
+}
+
+.ov-page {
+  /* NOT container-type: inline-size here (was previously, and unused — no
+     `@container ovpage (...)` query anywhere ever consumed it) — CSS
+     containment on this element breaks the sticky page header below, since
+     it establishes a new formatting-context boundary between the header's
+     `position: sticky` and its actual scrolling ancestor. Per-card container
+     queries still work fine — those scope to `.ov-griditem__body`'s own
+     `ovcard` container, never this one. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+/* The title row and the view tabs pin as ONE box: as two, the flex gap between them
+   stayed transparent and the grid scrolled through it. */
+.ov-pagehead {
+  position: sticky;
+  top: var(--ov-topbar-h, 56px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+  background: var(--bg);
+  box-shadow: 0 0 0 100vmax var(--bg);
+  clip-path: inset(0 -100vmax);
+}
+
+.ov-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ov-page-actions__tools,
+.ov-page-actions__commit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ov-mobile-edit-dock {
+  display: none;
+}
+
+/* ── View tabs ─────────────────────────────────────────────────────────── */
+
+.ov-view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+}
+
+.ov-view-tab {
+  position: relative;
+  padding: 6px 12px;
+  margin-bottom: -1px;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition:
+    color 0.12s,
+    border-color 0.12s,
+    background 0.12s;
+}
+
+@media (hover: hover) {
+  .ov-view-tab:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+
+.ov-view-tab[draggable='true'] {
+  cursor: grab;
+}
+
+/* Drag-to-reorder view tabs (item 11). */
+.ov-view-tab--dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+.ov-view-tab--active {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+.ov-view-tab-close {
+  opacity: 0.6;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+@media (hover: hover) {
+  .ov-view-tab-close:hover {
+    opacity: 1;
+    color: var(--bad);
+  }
+}
+
+.ov-view-tab--add {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 6px 10px;
+}
+
+.ov-view-tab-input {
+  font-size: 13px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--surface);
+  color: var(--ink);
+  width: 120px;
+}
+
+/* ── Grid + grid item ─────────────────────────────────────────────────────
+   Absolute-positioned on desktop: x/w as percentages of the 12-col grid,
+   y/h as literal pixels (per-widget stored height, ADR foundation doc). */
+
+.ov-grid {
+  position: relative;
+  width: 100%;
+  /* `.ov-page`'s own flex `gap` already contributes --space-4 (10px) between
+     the view-tabs row and this grid; the handoff's grid wrapper wants the
+     total gap to be --space-6 (16px) specifically here (`margin-top:
+     var(--space-6)`), so this makes up the remaining 6px rather than
+     widening every gap in the page uniformly. */
+  margin-top: 6px;
+}
+
+/* Customize-mode column guide, shown only while dragging/resizing (item 2) —
+   ported from the handoff's `.ov-grid-overlay`. */
+.ov-grid-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: var(--space-6, 16px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ov-grid-overlay i {
+  border-radius: var(--radius-lg, 10px);
+  border: 1px dashed color-mix(in srgb, var(--line-strong, var(--line)) 45%, transparent);
+}
+
+.ov-griditem {
+  position: absolute;
+  box-sizing: border-box;
+  transition:
+    left 0.15s cubic-bezier(0.2, 0.7, 0.2, 1),
+    top 0.15s cubic-bezier(0.2, 0.7, 0.2, 1),
+    width 0.15s cubic-bezier(0.2, 0.7, 0.2, 1),
+    height 0.15s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.ov-grid--editing .ov-griditem {
+  transition: none;
+}
+
+/* Live drag/resize visual states (item 13) — the moved/resized card floats
+   above its neighbours with a stronger shadow + accent ring. */
+.ov-griditem--dragging {
+  z-index: 50;
+  opacity: 0.92;
+  cursor: grabbing;
+  transition: none !important;
+}
+
+.ov-griditem--dragging .ov-griditem__body .panel,
+.ov-griditem--dragging .ov-griditem__body section {
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.45),
+    0 0 0 1.5px var(--accent);
+}
+
+.ov-griditem--resizing {
+  z-index: 40;
+  transition: none !important;
+}
+
+.ov-griditem--resizing .ov-griditem__body .panel,
+.ov-griditem--resizing .ov-griditem__body section {
+  box-shadow: 0 0 0 1.5px var(--accent) !important;
+}
+
+/* New-widget landing pulse (item 11/20). */
+@keyframes ovGridItemNew {
+  0%,
+  55% {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
+.ov-griditem--new .ov-griditem__body .panel,
+.ov-griditem--new .ov-griditem__body section {
+  animation: ovGridItemNew 1.8s ease-out;
+}
+
+.ov-griditem__body {
+  height: 100%;
+  container-type: inline-size;
+  container-name: ovcard;
+}
+
+/* Defensive backstop for EVERY widget, not just the auto-height list below:
+   real content (a Needs-Attention widget with more/longer flags than the
+   design's assumed default, a Movers list with more rows, ...) can still
+   exceed a widget's fixed stored `h` even when its type was never expected
+   to vary much. Every grid item is position:absolute, so nothing else stops
+   an overflowing panel from painting over the widget stacked below it — this
+   clips it to its own box (scrollable, not silently cut off) instead. Kept
+   at the .panel/section level, not the outer .ov-griditem__body, so it can
+   never clip a grid-level popover (kebab menu, drag handle) that renders as
+   a SIBLING of this element, not a child. */
+/* `display: flex; flex-direction: column` here is load-bearing, not
+   decorative — copied from the prototype's own widget-panel/section rule
+   rule (overview.css:139) after finding a chart widget (`.ov-fill`,
+   `flex: 1 1 auto`) rendering short with dead space below it: `.panel` is a
+   plain block (see index.css), so a `flex:1 1 auto` CHILD had no flex
+   container to actually stretch within and just sized to its own content
+   instead of filling this element's real height. */
+.ov-griditem__body .panel,
+.ov-griditem__body section {
+  height: 100%;
+  overflow-y: auto;
+  /* Explicit, not left to default: per spec, a non-`visible` value on ONE
+     overflow axis makes `visible` on the OTHER axis compute to `auto`
+     instead — so `overflow-y: auto` alone was silently turning on
+     horizontal scrolling for EVERY widget's outer panel too (this is the
+     widget-wide root cause; `.ov-breakdown-list` had the same bug fixed
+     separately, one level deeper, in netWorth.css). Nothing at this level
+     should ever need horizontal scroll — a row too wide for its box is a
+     bug in that row, not something to pan sideways to read. */
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar width is 0, permanently, on every axis — never toggled, never
+   reserved, so it can never reflow or narrow a header sharing the same box.
+   Scrolling itself still works (wheel/trackpad); there's just no visible
+   thumb. A hover-reveal thumb was tried (twice) and kept reflowing content
+   in some form — not worth it next to a scrollbar accidentally affecting a
+   widget's title row. */
+.ov-griditem__body .panel,
+.ov-griditem__body section,
+.ov-fit,
+.ov-breakdown-list {
+  scrollbar-width: none;
+}
+.ov-griditem__body .panel::-webkit-scrollbar,
+.ov-griditem__body section::-webkit-scrollbar,
+.ov-fit::-webkit-scrollbar,
+.ov-breakdown-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Sticky positioning REMOVED (4th attempt) — every attempt so far has
+   either broken real content or produced an unverifiable result, and I
+   have no way to see the live page myself. Left as a real, known,
+   deliberately unfixed gap rather than a 5th blind guess.
+   The gap itself: owner-set 10px for EVERY widget (was 4px per the design
+   tool's own net-worth-hero measurement; bumped to 10px by direct owner
+   correction once the two stacked line-height/legacy-h2-margin bugs below
+   were fixed and 4px read as too tight in practice — applied uniformly, not
+   just to the widget that prompted it). */
+.ov-griditem__body .panel > .ui-panel__head {
+  margin-bottom: 10px;
+}
+
+/* The 4px above is the real gap the design tool measures, but the visible
+   whitespace looked much bigger than that for two STACKED reasons: (1) the
+   title's inherited body line-height (no explicit line-height anywhere on
+   `.ui-panel__title`) adds real slop below its own text baseline before the
+   4px margin even starts — an uppercase, single-line, no-descender label
+   doesn't need that headroom; (2) `.ui-panel__title` renders as a literal
+   `<h2>`, and a much older, generic `.panel h2 { margin-bottom: 16px }` rule
+   (index.css, pre-dating this DS Panel component — written for old hand-
+   rolled `.panel > h2` markup elsewhere) still matches it and adds its OWN
+   16px margin on the h2 itself, on top of the .ui-panel__head container's
+   4px above — 20px total instead of 4px. The container's margin is the one
+   real spacing value; the h2's own margin needs to be zeroed here. */
+.ov-griditem__body .panel > .ui-panel__head .ui-panel__title {
+  line-height: 1;
+  margin-bottom: 0;
+}
+
+/* Content-fit ("prose") widgets in Fit mode (item 1): `height: 100%` here
+   (not `auto`) so the panel fills whatever height DashboardGrid computed
+   for its OUTER grid cell — its own natural content height when solo, but
+   the row's shared height when `grid.ts`'s row-height equalization has
+   stretched a shorter row-mate to match a taller one. This does NOT break
+   the ResizeObserver measurement the comment below used to describe: the
+   measurement path (DashboardGrid.tsx's `measurePanel`) always force-sets
+   `panel.style.height = 'auto'` as an INLINE style before reading
+   `offsetHeight`/`scrollHeight` — an inline style beats this class rule
+   regardless of what it says, so measuring the true natural height never
+   depended on the rest-state value being `auto` here. Past the cap the
+   body scrolls; the title stays pinned via WidgetShell/Panel's own sticky
+   head. */
+.ov-griditem--autoh .ov-griditem__body .panel,
+.ov-griditem--autoh .ov-griditem__body section {
+  height: 100%;
+  max-height: min(560px, 68vh);
+  overflow-y: auto;
+}
+
+.ov-griditem--accent .ov-griditem__body .panel {
+  background: color-mix(in srgb, var(--wtint, var(--accent)) 9%, var(--surface));
+  border-color: color-mix(in srgb, var(--wtint, var(--accent)) 32%, var(--line));
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+/* Display option: "Hide title" — hides WidgetShell's own head row (title +
+   the chart-type toggle live there) without touching the grid-level drag/
+   kebab/resize overlays, which are positioned independently of it. */
+.ov-griditem--hide-title:not(.ov-griditem--editing)
+  .ui-panel__head:not(:has(.ov-widget-header-kebab)) {
+  display: none;
+}
+
+/* Collapsed widget: a slim title-only bar in place of the full card (item 8). */
+.ov-griditem-collapsed {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2xl, 16px);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    color 0.12s;
+}
+
+@media (hover: hover) {
+  .ov-griditem-collapsed:hover {
+    color: var(--ink);
+    border-color: var(--line-strong, var(--line));
+  }
+}
+
+.ov-griditem-collapsed-t {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Chart.js canvas wrapper (charts.tsx's OvChart) — sizing is inline-styled per
+   instance; this rule exists so the class has a real definition. */
+.ov-cjs {
+  display: block;
+}
+
+/* Timeline primitive outer wrapper (Timeline.tsx). */
+.ov-tl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ov-griditem--section {
+  transition: none;
+}
+
+/* ── Section divider: chevron toggle + title (double-click to rename) + a
+   member count, collapsing to a slim bar (item 6/8/14). ──────────────────── */
+.ov-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  padding: 0 6px;
+  cursor: pointer;
+}
+
+.ov-section-chevron {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+  background: none;
+  border: none;
+  padding: 2px;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition:
+    transform 0.16s cubic-bezier(0.2, 0.7, 0.2, 1),
+    color 0.12s,
+    background 0.12s;
+}
+
+@media (hover: hover) {
+  .ov-section-chevron:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+}
+
+.ov-section-chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+.ov-section-title {
+  flex: none;
+  max-width: 62%;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+  transition: color 0.12s;
+  /* Same fix as .ui-panel__title above, same reasoning: an uppercase,
+     single-line, no-descender label doesn't need inherited body line-height
+     headroom — kept consistent across every title-shaped label in the tab,
+     not just widget-card titles. */
+  line-height: 1;
+}
+
+@media (hover: hover) {
+  .ov-grid:not(.ov-grid--editing) .ov-section-divider:hover .ov-section-title {
+    color: var(--accent);
+  }
+}
+
+.ov-section-rule {
+  flex: 1 1 auto;
+  min-width: 12px;
+  height: 1px;
+  background: var(--line);
+}
+
+.ov-section-meta {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-section-rename {
+  flex: none;
+  width: 190px;
+  max-width: 62%;
+  box-sizing: border-box;
+  background: var(--bg-2, var(--surface));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+}
+
+.ov-section-rename:focus,
+.ov-section-rename:focus-visible {
+  outline: none;
+}
+
+/* Customize mode: a section being dragged floats with a stronger shadow. */
+.ov-griditem--dragging.ov-griditem--section .ov-section-divider {
+  background: var(--surface);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1.5px var(--accent);
+  border-radius: var(--radius-md, 8px);
+}
+
+@media (hover: hover) {
+  .ov-grid--editing .ov-griditem--section:hover .ov-section-divider {
+    background: var(--hover);
+    box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, transparent);
+    border-radius: var(--radius-md, 8px);
+  }
+}
+
+/* Customize mode: the whole card is the drag surface (no dedicated handle
+   icon — matches the handoff, where `startDrag` binds to the widget's own
+   root div). `touch-action: none` so a touch-drag doesn't also scroll the
+   page; `:active` only really shows grabbing over the card's own background,
+   since a click starting on interactive chrome never reaches this (GridCard
+   excludes it before calling `onDragPointerDown`). */
+.ov-griditem--editing:not(.ov-griditem--section) {
+  cursor: grab;
+  touch-action: none;
+}
+
+.ov-griditem--editing:not(.ov-griditem--section):active {
+  cursor: grabbing;
+}
+
+/* ── Resize handles: all 4 edges + all 4 corners (item 4), hover-revealed,
+   with a decorative arc grip on corners tracing the panel's border-radius. ── */
+.ov-resize-handle {
+  position: absolute;
+  z-index: 6;
+  touch-action: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ov-resize-handle--e-r {
+  top: 18px;
+  bottom: 18px;
+  right: -7px;
+  width: 14px;
+  cursor: ew-resize;
+}
+
+.ov-resize-handle--e-l {
+  top: 18px;
+  bottom: 18px;
+  left: -7px;
+  width: 14px;
+  cursor: ew-resize;
+}
+
+.ov-resize-handle--e-b {
+  left: 18px;
+  right: 18px;
+  bottom: -7px;
+  height: 14px;
+  cursor: ns-resize;
+}
+
+.ov-resize-handle--e-t {
+  left: 18px;
+  right: 48px;
+  top: -7px;
+  height: 14px;
+  cursor: ns-resize;
+}
+
+.ov-resize-handle--c-se,
+.ov-resize-handle--c-sw,
+.ov-resize-handle--c-ne,
+.ov-resize-handle--c-nw {
+  width: 18px;
+  height: 18px;
+}
+
+.ov-resize-handle--c-se {
+  right: -5px;
+  bottom: -5px;
+  cursor: nwse-resize;
+}
+
+.ov-resize-handle--c-nw {
+  left: -5px;
+  top: -5px;
+  cursor: nwse-resize;
+}
+
+.ov-resize-handle--c-ne {
+  right: -5px;
+  top: -5px;
+  cursor: nesw-resize;
+}
+
+.ov-resize-handle--c-sw {
+  left: -5px;
+  bottom: -5px;
+  cursor: nesw-resize;
+}
+
+.ov-resize-handle--c-se::after,
+.ov-resize-handle--c-sw::after,
+.ov-resize-handle--c-ne::after,
+.ov-resize-handle--c-nw::after {
+  content: '';
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  opacity: 0;
+  transition:
+    opacity 0.12s,
+    border-color 0.12s;
+  border: 0 solid var(--line-strong, var(--line));
+}
+
+.ov-resize-handle--c-se::after {
+  right: 4px;
+  bottom: 4px;
+  border-right-width: 2.5px;
+  border-bottom-width: 2.5px;
+  border-radius: 0 0 15px 0;
+}
+
+.ov-resize-handle--c-nw::after {
+  left: 4px;
+  top: 4px;
+  border-left-width: 2.5px;
+  border-top-width: 2.5px;
+  border-radius: 15px 0 0 0;
+}
+
+.ov-resize-handle--c-ne::after {
+  right: 4px;
+  top: 4px;
+  border-right-width: 2.5px;
+  border-top-width: 2.5px;
+  border-radius: 0 15px 0 0;
+}
+
+.ov-resize-handle--c-sw::after {
+  left: 4px;
+  bottom: 4px;
+  border-left-width: 2.5px;
+  border-bottom-width: 2.5px;
+  border-radius: 0 0 0 15px;
+}
+
+@media (hover: hover) {
+  .ov-griditem:hover .ov-resize-handle--c-se::after,
+  .ov-griditem:hover .ov-resize-handle--c-sw::after,
+  .ov-griditem:hover .ov-resize-handle--c-ne::after,
+  .ov-griditem:hover .ov-resize-handle--c-nw::after {
+    opacity: 1;
+  }
+}
+
+@media (hover: none) {
+  .ov-griditem--editing .ov-resize-handle--c-se {
+    width: 32px;
+    height: 32px;
+  }
+
+  .ov-griditem--editing .ov-resize-handle--c-se::after {
+    opacity: 1;
+  }
+}
+
+.ov-griditem--resizing .ov-resize-handle--c-se::after,
+.ov-griditem--resizing .ov-resize-handle--c-sw::after,
+.ov-griditem--resizing .ov-resize-handle--c-ne::after,
+.ov-griditem--resizing .ov-resize-handle--c-nw::after {
+  opacity: 1;
+  border-color: var(--accent);
+}
+
+/* Live "N / 12 cols" readout while resizing. */
+.ov-resize-readout {
+  position: absolute;
+  top: -13px;
+  right: 26px;
+  z-index: 6;
+  background: var(--modal-bg, var(--surface));
+  border: 1px solid var(--modal-border, var(--line));
+  border-radius: var(--radius-pill, 999px);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.3));
+  padding: 3px 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Customize-mode toolbar: Fit/Fixed · Edit · Remove, INSIDE the card on its header row and
+   always visible while customizing — Customize is an explicit mode, so its controls don't hide
+   behind hover (which a touch screen never has) or float over the card's edge. The widget's own
+   header actions (chart toggle, ⋯) step aside while editing, and the title keeps clear of the
+   toolbar via the head's right padding. */
+.ov-w-ctrls {
+  position: absolute;
+  top: calc(var(--panel-pad, 20px) - 2px);
+  right: calc(var(--panel-pad, 20px) - 6px);
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-griditem--editing .ov-widget-panel > .ui-panel__head .ui-panel__actions {
+  display: none;
+}
+
+.ov-griditem--editing:not(.ov-griditem--section) .ov-widget-panel > .ui-panel__head {
+  padding-right: 92px;
+}
+
+.ov-griditem--editing:has(.ov-w-ctrl--fit) .ov-widget-panel > .ui-panel__head {
+  padding-right: 164px;
+}
+
+.ov-griditem--editing.ov-griditem--hide-title .ui-panel__head {
+  display: flex;
+}
+
+.ov-w-ctrl {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  flex: none;
+  line-height: 0;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface2, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--line-strong, var(--line));
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.12s,
+    border-color 0.12s,
+    background 0.12s;
+}
+
+@media (hover: hover) {
+  .ov-w-ctrl:hover {
+    color: var(--ink);
+    border-color: var(--faint);
+    background: var(--hover);
+  }
+}
+
+.ov-w-ctrl--label {
+  width: auto;
+  min-width: 0;
+  padding: 0 9px;
+  gap: 5px;
+}
+
+.ov-w-ctrl--label span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.ov-w-remove {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  flex: none;
+  line-height: 0;
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--bad) 14%, var(--surface2));
+  border: 1px solid color-mix(in srgb, var(--bad) 45%, transparent);
+  color: var(--bad);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.12s,
+    border-color 0.12s,
+    background 0.12s;
+}
+
+@media (hover: hover) {
+  .ov-w-remove:hover {
+    background: var(--bad);
+    border-color: var(--bad);
+    color: #fff;
+  }
+}
+
+.ov-w-remove svg {
+  display: block;
+  flex: none;
+}
+
+.ov-card-mobile-move {
+  display: none;
+}
+
+/* View-mode widget actions: ONE ⋯ in the widget's own header, on every screen size and input —
+   Full screen, Collapse, Edit…, Display… and the rest live in its menu. No floating hover
+   cluster: hover never happens on a touch screen, so it either vanished or sat permanently over
+   the card. */
+.ov-widget-header-kebab {
+  display: inline-flex;
+  margin: -6px -6px -6px 0;
+}
+
+.ov-widget-header-kebab .kebab-trigger {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-pill, 999px);
+  background: transparent;
+  color: var(--faint);
+  box-shadow: none;
+}
+
+.ov-widget-header-kebab .kebab-trigger[aria-expanded='true'] {
+  color: var(--ink);
+  background: var(--hover-surface, var(--hover));
+}
+
+@media (hover: hover) {
+  .ov-widget-header-kebab .kebab-trigger:hover {
+    color: var(--ink);
+    background: var(--hover-surface, var(--hover));
+  }
+}
+
+@media (pointer: coarse) {
+  .ov-widget-header-kebab {
+    margin: -10px -10px -10px 0;
+  }
+
+  .ov-widget-header-kebab .kebab-trigger {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+}
+
+/* "Hide title": the head row collapses to just its ⋯, pinned in the card's corner, so a
+   titleless widget keeps its menu. */
+.ov-griditem--hide-title:not(.ov-griditem--editing) .ov-griditem__body .panel {
+  position: relative;
+}
+
+.ov-griditem--hide-title:not(.ov-griditem--editing) .ov-widget-panel > .ui-panel__head {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+}
+
+.ov-griditem--hide-title:not(.ov-griditem--editing)
+  .ov-widget-panel
+  > .ui-panel__head
+  > .ui-panel__heading,
+.ov-griditem--hide-title:not(.ov-griditem--editing)
+  .ov-responsive-toolbar
+  > :not(.ov-widget-header-kebab) {
+  display: none;
+}
+
+/* A widget's actions slot is always a single small kebab trigger, never the
+   multi-control case .ui-panel__head's own flex-wrap exists for — so the
+   title and the kebab always share one row instead of the kebab dropping to
+   a wasted line of its own. */
+.ov-widget-panel.panel > .ui-panel__head {
+  flex-wrap: nowrap;
+}
+
+/* The title row may shrink: a long title + meta ("Next 30 days • S$5,135 going out") ran past
+   the card's edge on a narrow card instead of ellipsizing its meta. */
+.ov-widget-panel .ui-panel__titlerow,
+.ov-widget-panel .ui-panel__title {
+  min-width: 0;
+}
+
+.ov-widget-panel .ui-panel__title {
+  overflow: hidden;
+}
+
+.ov-widget-panel .ui-panel__title > span {
+  max-width: 100%;
+}
+
+/* Widget controls are buttons, not text links — centre them on the title row rather than the
+   DS head's baseline alignment, which drops a 28px ⋯ a few pixels off the title. */
+.ov-widget-panel.panel > .ui-panel__head:not(:has(.ui-panel__subtitle)) {
+  align-items: center;
+}
+
+.ov-widget-panel.panel > .ui-panel__head:not(:has(.ui-panel__subtitle)) .ui-panel__actions {
+  align-self: center;
+}
+
+/* ── Shared widget-shell chrome (title meta, fill/fit body) ──────────────── */
+
+.ov-t-meta {
+  color: var(--faint);
+  font-weight: 400;
+}
+
+/* ── Chart-type toggle (ChartToggleMenu): a fixed-size single button, never
+   wraps, opening a popover for the actual options — replaces the old
+   3-pill SegmentedControl, which was wide enough to wrap onto its own line
+   under the title the moment the header needed real space. Popover chrome
+   (`.kebab-menu`/`.kebab-item`) is reused as-is from KebabMenu's own CSS;
+   only the trigger and the active-item indicator are new here. */
+.ov-charttoggle__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--text);
+  font-size: var(--text-xs, 11px);
+  font-weight: 600;
+  padding: 3px var(--space-2, 8px);
+  cursor: pointer;
+  white-space: nowrap;
+  flex: none;
+}
+
+.ov-charttoggle__trigger[aria-expanded='true'] {
+  border-color: var(--line-strong, var(--line));
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+@media (hover: hover) {
+  .ov-charttoggle__trigger:hover {
+    border-color: var(--line-strong, var(--line));
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+  }
+}
+
+.ov-charttoggle__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 96px;
+}
+
+.ov-charttoggle__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ov-charttoggle__item--active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Widget-title inline rename (item 6) — double-click swaps the title TEXT
+   for an `<input>` in the exact same slot, so it inherits the title's own
+   typography for free (WidgetShell.tsx's `WidgetTitle`). */
+.ov-widget-title-rename {
+  cursor: text;
+}
+
+.ov-title-edit {
+  font: inherit;
+  color: var(--ink);
+  letter-spacing: inherit;
+  text-transform: inherit;
+  background: var(--bg-2, var(--surface));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm, 6px);
+  outline: none;
+  padding: 3px 8px;
+  margin: -3px 0;
+  min-width: 6ch;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.ov-title-edit:focus,
+.ov-title-edit:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.ov-fill {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+}
+
+/* Copied line-for-line from the handoff (overview.css:157) — the port had
+   dropped `flex: 1 1 auto` + `min-height: 0` entirely, leaving only
+   `overflow: auto` with no actual height CONSTRAINT. A flex child with no
+   min-height:0 doesn't shrink below its content's natural size, so this
+   grew to fit whatever was inside it (a donut chart included) instead of
+   being bounded by the widget's real available space — and a chart that
+   measures its own size against THAT unconstrained ancestor renders a
+   circle too big for the box, clipped by the panel's own overflow. */
+.ov-fit {
+  flex: 1 1 auto !important;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ov-body-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.ov-subhead-fixed {
+  flex: 0 0 auto;
+}
+
+/* ── Shared responsive widget primitives ──────────────────────────────────
+   These classes describe recurring layout transformations; widgets only
+   provide semantic content and keep their existing visual treatment. Every
+   query is scoped to the card's own `ovcard` container, never the viewport. */
+
+.ov-responsive-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ov-responsive-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.ov-responsive-metric-row > * {
+  min-width: 0;
+}
+
+@container ovcard (max-width: 360px) {
+  .ov-responsive-metric-row {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    row-gap: 6px;
+  }
+
+  .ov-responsive-metric-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .ov-responsive-metric-amount {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .ov-responsive-metric-detail {
+    margin-left: 0;
+  }
+
+  .ov-responsive-toolbar {
+    width: 100%;
+  }
+
+  /* A toolbar with real controls (the Holdings map's Sector/Type/Account/None picker) drops
+     to its own row under the title on a narrow card. The widget head is `nowrap` for the
+     kebab-only case (overview.css `.ov-widget-panel.panel > .ui-panel__head`), which on a
+     phone left the 250px picker on the title row and squeezed "HOLDINGS MAP" and its
+     subtitle into one word per line. The kebab rides the second row's right edge. */
+  .ov-widget-panel.panel
+    > .ui-panel__head:has(.ov-responsive-toolbar > :not(.ov-widget-header-kebab)) {
+    flex-wrap: wrap;
+  }
+
+  .ov-widget-panel.panel
+    > .ui-panel__head:has(.ov-responsive-toolbar > :not(.ov-widget-header-kebab))
+    .ui-panel__actions {
+    flex: 1 1 100%;
+  }
+
+  .ov-widget-panel.panel
+    > .ui-panel__head:has(.ov-responsive-toolbar > :not(.ov-widget-header-kebab))
+    .ov-widget-header-kebab {
+    margin-left: auto;
+  }
+
+  /* On its own row the control stays one line — the toolbar scrolls sideways if it must
+     (`overflow-x: auto` above) rather than stacking "None" under the other options. */
+  .ov-responsive-toolbar .ui-segmented {
+    flex-wrap: nowrap;
+    flex: none;
+  }
+}
+
+.ov-more {
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--faint);
+  text-align: center;
+}
+
+.ov-widget-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.ov-widget-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.ov-lucius-spark {
+  color: var(--lucius);
+}
+
+/* ── Delegated chart tooltip (tip.ts) ──────────────────────────────────── */
+
+.ov-htip {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  background: var(--surface, #14161c);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(2px);
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+  max-width: 240px;
+}
+
+.ov-htip-t {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.ov-htip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.ov-htip-r {
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Touch only — appended by tooltip.ts after a tap pins the popup on a clickable element. */
+.ov-htip-tap {
+  color: var(--faint);
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+/* ── Timeline primitive ───────────────────────────────────────────────── */
+
+/* Two rows: the track (with its dots) on top, the tick labels on their own row beneath —
+   the labels used to sit on the track's own line and a "today" dot landed on its label. */
+.ov-tl-strip {
+  position: relative;
+  height: 30px;
+  margin: 4px 0 12px;
+}
+
+.ov-tl-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 7px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--line);
+}
+
+.ov-tl-dot {
+  position: absolute;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--surface);
+  transform: translate(-50%, -50%);
+}
+
+.ov-tl-tick {
+  position: absolute;
+  bottom: 0;
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--faint);
+}
+
+.ov-tl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ov-tl-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.ov-tl-row.past {
+  opacity: 0.5;
+}
+
+.ov-tl-date {
+  color: var(--faint);
+  min-width: 60px;
+}
+
+.ov-tl-mk {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.ov-tl-lbl {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-tl-amt {
+  color: var(--muted);
+}
+
+/* ── Add-widget picker ────────────────────────────────────────────────── */
+
+.ov-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Sticky search + group tabs (item 18) — pinned above the scrolling tile grid. No drop
+   shadow under it: on a light surface it read as a smudge below the chips (owner, 2026-09-20);
+   the opaque background is separation enough. */
+.ov-picker-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--modal-bg, var(--surface));
+  padding-bottom: 10px;
+}
+
+.ov-picker-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.ov-picker-tab {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ov-picker-tab.active {
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  border-color: var(--accent);
+}
+
+.ov-picker-lucius-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--lucius);
+  background: color-mix(in srgb, var(--lucius) 8%, transparent);
+  cursor: pointer;
+  text-align: left;
+}
+
+.ov-picker-lucius-desc {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.ov-picker-build {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ov-picker-build-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ov-picker-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* FIXED height, not max-height — a max-height shrinks to fit whatever the
+     active group tab happens to have, so the whole modal visibly resized
+     shorter/taller every time you switched tabs. A constant height with a
+     scrollbar (blank space below a sparse tab is fine) reads as stable. */
+  height: 60vh;
+  overflow: auto;
+}
+
+.ov-picker-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.ov-picker-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+
+/* Hover richness (item 18): border AND background AND the icon swatch all
+   shift to accent together, not just the border. */
+@media (hover: hover) {
+  .ov-picker-tile:hover {
+    border-color: var(--accent);
+    background: var(--hover);
+  }
+}
+
+.ov-picker-tile-icon {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface2, rgba(255, 255, 255, 0.04));
+  color: var(--muted);
+  transition:
+    color 0.12s,
+    background 0.12s;
+}
+
+@media (hover: hover) {
+  .ov-picker-tile:hover .ov-picker-tile-icon {
+    color: var(--accent);
+    background: var(--hover-surface);
+  }
+}
+
+.ov-picker-tile-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ov-picker-tile-desc {
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.ov-picker-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--faint);
+}
+
+/* ── Add-widget picker: flat filtered row-card layout + Lucius build mode
+   (parity items 3/4/5/6/8, AddWidgetPicker.tsx) — additive only. Every rule
+   above this block is untouched and still referenced (ov-picker-tile /
+   ov-picker-tiles stay the base class, layered with a --row/--flat modifier
+   below rather than edited in place); the old ov-picker-group / ov-picker-
+   group-title rules were removed because the flat (not sectioned) layout
+   has no group-header wrapper left to use them. ────────────────────────── */
+
+/* Item 3: one flat 2-col grid of horizontal row-cards (mirrors the
+   prototype's tray-grid/tray-card), replacing the per-group vertical-tile
+   grouping. */
+.ov-picker-tiles--flat {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.ov-picker-tile--row {
+  flex-direction: row;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+}
+
+.ov-picker-tile-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 2px;
+}
+
+/* Item 6: the trailing "+" affordance the hover CSS already anticipated. */
+.ov-picker-tile-plus {
+  flex: none;
+  display: inline-flex;
+  color: var(--faint);
+  transition: color 0.12s;
+}
+
+@media (hover: hover) {
+  .ov-picker-tile:hover .ov-picker-tile-plus {
+    color: var(--accent);
+  }
+}
+
+/* Item 4: suggestion chips + explainer caption in build mode. */
+.ov-picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ov-picker-chip {
+  background: var(--surface2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  border-radius: var(--radius-pill, 999px);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition:
+    color 0.12s,
+    border-color 0.12s,
+    background 0.12s;
+}
+
+@media (hover: hover) {
+  .ov-picker-chip:hover {
+    color: var(--ink);
+    border-color: var(--hover-line);
+    background: color-mix(in srgb, var(--lucius) 8%, var(--surface2, transparent));
+  }
+}
+
+.ov-picker-build-hint {
+  font-size: 12px;
+  color: var(--faint);
+  line-height: 1.4;
+}
+
+/* Item 5: "← All widgets" back-link, replacing the plain Cancel button. */
+.ov-picker-build-actions--split {
+  justify-content: space-between;
+}
+
+.ov-picker-back {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+@media (hover: hover) {
+  .ov-picker-back:hover {
+    color: var(--ink);
+  }
+}
+
+/* Item 8: transient "widget added" toast (OvToast.tsx). */
+.ov-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120;
+  background: var(--modal-bg, var(--surface));
+  border: 1px solid var(--modal-border, var(--line));
+  border-radius: var(--radius-pill, 999px);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.4));
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  animation: ovMenuIn 0.14s ease;
+}
+
+@keyframes ovMenuIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* ── Section-add prompt (lightweight inline dialog) ───────────────────── */
+
+.ov-section-prompt {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 320px;
+}
+
+.ov-section-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── Set-alert dialog ─────────────────────────────────────────────────── */
+
+.ov-alert-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ov-alert-copy {
+  margin: 0;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.ov-alert-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.ov-alert-row .ui-select {
+  flex: 1;
+  min-width: 140px;
+}
+
+.ov-alert-row .ui-input {
+  width: 110px;
+}
+
+.ov-alert-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── Display panel ────────────────────────────────────────────────────── */
+
+.ov-display-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ov-display-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ov-display-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ov-display-label {
+  font-size: 12px;
+  color: var(--faint);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ov-display-limit-seg {
+  display: flex;
+  gap: 4px;
+}
+
+.ov-display-limit-opt {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ov-display-limit-opt.active {
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  border-color: var(--accent);
+}
+
+.ov-display-swatches {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ov-display-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ov-display-swatch.active {
+  border-color: var(--ink);
+}
+
+.ov-display-swatch--none {
+  background: none;
+  border: 1px dashed var(--line);
+  position: relative;
+}
+
+.ov-display-swatch--none::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: var(--line);
+  border-radius: 50%;
+}
+
+.ov-display-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── Empty states ─────────────────────────────────────────────────────── */
+/* The EMPTY-BOOK dashboard (no accounts/holdings at all) is DataInHero.tsx — the design
+   system's EmptyState. This block is a SMALLER, different case: the book has data, but the
+   current custom VIEW has no widgets yet — an in-page prompt, not a full hero, since it's a
+   much lower-stakes moment. */
+.overview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 48px 32px;
+  border: 1.5px dashed var(--line-strong, var(--line));
+  border-radius: var(--radius-2xl, 20px);
+}
+.overview-empty__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ── Responsive: mobile collapses to a single stacked column ──────────── */
+
+/* Same stacking rules as the @media block below, but keyed off DashboardGrid.tsx's
+   `narrow` state (the GRID CONTAINER's own measured width, e.g. shrunk by the Lucius
+   panel) instead of window.innerWidth — a @media query can only ever see the viewport,
+   so it missed a plenty-wide window with little room actually left for the grid. */
+.ov-grid--narrow {
+  min-height: auto !important;
+}
+
+/* No min-height: the card inside sizes to its own content (the body's
+   height: 100% resolves against this auto height), so a floor here only left
+   an empty band under a short card — a one-line "All clear" read as a gap. */
+.ov-grid--narrow .ov-griditem {
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  margin-bottom: 12px;
+  left: auto !important;
+  top: auto !important;
+}
+
+.ov-grid--narrow .ov-resize-handle {
+  display: none;
+}
+
+/* Phone Customize: one toolbar row ABOVE each card — move ↑↓ on the left, Edit + remove on the
+   right. The controls used to float half over the card's top edge in two stacked groups (the
+   desktop hover chrome), covering the title. */
+.ov-grid--narrow .ov-griditem--editing {
+  padding-top: 40px;
+}
+
+.ov-grid--narrow .ov-griditem--editing .ov-w-ctrls {
+  top: 2px;
+  right: 0;
+}
+
+.ov-grid--narrow .ov-griditem.ov-griditem--editing .ov-widget-panel > .ui-panel__head {
+  padding-right: 0;
+}
+
+.ov-grid--narrow .ov-griditem--editing .ov-w-ctrl,
+.ov-grid--narrow .ov-griditem--editing .ov-w-remove {
+  height: 32px;
+  min-width: 32px;
+}
+
+.ov-grid--narrow .ov-griditem--editing .ov-w-remove {
+  width: 32px;
+}
+
+.ov-grid--narrow .ov-card-mobile-move {
+  display: flex;
+  position: absolute;
+  top: 2px;
+  left: 0;
+  z-index: 3;
+  gap: 6px;
+}
+
+.ov-grid--narrow .ov-card-mobile-move button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface2, rgba(0, 0, 0, 0.3));
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  /* Title + subtitle scroll away and only the tabs pin, to leave a phone as much room
+     for widgets as possible. `display: contents` dissolves the wrapper box: a sticky
+     element is confined to its parent, and the tabs are that wrapper's last child, so
+     inside it they could never pin at all. */
+  .ov-pagehead {
+    display: contents;
+  }
+
+  .ov-page--editing .ov-pagehead {
+    position: sticky;
+    top: var(--ov-topbar-h, 0px);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 12px);
+    background: var(--bg);
+    box-shadow: 0 0 0 100vmax var(--bg);
+    clip-path: inset(0 -100vmax);
+  }
+
+  /* Keep the page identity and compact Customize affordance on one line.
+     The shared PageHeader stacks by default on phones; Overview intentionally
+     opts out because its single icon action fits without stealing a row. */
+  .ov-pagehead > .ui-page-header {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3, 8px);
+  }
+
+  .ov-pagehead > .ui-page-header .ui-page-header__titles {
+    flex: 1 1 auto;
+  }
+
+  .ov-page--editing .ui-page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ov-page--editing .ui-page-header .ui-page-header__actions {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .ov-page--editing .ov-page-actions {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+
+  .ov-page--editing .ov-pagehead > .ui-page-header .ui-page-header__titles {
+    display: none;
+  }
+
+  .ov-page--editing {
+    padding-bottom: 96px;
+  }
+
+  .ov-page--editing .ov-page-actions__commit,
+  .ov-page--editing .ov-reset-changes {
+    display: none;
+  }
+
+  .ov-mobile-edit-dock {
+    position: fixed;
+    left: max(var(--space-4, 16px), var(--safe-l, 0px));
+    right: max(var(--space-4, 16px), var(--safe-r, 0px));
+    z-index: calc(var(--z-sticky, 30) + 1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--modal-border);
+    border-radius: var(--radius-pill);
+    background: var(--modal-bg);
+    box-shadow: var(--shadow-modal);
+  }
+
+  .ov-mobile-edit-dock > .ui-btn {
+    height: 32px;
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .ov-mobile-edit-dock > * {
+    flex: 1 1 0;
+  }
+
+  .ov-mobile-edit-dock > :last-child {
+    flex-grow: 1.35;
+  }
+
+  .ov-page-actions__tools {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ov-page-actions__tools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ov-page-actions__tools > *,
+  .ov-page-actions__commit,
+  .ov-page-actions__commit > * {
+    flex: none;
+  }
+
+  .ov-customize-button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .ov-customize-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .ov-grid {
+    min-height: auto !important;
+  }
+
+  .ov-griditem {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    margin-bottom: 12px;
+    left: auto !important;
+    top: auto !important;
+  }
+
+  .ov-resize-handle {
+    display: none;
+  }
+
+  .ov-card-mobile-move {
+    display: flex;
+    position: absolute;
+    top: 6px;
+    right: 40px;
+    z-index: 3;
+    gap: 4px;
+  }
+
+  .ov-card-mobile-move button {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--surface2, rgba(0, 0, 0, 0.3));
+    color: var(--muted);
+  }
+
+  .ov-picker-tiles {
+    grid-template-columns: 1fr;
+  }
+
+  .ov-view-tabs {
+    position: sticky;
+    top: var(--ov-topbar-h, 0px);
+    z-index: 29;
+    box-shadow: 0 0 0 100vmax var(--bg);
+    clip-path: inset(0 -100vmax);
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    /* A flex item's default min-width is `auto` (its content's intrinsic
+       width), which lets a nowrap tab row force the flex parent — and the
+       PAGE — wider than the viewport even though this element itself has
+       overflow-x: auto. min-width: 0 lets it actually clip/scroll internally
+       instead of pushing the page into horizontal overflow (measured: 7px on
+       a 390px viewport before this fix). */
+    min-width: 0;
+    max-width: 100%;
+    /* Sticky headers must fully occlude the widget controls scrolling under
+       them; translucency made the right-edge buttons visibly bleed through. */
+    background: var(--bg);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ov-page--editing .ov-view-tabs {
+    position: relative;
+    top: auto;
+    z-index: auto;
+  }
+
+  .ov-view-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ov-view-tab {
+    flex: none;
+    white-space: nowrap;
+  }
+}
+
+/* ── In-app confirm dialog content; ui/Modal owns the overlay. ─────────── */
+
+.ov-confirm {
+  width: min(400px, 100%);
+  background: var(--modal-bg, var(--surface));
+  border: 1px solid var(--modal-border, var(--line));
+  border-radius: var(--radius-xl, 14px);
+  box-shadow: var(--shadow-lg, 0 20px 50px rgba(0, 0, 0, 0.45));
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ov-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ── Fullscreen widget detail view (item 7) — ONE seamless card split:
+   widget content fills the LEFT at full height, an Appearance/Data/Lucius
+   rail sits on the RIGHT. Ported from the handoff's `.ov-fs-*` (~100 lines). ── */
+
+.ov-fs-backdrop {
+  position: fixed;
+  inset: 0;
+  /* Clears the docked Lucius side panel via the same --chat-width the shell
+     reserves for it (mirrors .modal-overlay's own pattern) — the fullscreen
+     widget view fits within the remaining space instead of covering Lucius,
+     so the panel stays visible and usable while a widget is expanded. */
+  right: var(--chat-width, 0px);
+  z-index: var(--z-modal, 500);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+}
+
+.ov-fs-shell {
+  position: relative;
+  width: min(1180px, 100%);
+  height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+/* Full screen (view): the widget alone, Edit + close in a slim bar above it — never floating
+   over the card, whose own header controls (chart type) sit at its top-right. */
+.ov-fs-viewbar {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 0;
+  background: var(--bg);
+}
+
+.ov-fs-viewbar .ov-fs-close {
+  position: static;
+}
+
+.ov-fs-shell--view .ov-fs-preview {
+  padding-top: 10px;
+}
+
+.ov-fs-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-fs-preview {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  padding: 22px;
+  background: var(--bg);
+}
+
+.ov-fs-card {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+.ov-fs-card > .panel,
+.ov-fs-card > section {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  /* Same implicit-overflow-x-auto spec quirk as .ov-griditem__body .panel
+     above (a non-`visible` value on one overflow axis makes `visible` on
+     the other compute to `auto`) — this was very likely the real source of
+     the fullscreen "Where it's held" panel showing a horizontal scrollbar
+     and hard-clipped legend values, independent of whether the donut/legend
+     stacking below is applying correctly. */
+  overflow-x: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.3));
+  /* Same bug as .ov-griditem__body .panel above, same fix: without this,
+     the .ov-fill/.ov-fit child's `flex: 1 1 auto` has no flex container to
+     stretch within and shrinks to its own content — a chart rendering tiny
+     in the middle of the much larger fullscreen panel instead of filling
+     it. */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fullscreen-only breakdown/pie layout — ported from the prototype's own
+   fullscreen breakdown-pie override (overview.css:728-731), ADDITIVE to the grid-card
+   side-by-side layout above (`.ov-breakdown-pie`, unscoped), not a replacement
+   of it. In the much wider fullscreen panel, growing the legend sideways to
+   fill leftover row width (the grid-card layout's `flex: 1 1 150px`) left a
+   big gap between the donut and the legend and a bigger dead zone to the
+   legend's right — the prototype's actual answer is to STACK them (donut
+   centered on top, legend width-capped and centered below), not to widen the
+   side-by-side row further. */
+.ov-fs-card .ov-breakdown-pie {
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.ov-fs-card .ov-breakdown-pie .ov-breakdown-list {
+  flex: 0 0 auto;
+  width: min(560px, 100%);
+  margin: 0 auto;
+}
+
+.ov-fs-card .ov-breakdown-pie .ov-breakdown-row {
+  padding: 9px 0;
+}
+
+.ov-fs-card--no-title .ui-panel__head {
+  display: none;
+}
+
+/* Accent tint (item 15) in the fullscreen preview — mirrors the grid card's
+   own `.ov-griditem--accent` wash so the widget reads the same both places. */
+.ov-fs-card--accent > .panel {
+  background: color-mix(in srgb, var(--wtint, var(--accent)) 9%, var(--surface));
+  border-color: color-mix(in srgb, var(--wtint, var(--accent)) 32%, var(--line));
+}
+
+.ov-fs-data {
+  flex: 0 0 auto;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ov-fs-data-sec {
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-fs-rail {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* The floating Lucius dock (lucius.css .lx-dock) sits above every modal at the viewport's
+     bottom-right — exactly over Discard / Save. The rail's foot clears it. */
+  padding: 4px 20px 72px;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .ov-fs-shell {
+    flex-direction: column;
+  }
+  .ov-fs-rail {
+    flex: 0 0 auto;
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+}
+
+/* ── Phone: the widget full screen (view) — clear of the status bar / notch and the home bar,
+   the close and Edit controls in thumb reach at the top. Its settings open as a bottom sheet
+   (.ov-fs-sheet inside the shared .kebab-sheet) instead of a column under the preview. ── */
+/* Phone full-screen view: the widget inside a tall bottom sheet. The sheet's title replaces the
+   widget's own title (its controls — chart type, toggles — stay), and the card's frame goes, so
+   the widget reads as the sheet's content rather than a card in a card. */
+.ov-fs-sheet-view {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.ov-fs-sheet-view .ov-fs-card > .panel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  /* The light theme's card shadow drew a faint box inside the sheet. */
+  box-shadow: none;
+}
+
+.ov-fs-sheet-view .ov-fs-card > .panel > .ui-panel__head > .ui-panel__heading {
+  display: none;
+}
+
+.ov-fs-sheet-view .ov-fs-card > .panel > .ui-panel__head:not(:has(.ui-panel__actions)) {
+  display: none;
+}
+
+.ov-fs-sheet {
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-fs-bar-h {
+  padding: 14px 2px 8px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 700;
+}
+
+.ov-fs-ctl {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 2px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
+}
+
+.ov-fs-ctl:last-child {
+  border-bottom: none;
+}
+
+.ov-fs-ctl-l {
+  flex: none;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 700;
+}
+
+.ov-fs-ctl-hint {
+  font-size: 11px;
+  color: var(--faint);
+  line-height: 1.35;
+}
+
+.ov-fs-ctl-wide {
+  align-items: flex-start;
+}
+
+.ov-fs-seg {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.ov-fs-chip {
+  padding: 5px 13px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .ov-fs-chip:hover {
+    color: var(--ink);
+    border-color: var(--faint);
+  }
+}
+
+.ov-fs-chip.on {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.ov-fs-chip--viz {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-fs-chip--viz svg {
+  flex: none;
+}
+
+.ov-fs-input {
+  padding: 7px 10px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ov-fs-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ov-fs-sw-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ov-fs-sw {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+
+.ov-fs-sw--none {
+  background: var(--surface2, rgba(255, 255, 255, 0.06));
+}
+
+.ov-fs-sw--none::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border-top: 1.5px solid var(--faint);
+  transform: rotate(45deg);
+}
+
+.ov-fs-sw.on {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 3.5px var(--ink);
+}
+
+.ov-fs-inline {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 14px 30px;
+  align-items: flex-start;
+}
+
+.ov-fs-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ov-fs-actions {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  padding: 14px 0 2px;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.ov-fs-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 20;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface2, rgba(255, 255, 255, 0.06));
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    color 0.12s,
+    border-color 0.12s;
+}
+
+@media (hover: hover) {
+  .ov-fs-close:hover {
+    color: var(--ink);
+    border-color: var(--faint);
+  }
+}
+
+/* Fullscreen fill model, by content role — width-driven charts fill the
+   height; the widget's own CSS otherwise governs (this port's content lanes
+   haven't yet declared per-shape min-heights the way the handoff's own
+   fullscreen chart/sankey rules do; a lane adding a full-bleed chart here
+   gets one card-level default, not a bespoke per-shape rule set). */
+.ov-fs-card .ov-fill {
+  min-height: 260px;
+}
+
+/* Lucius prompt + Regenerate (item 7's Lucius group). */
+.ov-fs-prompt {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 88px;
+  resize: vertical;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.ov-fs-prompt:focus {
+  outline: none;
+  border-color: var(--lucius);
+}
+
+.ov-fs-regen {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid color-mix(in srgb, var(--lucius) 50%, transparent);
+  background: color-mix(in srgb, var(--lucius) 14%, transparent);
+  color: var(--lucius);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .ov-fs-regen:hover {
+    background: color-mix(in srgb, var(--lucius) 22%, transparent);
+  }
+}
+
+/* Generic FX-pairs editor (item 9's `type: 'pairs'` control). */
+.ov-fs-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ov-fs-pairlist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ov-fs-pairchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface2, rgba(255, 255, 255, 0.06));
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-fs-pairchip button {
+  border: none;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+@media (hover: hover) {
+  .ov-fs-pairchip button:hover {
+    color: var(--bad);
+  }
+}
+
+.ov-fs-pairadd {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ov-fs-pairadd select {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3px 5px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11.5px;
+}
+
+.ov-fs-pairslash {
+  color: var(--faint);
+}
+
+.ov-fs-pairbtn {
+  padding: 3px 9px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .ov-fs-pairbtn:hover {
+    filter: brightness(1.08);
+  }
+}

@@ -1,0 +1,448 @@
+/*
+ * Activity sub-tab styles (.act-*)
+ *
+ * .act-* are verbatim from /tmp/proto-design.css with var(--token) substitutions
+ * where the prototype value matches an existing design token.
+ *
+ * Integration note: the check-css-classes script includes this file via
+ * CSS_FILES so all tokens declared here are known-defined.
+ */
+
+/* ── Filter row ── */
+/* Activity table card — flush (no inner padding) so each section (filter row,
+   table, footer) controls its own inset. Using .panel here would add 20px on
+   top of the filter row's 15/18 → double padding. */
+.act-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.act-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+/* Type chips: left side */
+.act-filter {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Range dropdown + search: right side — stay on one aligned line */
+.act-filter-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+/* The merged type filter (FilterSheet) exists for the phone toolbar only — on a wide
+   layout the chips are visible and the button would duplicate them. */
+.act-type-filter {
+  display: none;
+}
+
+.act-chip {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-3);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 13px;
+  cursor: pointer;
+  transition:
+    color 0.14s,
+    border-color 0.14s,
+    background 0.14s;
+}
+
+@media (hover: hover) {
+  .act-chip:hover {
+    color: var(--muted);
+  }
+}
+
+.act-chip.on {
+  color: var(--ink);
+  background: var(--selected);
+  border-color: var(--line-strong);
+}
+
+/* Search input — 34px height to match dropdown */
+.act-search-c {
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  width: 160px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  transition: border-color 0.14s;
+}
+
+.act-search-c::placeholder {
+  color: var(--faint);
+}
+
+.act-search-c:focus {
+  border-color: var(--accent);
+}
+
+/* ── Date-range dropdown ── */
+.act-dd-wrap {
+  position: relative;
+  flex: none;
+}
+
+/* Button: 34px height, matches search */
+.act-dd-btn {
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.14s,
+    background 0.14s;
+}
+
+@media (hover: hover) {
+  .act-dd-btn:hover {
+    border-color: var(--line-strong);
+    background: var(--hover);
+  }
+}
+
+/* Caret icon inside button */
+.cv {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.55;
+  margin-left: 2px;
+}
+
+/* Transparent scrim — covers the page behind the open menu for outside-click close */
+.act-dd-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: transparent;
+}
+
+/* Dropdown menu */
+.act-dd-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 100;
+  min-width: 200px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Menu item */
+.act-dd-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  background: none;
+  border: none;
+  padding: 8px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+@media (hover: hover) {
+  .act-dd-item:hover {
+    background: var(--hover);
+  }
+}
+
+/* Check icon on the selected item */
+.ck {
+  font-size: 11px;
+  color: var(--accent);
+  flex: none;
+}
+
+/* ── Activity table ── */
+.act-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  min-width: 680px;
+}
+
+.act-tbl thead th {
+  text-align: left;
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 600;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.act-tbl thead th.num {
+  text-align: right;
+}
+
+.act-tbl td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  text-align: left;
+}
+
+.act-tbl tbody tr:last-child td {
+  border-bottom: none;
+}
+
+@media (hover: hover) {
+  .act-tbl tbody tr:hover {
+    background: var(--hover);
+  }
+}
+
+.act-tbl td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Table cell atoms ── */
+.act-date {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.act-sym {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.act-detail {
+  color: var(--muted);
+}
+
+.act-acct {
+  color: var(--faint);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* ── Type pills ── */
+.act-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.act-pill.buy {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.act-pill.sell {
+  color: var(--muted);
+  background: var(--bg-2);
+}
+
+.act-pill.income {
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+}
+
+.act-pill.deposit {
+  color: var(--act-teal);
+  background: color-mix(in srgb, var(--act-teal) 15%, transparent);
+}
+
+/* Shares moved between the user's own accounts (one row, "→ account") — the same "movement, not P&L" teal as cash in/out. */
+.act-pill.transfer {
+  color: var(--act-teal);
+  background: color-mix(in srgb, var(--act-teal) 15%, transparent);
+}
+
+.act-pill.vest {
+  color: var(--crypto);
+  background: color-mix(in srgb, var(--crypto) 16%, transparent);
+}
+
+.act-pill.fee {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent);
+}
+
+/* ── Phone card list (ActivityCards) ───────────────────────────────────────────
+   Rendered INSTEAD of .act-tbl below the phone breakpoint (ActivityTab swaps on
+   useIsMobile) — a 680px-min table inside a 390px card meant a sideways scroll to reach
+   the amount (owner, 2026-09-04). One two-line card per event:
+     ┌ symbol [pill] ─────────────── amount ┐
+     └ detail ─────────────── date · account ┘ */
+.act-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.act-mcard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'main amt'
+    'sub meta';
+  column-gap: 12px;
+  row-gap: 3px;
+  align-items: baseline;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.act-mcard:last-child {
+  border-bottom: none;
+}
+
+.act-mcard-main {
+  grid-area: main;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--text-md);
+}
+
+.act-mcard-main > .act-sym {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.act-mcard-amt {
+  grid-area: amt;
+  font-size: var(--text-md);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.act-mcard-sub {
+  grid-area: sub;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.act-mcard-meta {
+  grid-area: meta;
+  color: var(--faint);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.act-cards-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--faint);
+  font-size: var(--text-sm);
+}
+
+/* ── Phone toolbar ─────────────────────────────────────────────────────────────
+   Same breakpoint as useIsMobile (639.98px). The chip row collapses into the FilterSheet
+   button and the three remaining controls share ONE line — search first and filling the
+   leftover width, because it is the control you type into (mirrors .mk-toolbar). */
+@media (max-width: 639.98px) {
+  .act-filter-row {
+    padding: 12px 16px;
+    flex-wrap: nowrap;
+  }
+
+  .act-filter {
+    display: none;
+  }
+
+  .act-filter-right {
+    margin-left: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .act-type-filter {
+    display: flex;
+  }
+
+  .act-search-c {
+    order: -1;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    font-size: var(--text-md);
+    border-radius: 9px;
+  }
+
+  .act-dd-wrap {
+    flex: none;
+  }
+
+  /* The range button only triggers here — on a phone the list opens as the standard
+     bottom sheet (BottomSheet), never as the anchored .act-dd-menu. */
+  .act-dd-btn {
+    font-size: var(--text-md);
+    border-radius: 9px;
+    padding: 0 9px;
+  }
+}
+
+/* (The Realized-G/L tax callout's .act-tax* styles were removed with the banner —
+   owner call 2026-07-12; tax surfacing on this tab returns as its own feature.) */

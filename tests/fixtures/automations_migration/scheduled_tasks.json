@@ -1,0 +1,96 @@
+[
+  {
+    "id": "task_a",
+    "title": "Morning balance note",
+    "action": "notify",
+    "message": "Check the operating account before work.",
+    "prompt": null,
+    "agent_id": null,
+    "transaction": null,
+    "channels": [
+      "telegram",
+      "email"
+    ],
+    "card_account_id": null,
+    "card_name": null,
+    "schedule": {
+      "type": "daily",
+      "time": "08:15",
+      "tzid": "Asia/Singapore"
+    },
+    "status": "active",
+    "next_run_at": "2026-08-03T08:15:00+08:00",
+    "last_run_at": "2026-08-02T08:15:00+08:00",
+    "last_status": "ok",
+    "run_count": 7,
+    "max_runs": 30,
+    "source": "ui",
+    "created_at": "2026-05-06T07:08:09+08:00",
+    "updated_at": "2026-07-08T09:10:11+08:00"
+  },
+  {
+    "id": "task_b",
+    "title": "Monthly rent",
+    "action": "create_transaction",
+    "message": null,
+    "prompt": null,
+    "agent_id": null,
+    "transaction": {
+      "kind": "expense",
+      "from_account_id": "acc_card",
+      "to_account_id": null,
+      "amount": 2400.5,
+      "currency": "SGD",
+      "category": "cat_housing",
+      "description": "Apartment rent",
+      "tags": [
+        "fixed"
+      ]
+    },
+    "channels": null,
+    "card_account_id": null,
+    "card_name": null,
+    "schedule": {
+      "type": "monthly",
+      "day": 31,
+      "time": "09:05",
+      "tzid": "Asia/Singapore"
+    },
+    "status": "completed",
+    "next_run_at": null,
+    "last_run_at": "2026-07-31T09:05:00+08:00",
+    "last_status": "error: duplicate refused",
+    "run_count": 12,
+    "max_runs": 12,
+    "source": "lucius",
+    "created_at": "2025-08-01T09:05:00+08:00",
+    "updated_at": "2026-07-31T09:05:02+08:00"
+  },
+  {
+    "id": "task_c",
+    "title": "Review investments",
+    "action": "run_agent",
+    "message": null,
+    "prompt": null,
+    "agent_id": "agent_a",
+    "transaction": null,
+    "channels": null,
+    "card_account_id": null,
+    "card_name": null,
+    "schedule": {
+      "type": "weekly",
+      "day": "sun",
+      "time": "18:30",
+      "tzid": "Asia/Singapore"
+    },
+    "status": "cancelled",
+    "next_run_at": "2026-08-09T18:30:00+08:00",
+    "last_run_at": "2026-07-26T18:30:00+08:00",
+    "last_status": "ok",
+    "run_count": 4,
+    "max_runs": null,
+    "source": "system",
+    "created_at": "2026-03-01T18:30:00+08:00",
+    "updated_at": "2026-07-27T10:00:00+08:00"
+  }
+]

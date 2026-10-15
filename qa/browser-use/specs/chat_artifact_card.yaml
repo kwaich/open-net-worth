@@ -1,0 +1,75 @@
+# Spec: CH-ART-01 — Lucius artifact card renders an inline HTML chart
+# Covers: create_artifact tool → SSE `artifact` event → useChat block →
+#         MessageBubble → ArtifactCard (sandboxed iframe render, download +
+#         fullscreen affordances). Does NOT verify the download file contents.
+# Requires ANTHROPIC_API_KEY; SKIP otherwise.
+id: CH-ART-01
+acceptance_ids:
+  - CHAT-ARTIFACT-INLINE-RENDER
+title: "Lucius renders an inline artifact card when asked for a chart"
+description: >
+  When the user asks Lucius to render a small chart, Lucius calls the
+  create_artifact tool with a self-contained HTML document. The frontend must
+  show an artifact card inline in the chat: a header with the artifact title,
+  a download button and a fullscreen button, and a body that renders the
+  document inside a sandboxed iframe.
+
+acceptance_criteria:
+  - AC1: The chat panel can be opened and a message can be sent
+  - AC2: Lucius returns a response (not an error)
+  - AC3: An artifact card appears in the thread (title header + iframe body)
+  - AC4: The iframe actually rendered content (not a blank/error body)
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open chat.
+  Find and click the chat button (speech bubble icon, "Ask Lucius", or a chat
+  toggle button). Wait for the chat panel to slide in from the right.
+
+  Step 2 — Check for API key.
+  If you see a message about "API key", "not configured", or a setup notice,
+  return "SKIP: AI not configured — cannot test artifact card".
+
+  Step 3 — Request a chart artifact.
+  Click the message input at the bottom of the chat panel.
+  Type exactly: use the create_artifact tool to render a tiny dark-themed bar chart titled Demo Chart with two bars, then say done
+  Press Enter to send.
+
+  Step 4 — Wait for Lucius to respond.
+  Wait up to 90 seconds. Lucius will call the create_artifact tool; a card
+  should appear in the chat thread while or after the reply streams.
+
+  Step 5 — Check the artifact.
+  The artifact renders SEAMLESSLY inline in the assistant's reply (no bordered
+  card or header bar). Look for:
+    - rendered chart content in the chat flow (bars / shapes on a dark
+      background), NOT raw HTML source text
+    - two small floating icon buttons (download arrow, expand/maximize) at the
+      top-right of the artifact area — they are faint until you hover over the
+      artifact, so move the mouse over the chart to confirm them
+  If "Could not load artifact" is shown, that is a FAIL.
+
+  Do NOT click the download button.
+
+  Decision:
+  - If the artifact card is visible with rendered (non-blank) chart content:
+    return "PASS: artifact card rendered inline — <describe the card>"
+  - If Lucius replied but no artifact card appeared after 20 more seconds:
+    return "FAIL: reply finished but no artifact card appeared"
+  - If the card shows an error body:
+    return "FAIL: artifact card error state — <text>"
+  - If an error message appeared in the chat:
+    return "FAIL: error in chat — <error text>"
+  - If no reply arrived within the timeout:
+    return "FAIL: no reply from Lucius within timeout"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CH-ART-01-artifact-card.png"
+  note: >
+    SKIP is acceptable when ANTHROPIC_API_KEY is not configured. The spec
+    validates the full path: chat input → /api/chat SSE → create_artifact tool
+    → artifact event → ArtifactCard sandboxed-iframe render. The iframe runs
+    with sandbox="allow-scripts" only; rendered chart pixels prove the CSP +
+    sandbox combination still allows inline drawing.

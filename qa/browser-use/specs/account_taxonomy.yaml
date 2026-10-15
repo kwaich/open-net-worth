@@ -1,0 +1,87 @@
+# Spec: ACCOUNT-TAXONOMY-01 — Seven account types, one number for cash on hand
+# Verifies ADR 2026-09-07-seven-account-types-one-axis: cash on hand is the SAME
+# figure on Accounts / Assets / Plan → Cash Flow; settlement cash (incl. margin)
+# belongs to Investments, never netted into cash; a single-kind Assets card shows
+# no breakdown rows while a two-or-more-kind card does; the runway "Investments"
+# toggle brings in positions net of settlement cash; and net worth excl. retirement
+# renders as a second line whenever a retirement account exists.
+id: ACCOUNT-TAXONOMY-01
+# 5 checks across three tabs (Accounts, Assets, Plan, Overview) — needs more than
+# the default 120s.
+timeout_seconds: 360
+acceptance_ids:
+  - AT-1
+  - AT-2
+  - AT-3
+  - AT-4
+  - AT-5
+acceptance_criteria:
+  - 'AT1: "Cash on hand" reads the SAME figure on Accounts, Assets ("Cash & Savings"), and Plan → Cash Flow ("Cash on hand · today") — equal to the sum of every `cash`-type account'
+  - 'AT2: On Assets, an Investment account with settlement cash ≠ 0 makes the Investments card show "Positions" and "Settlement cash" rows summing to its headline'
+  - 'AT3: On Assets, with no fixed-deposit account, the Cash & Savings card shows its headline only — no breakdown rows'
+  - 'AT4: On Plan → Cash Flow, toggling "Investments" raises the starting balance by positions net of settlement cash and updates the runway months'
+  - 'AT5: On Overview, a retirement account produces a second "excl. retirement" line under the net-worth headline'
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully. Use the demo/seeded book,
+  which includes a bank (cash) account, an investment account carrying negative
+  settlement cash (a drawn margin balance), and a retirement account.
+
+  Step 1: Read "Cash on hand" on Accounts (AT-1).
+  Click "Accounts" (or "Cash") in the left sidebar. Record the sidebar's total figure
+  labelled "Cash on hand" (or the on-budget cash total at the top of the Cash group).
+  Record: CASH_ON_HAND_ACCOUNTS = the exact figure shown.
+  Take a screenshot.
+
+  Step 2: Read "Cash & Savings" on Assets and compare (AT-1, AT-2, AT-3).
+  Click "Assets" in the left sidebar. Wait for the register to render.
+  Record: CASH_SAVINGS_HEADLINE = the headline figure on the "Cash & Savings" card.
+  Confirm CASH_SAVINGS_HEADLINE equals CASH_ON_HAND_ACCOUNTS (same number).
+  Record: CASH_SAVINGS_HAS_ROWS = "yes" if the Cash & Savings card shows any rows
+  beneath its headline (e.g. "Cash on hand" / "Fixed deposits"), else "no". If there is
+  no fixed-deposit account in the book, this MUST be "no" (AT-3) — the card shows the
+  headline alone.
+  On the "Investments" card, record: INVESTMENTS_HAS_ROWS = "yes" if it shows "Positions"
+  and "Settlement cash" rows, else "no". Because the book's investment account carries a
+  nonzero settlement cash balance, this MUST be "yes" (AT-2) — record POSITIONS_ROW and
+  SETTLEMENT_CASH_ROW and confirm they sum to the card's headline.
+  Take a screenshot of both cards.
+
+  Step 3: Read "Cash on hand · today" on Plan → Cash Flow and compare (AT-1, AT-4).
+  Click "Plan" in the left sidebar, then the "Cash Flow" sub-tab. Wait for it to render.
+  Record: CASH_ON_HAND_PLAN = the figure labelled "Cash on hand · today" (or the
+  runway's starting balance before any toggle is enabled).
+  Confirm CASH_ON_HAND_PLAN equals CASH_ON_HAND_ACCOUNTS.
+  Record: RUNWAY_MONTHS_BEFORE = the runway months shown with both toggles off.
+  Find the "Investments" toggle and switch it ON. Wait 1 second.
+  Record: STARTING_BALANCE_AFTER = the starting balance now shown (should have risen by
+  the investment account's positions net of its settlement cash).
+  Record: RUNWAY_MONTHS_AFTER = the runway months now shown (should differ from
+  RUNWAY_MONTHS_BEFORE since the starting balance changed).
+  Take a screenshot with the toggle ON.
+  Turn the "Investments" toggle back OFF.
+
+  Step 4: Confirm the "excl. retirement" line on Overview (AT-5).
+  Click "Overview" (or the Dashboard) in the left sidebar. Wait for it to render.
+  Locate the net-worth headline. Record: EXCL_RETIREMENT_LINE = "yes" if a second line
+  reading something like "excl. retirement: <amount>" appears directly under the net-worth
+  headline, else "no". Because the book has a retirement account, this MUST be "yes".
+  Take a screenshot of the net-worth widget.
+
+  Decision:
+  - If CASH_SAVINGS_HEADLINE != CASH_ON_HAND_ACCOUNTS or CASH_ON_HAND_PLAN != CASH_ON_HAND_ACCOUNTS:
+    return "FAIL: cash on hand disagrees across Accounts/Assets/Plan (AT-1)"
+  - If INVESTMENTS_HAS_ROWS != "yes":
+    return "FAIL: Investments card did not show Positions/Settlement cash rows despite nonzero settlement cash (AT-2)"
+  - If CASH_SAVINGS_HAS_ROWS != "no":
+    return "FAIL: Cash & Savings card showed rows with no fixed-deposit account (AT-3)"
+  - If RUNWAY_MONTHS_AFTER == RUNWAY_MONTHS_BEFORE or STARTING_BALANCE_AFTER is unchanged:
+    return "FAIL: Investments runway toggle did not change the starting balance/runway (AT-4)"
+  - If EXCL_RETIREMENT_LINE != "yes":
+    return "FAIL: no excl.-retirement line shown despite a retirement account existing (AT-5)"
+  - Else:
+    return "PASS: cash on hand is one number, settlement cash and rows behave per type, runway toggle and excl.-retirement line both work"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "ACCOUNT-TAXONOMY-01-cash-on-hand.png"

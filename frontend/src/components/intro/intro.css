@@ -1,0 +1,699 @@
+/* Feature intro (FeatureIntro) and page tour (PageTour). */
+
+/* The intro shows its title under the hero, so the header keeps only the close button,
+   floated over the hero's corner; the real title stays in the header for screen readers. */
+.ui-modal-card.fi-modal {
+  position: relative;
+}
+.fi-modal .ui-modal__head {
+  position: absolute;
+  top: var(--space-5);
+  right: var(--space-5);
+  z-index: 1;
+}
+.fi-modal .ui-modal__heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.ui-modal-card--md.fi-modal {
+  width: min(560px, 100%);
+}
+.fi-modal .ui-modal__body {
+  scrollbar-gutter: auto;
+}
+/* The hero runs flush to the card's top and sides, so the card drops its padding and the
+   text and actions below carry it instead (a bleed inside the scrolling body would clip). */
+.ui-modal-card.fi-modal {
+  padding: 0;
+}
+.fi-hero {
+  padding: var(--space-6) var(--space-5);
+  border-bottom: 1px solid var(--modal-border);
+  background: radial-gradient(
+    60% 60% at 50% 50%,
+    color-mix(in srgb, var(--primary) 11%, var(--modal-bg)) 0%,
+    var(--modal-bg) 72%
+  );
+}
+/* A screen preview fills the hero edge to edge, so it starts below the close button rather
+   than under it (the × sat on the preview's top-right card). The orbit leaves that corner
+   empty on its own. */
+.fi-hero:has(> .fi-pv) {
+  position: relative;
+  padding-top: calc(var(--space-9) + var(--space-5));
+}
+/* In the corner the close button leaves free, level with it. */
+.fi-pv-example {
+  position: absolute;
+  top: var(--space-5);
+  left: var(--space-5);
+}
+.fi-modal .fi-title,
+.fi-modal .fi-why {
+  margin-left: var(--space-8);
+  margin-right: var(--space-8);
+}
+.fi-modal .fi-hero + .fi-title,
+.fi-modal .fi-hero + .fi-why {
+  margin-top: var(--space-7);
+}
+.fi-modal .ui-modal__footer {
+  padding: var(--space-7) var(--space-8) var(--space-8);
+}
+.fi-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.fi-why {
+  list-style: none;
+  margin: 14px 0 6px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.fi-why li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.fi-why li svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ink);
+}
+.fi-why b {
+  font-weight: 600;
+  color: var(--ink);
+}
+.fi-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.fi-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+.fi-progress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.fi-progress-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+.fi-progress-dot--on {
+  width: 16px;
+  border-radius: 3px;
+  background: var(--primary);
+}
+/* Anything that hands work to Lucius wears Lucius's colour, not the action blue. */
+.ui-btn.fi-lucius {
+  background: var(--lucius);
+  border-color: var(--lucius);
+  color: var(--ink-on-accent);
+}
+@media (hover: hover) {
+  .ui-btn.fi-lucius:hover {
+    background: color-mix(in srgb, var(--lucius) 85%, #fff);
+    border-color: color-mix(in srgb, var(--lucius) 85%, #fff);
+    color: var(--ink-on-accent);
+  }
+}
+
+/* The tour sits over the page and takes its clicks: a step is read, not interacted with. */
+.pt-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+}
+.pt-dim {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.6);
+}
+.pt-spot {
+  position: fixed;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--primary) 70%, transparent),
+    0 0 0 9999px rgb(0 0 0 / 0.6);
+  pointer-events: none;
+  animation: pt-ring 0.24s ease-out;
+}
+/* A step arrives where it is: the ring settles in and the card fades up. Nothing slides
+   across the screen between steps or chases the page while it scrolls. */
+@keyframes pt-ring {
+  from {
+    box-shadow:
+      0 0 0 6px color-mix(in srgb, var(--primary) 0%, transparent),
+      0 0 0 9999px rgb(0 0 0 / 0.6);
+  }
+}
+@keyframes pt-card-in {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pt-layer .pt-spot,
+  .pt-layer .pt-card {
+    animation: none;
+  }
+}
+.pt-card {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px 12px;
+  box-sizing: border-box;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  animation: pt-card-in 0.18s ease-out;
+}
+/* The pointer: on the card's edge nearest the lit element, under that element's left side. */
+.pt-card::before {
+  content: '';
+  position: absolute;
+  left: var(--arrow-x, 32px);
+  width: 11px;
+  height: 11px;
+  background: var(--modal-bg);
+  transform: rotate(45deg);
+}
+.pt-card--below::before {
+  top: -6px;
+  border-left: 1px solid var(--modal-border);
+  border-top: 1px solid var(--modal-border);
+}
+.pt-card--above::before {
+  bottom: -6px;
+  border-right: 1px solid var(--modal-border);
+  border-bottom: 1px solid var(--modal-border);
+}
+.pt-card--free::before {
+  display: none;
+}
+.pt-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.pt-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.pt-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+.pt-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.pt-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+.pt-dot--on {
+  width: 16px;
+  border-radius: 3px;
+  background: var(--primary);
+}
+.pt-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pt-skip {
+  border: 0;
+  background: none;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.pt-skip:hover {
+  color: var(--ink);
+}
+
+/* OrbitHero: what a screen holds, orbiting its title. The ring
+   turns once a minute; each icon turns back the other way so it stays upright. */
+.fi-orbit {
+  --r: 128px;
+  position: relative;
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+}
+.fi-orbit-ring {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fi-orbit-ring::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--r) * 2);
+  height: calc(var(--r) * 2);
+  transform: translate(-50%, -50%);
+  border: 1px dashed var(--line-strong);
+  border-radius: 50%;
+}
+.fi-orbit-item {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  transform: rotate(var(--a)) translate(var(--r)) rotate(calc(-1 * var(--a)));
+}
+.fi-orbit-dot {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--c) 16%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--c) 36%, var(--line));
+  color: var(--c);
+}
+.fi-orbit-item--own .fi-orbit-dot {
+  background: var(--modal-bg);
+  border: 1px dashed var(--line-strong);
+  color: var(--muted);
+}
+.fi-orbit-title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 224px;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.fi-orbit-title span {
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fi-orbit-ring {
+    animation: fi-orbit-turn 60s linear infinite;
+  }
+  .fi-orbit-dot {
+    animation: fi-orbit-turn 60s linear infinite reverse;
+  }
+}
+@keyframes fi-orbit-turn {
+  to {
+    rotate: 360deg;
+  }
+}
+/* A phone sheet is narrower than the ring: shrink the whole figure, text included. */
+@media (max-width: 420px) {
+  .fi-orbit {
+    scale: 0.84;
+    margin: -24px auto;
+  }
+}
+
+/* The empty Lucius home's ways to start. */
+.fi-starts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: var(--space-6);
+}
+/* The Lucius home is a grid with the greeting in a middle row; the ways to start sit just
+   under it (under the composer on desktop), never auto-placed into the empty top row. */
+.lucius-mobile-shell .lx-side-scroll-inner--home > .fi-starts {
+  grid-row: 3;
+  align-self: start;
+  margin-top: var(--space-5);
+  padding-inline: 8px;
+}
+.lucius-home-main .lx-side--home-empty .lx-side-scroll-inner--home:has(> .fi-starts) {
+  grid-template-rows: minmax(clamp(32px, 15vh, 200px), 1fr) auto auto auto minmax(0, 1fr);
+}
+.lucius-home-main .lx-side-scroll-inner--home > .fi-starts {
+  grid-row: 4;
+  align-self: start;
+  /* Measured in pixels, not element boxes: the chips sit the same VISIBLE distance below the
+     composer as the greeting's letters sit above it (25px; owner, 2026-10-10). */
+  margin-top: 1px;
+}
+.lucius-home-main
+  .lx-side--home-empty
+  .lx-side-scroll-inner--home:has(> .fi-starts)
+  .lx-automation-activity {
+  grid-row: 5;
+}
+/* Borderless: a raised surface and a soft, subtle shadow mark each as tappable (owner,
+   2026-10-10 — the outlined pills read as form chips). Hover lifts it a touch and tints it
+   toward Lucius; keyboard focus keeps a visible ring. */
+.fi-start {
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--bg-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 15px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+@media (hover: hover) {
+  .fi-start:hover {
+    background: color-mix(in srgb, var(--lucius) 10%, var(--bg-2));
+    transform: translateY(-1px);
+  }
+}
+.fi-start:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--lucius) 60%, transparent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fi-start {
+    transition: none;
+  }
+  .fi-start:hover {
+    transform: none;
+  }
+}
+
+/* ── Screen previews (IntroPreviews): a small copy of the screen, built from ui/ pieces.
+   Decorative and never interactive; sized to sit in the hero without scrolling. ── */
+.fi-pv {
+  width: min(360px, 100%);
+  margin: 0 auto;
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.fi-pv--wide {
+  width: 100%;
+}
+.fi-pv .panel {
+  margin: 0;
+  box-shadow: var(--shadow-sm);
+}
+/* A preview's panel title is short: the heading shrinks to it, so a badge or an action sits on
+   the same line instead of wrapping under the heading's 220px default basis. */
+.fi-pv .ui-panel__heading {
+  flex-basis: auto;
+}
+.fi-pv .ui-panel__head {
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+.fi-pv .ui-panel__actions {
+  align-self: center;
+}
+/* The legacy `.panel h2` bottom margin made the title row twice the title's height, so a badge
+   or a total beside it centred below the text. */
+.fi-pv .ui-panel__title {
+  margin: 0;
+}
+/* A flush preview panel's head lines up with its rows' inset, so a total sits over its column. */
+.fi-pv .panel--flush > .ui-panel__head {
+  padding: var(--space-4) var(--space-4) 0;
+}
+.fi-pv-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+/* The label takes the row's slack: the first child, or the one after a leading icon, swatch or
+   ticker chip. */
+.fi-pv-row > :first-child:not(.fi-pv-icon, .fi-pv-swatch, .fi-pv-tk),
+.fi-pv-row > .fi-pv-icon + *,
+.fi-pv-row > .fi-pv-swatch + *,
+.fi-pv-row > .fi-pv-tk + * {
+  flex: 1;
+  min-width: 0;
+}
+.fi-pv-swatch {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.fi-pv .panel--flush .fi-pv-row,
+.fi-pv-goal {
+  padding: var(--space-2) var(--space-4);
+}
+.fi-pv .panel--flush .fi-pv-row + .fi-pv-row,
+.fi-pv-goal + .fi-pv-goal {
+  border-top: 1px solid var(--line);
+}
+.fi-pv-goal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fi-pv-goal .fi-pv-row {
+  padding: 0;
+}
+.fi-pv-pos {
+  color: var(--good);
+}
+.fi-pv-sources {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+}
+.fi-pv-source {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--surface2);
+  box-shadow: var(--shadow-sm);
+}
+/* The three sources' lines meet in the ledger below: the picture's one idea. */
+.fi-pv-flow {
+  display: block;
+  width: 72%;
+  height: 22px;
+  margin: 0 auto;
+  overflow: visible;
+}
+.fi-pv-flow path {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+.fi-pv-cat {
+  --cc: var(--muted);
+  flex: none;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--cc) 14%, transparent);
+  color: var(--cc);
+  font-size: var(--text-2xs);
+  font-weight: 500;
+}
+.fi-pv-amt {
+  flex: none;
+  min-width: 64px;
+  text-align: right;
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.fi-pv-icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.fi-pv-icon--bank {
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+}
+.fi-pv-icon--card {
+  color: var(--cat-vehicle);
+  background: color-mix(in srgb, var(--cat-vehicle) 14%, transparent);
+}
+.fi-pv-icon--mail {
+  color: var(--cat-watch);
+  background: color-mix(in srgb, var(--cat-watch) 14%, transparent);
+}
+.fi-pv-slash {
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+.fi-pv-icon--bad {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+}
+.fi-pv-icon--good {
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+}
+.fi-pv-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.fi-pv-pair .panel,
+.fi-pv-env {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fi-pv-chart {
+  display: block;
+  width: 100%;
+  height: 84px;
+  overflow: visible;
+}
+.fi-pv-line {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.fi-pv-band {
+  fill: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.fi-pv-mark {
+  stroke: var(--faint);
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+}
+.fi-pv-dot--good {
+  fill: var(--good);
+}
+.fi-pv-dot--bad {
+  fill: var(--bad);
+}
+.fi-pv-legend {
+  display: flex;
+  gap: var(--space-4);
+}
+.fi-pv-stat {
+  display: flex;
+  flex-direction: column;
+}
+/* A ticker chip, tinted by its holding's colour, the way Holdings lists a symbol. */
+.fi-pv-tk {
+  flex: none;
+  min-width: 40px;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-align: center;
+  color: var(--tk);
+  background: color-mix(in srgb, var(--tk) 14%, transparent);
+}
+.fi-pv-tk--accent {
+  --tk: var(--primary);
+}
+.fi-pv-tk--watch {
+  --tk: var(--cat-watch);
+}
+.fi-pv-tk--warn {
+  --tk: var(--warn);
+}
+.fi-pv-move {
+  flex: none;
+  min-width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.fi-pv-spark {
+  display: block;
+  width: 100%;
+  height: 30px;
+  margin: var(--space-1) 0;
+}
+.fi-pv-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  color: var(--warn);
+}
+.fi-pv-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fi-pv-widgets {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  grid-template-rows: auto auto;
+  gap: var(--space-3);
+}
+.fi-pv-widgets > :first-child {
+  grid-row: span 2;
+}
+.fi-pv-big {
+  display: block;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}

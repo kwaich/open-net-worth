@@ -1,0 +1,1891 @@
+/* Automation v3 handoff. Product data and actions are real; geometry follows the frozen prototype. */
+/* No max-width here. This element is a direct child of .app-layout, i.e. the reading BAND,
+   which caps it at --content-max (index.css). `max-width: 100%` re-opened it to the full
+   column — and won, because this file is UNLAYERED while index.css lives inside @layer, and
+   unlayered rules beat every layered rule regardless of specificity (owner, 2026-08-24:
+   Automations ran edge-to-edge while every other tab was capped). It was redundant beside
+   `width: 100%` anyway. */
+.automations-page {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+}
+.a3-masthead-head {
+  flex: 1;
+  min-width: 0;
+}
+/* No min-height: it forced ~20px of dead space above the title that no other tab has.
+   Every other page (Intel, Profile, Inbox…) renders PageHeader directly and lets the
+   content set the height. NOT sticky — the title scrolls away with the rest of the
+   page; only the toolbar below it (search/sort/add) stays pinned. */
+.rd-masthead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 2px 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+/* NO horizontal padding and NO max-width centring: .app-layout already owns the content band
+   (16px phone / 24px desktop), the same band Intel, Plan and Overview sit in. This wrap used to
+   add 28px on top of a 1060px centred box, which put the cards at 318px while its own header sat
+   at 252px and every other tab sat at 224px — misaligned with the rest of the app AND with
+   itself. The masthead below is zeroed for the same reason. */
+.a3-wrap {
+  width: 100%;
+  padding: 22px 0 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  box-sizing: border-box;
+}
+.a3-action-error {
+  max-width: 1004px;
+  margin: 12px auto 0;
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--bad) 35%, var(--line));
+  border-radius: var(--radius-md);
+  color: var(--bad);
+  font-size: 12.5px;
+}
+.a3-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.a3-toolbar > .grow,
+.a3-instr-foot .grow,
+.a3-runcard .grow {
+  flex: 1;
+  min-width: 12px;
+}
+.a3-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.a3-search svg {
+  position: absolute;
+  left: 10px;
+  color: var(--faint);
+  pointer-events: none;
+}
+.a3-search input {
+  width: 190px;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 10px 0 30px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  outline: none;
+  transition:
+    border-color 0.12s ease,
+    width 0.16s ease;
+}
+.a3-search input:focus {
+  border-color: var(--accent);
+  width: 230px;
+}
+.a3-search input::placeholder {
+  color: var(--fg-3);
+}
+.rd-kebab {
+  position: relative;
+}
+.rd-kebab-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (hover: hover) {
+  .rd-kebab-btn:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+}
+.rd-kebab-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  display: block;
+}
+.rd-kebab-pop {
+  position: absolute;
+  right: 0;
+  top: 30px;
+  z-index: var(--z-dropdown);
+  min-width: 150px;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+}
+.rd-kebab-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .rd-kebab-item:hover {
+    background: var(--hover);
+  }
+}
+.rd-kebab-item.danger {
+  color: var(--bad);
+}
+.rd-kebab-item:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+.a3-sort {
+  height: 30px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .a3-sort:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+}
+.a3-sort b {
+  color: var(--ink);
+  font-weight: 700;
+}
+.a3-new-button {
+  height: 30px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  background: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .a3-new-button:hover {
+    filter: brightness(1.08);
+  }
+}
+.a3-new-pop {
+  min-width: 190px;
+}
+.a3-toolbar-chevron {
+  display: block;
+  flex: none;
+  align-self: center;
+}
+/* Sort has no icon on desktop (the words carry it); the icon IS the control on mobile. */
+.a3-sort .a3-toolbar-ic {
+  display: none;
+}
+.a3-toolbar-label {
+  display: inline;
+}
+.a3-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.a3-menu-row .a3-menu-ic {
+  display: inline-flex;
+  flex: none;
+  color: var(--faint);
+}
+.a3-menu-row .a3-menu-ic.lucius {
+  color: var(--lucius);
+}
+@media (hover: hover) {
+  .a3-menu-row:hover .a3-menu-ic {
+    color: var(--ink);
+  }
+}
+@media (hover: hover) {
+  .a3-menu-row:hover .a3-menu-ic.lucius {
+    color: var(--lucius);
+  }
+}
+.a3-menu-check {
+  display: inline-block;
+  width: 10px;
+  flex: none;
+}
+.a3-empty {
+  padding: 38px 8px;
+  text-align: center;
+  color: var(--faint);
+  font-size: 13px;
+}
+.a3-sec-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.a3-sec-label .rule {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+/* Two per row, capped — not auto-fill. Once the wrap stopped being max-width:1060px (so its
+   header would align with the rest of the app), auto-fill happily made FOUR columns on a
+   wide screen and the cards turned into unreadable stubs. Two is the same shape Skills and
+   the analyst grids use. */
+.a3-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
+  min-width: 0;
+}
+.a3-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 14px 15px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  box-sizing: border-box;
+}
+@media (hover: hover) {
+  .a3-row:hover {
+    background: var(--hover-surface);
+    border-color: color-mix(in srgb, var(--hover-line) 30%, var(--line));
+  }
+}
+.a3-row.off .a3-row-title,
+.a3-row.off .a3-row-blurb {
+  opacity: 0.55;
+}
+.a3-row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: flex-start;
+}
+.a3-row-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.a3-row-title .t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.a3-row-blurb {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  min-height: calc(2 * 1.5em);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.a3-when {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  text-align: left;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--good) 26%, transparent);
+}
+.a3-when.evt {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.a3-when.off {
+  color: var(--faint);
+  background: var(--bg-2);
+  border-color: var(--line);
+}
+.a3-when svg {
+  flex: none;
+  opacity: 0.85;
+  margin-top: 1px;
+  align-self: flex-start;
+}
+.a3-row-right {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+}
+.a3-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--bg-2);
+  white-space: nowrap;
+}
+.a3-tag.good {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 32%, var(--line));
+  background: color-mix(in srgb, var(--good) 10%, transparent);
+}
+.a3-tag.warn {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 32%, var(--line));
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+/* Breathing room between the automations list and the template picker. The wrap's
+   flex gap alone read as "one more list section" rather than a separate offer. */
+.a3-tpl-section {
+  margin-top: 26px;
+}
+/* The label was flush against the grid while sitting 26px below the list, so it read as
+   attached to the wrong side. The cards carry 12px of their own top padding, so 12px
+   here lands ~24px optically — balanced against the 26px above. */
+.a3-tpl-section .a3-sec-label {
+  margin-bottom: 12px;
+}
+/* Spent one-shots and capped schedules, collapsed under the live list. */
+.a3-done-section {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.a3-done-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.a3-done-chevron {
+  transition: transform 120ms ease;
+}
+.a3-done-chevron.open {
+  transform: rotate(90deg);
+}
+.a3-done-clear {
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+@media (hover: hover) {
+  .a3-done-toggle:hover {
+    color: var(--muted);
+  }
+}
+.a3-tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 4px 22px;
+  min-width: 0;
+}
+.a3-tpl {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 12px 10px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+}
+@media (hover: hover) {
+  .a3-tpl:hover {
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+  }
+}
+.a3-tpl-ic {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+@media (hover: hover) {
+  .a3-tpl:hover .a3-tpl-ic {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--hover-line) 45%, var(--line));
+  }
+}
+.a3-tpl-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.a3-tpl-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.a3-tpl-blurb {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.a3-tpl-when {
+  font-size: 11px;
+  color: var(--faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.a3-crumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--faint);
+}
+.a3-crumb button {
+  font: inherit;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+}
+@media (hover: hover) {
+  .a3-crumb button:hover {
+    color: var(--ink);
+    text-decoration: underline;
+  }
+}
+/* The wrap's top padding spaces the list view's masthead; on a detail page the crumb is the
+   first line, so it sits flush under the ticker and hugs the title below it. Desktop only:
+   the crumb is display:none on a phone but still matches, and zeroing the padding there
+   pushed the title under the status bar. */
+@media (min-width: 601px) {
+  .a3-wrap:has(> .a3-crumb) {
+    padding-top: 0;
+  }
+  .a3-crumb + .a3-detail-head {
+    margin-top: -10px;
+  }
+}
+.a3-crumb .cur {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.a3-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+/* Compact (Setup/History as subtabs, not side-by-side columns): the tab strip right
+   below already draws its own underline, so this border only doubled it up. */
+.a3-detail-head.compact {
+  border-bottom: none;
+}
+.a3-detail-title h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.a3-detail-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.5;
+}
+/* One row: status (left) and edit/delete/run (right), so the head is title + ONE
+   action bar instead of title + button row + status row stacked three deep. */
+.a3-detail-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.a3-detail-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.a3-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+.a3-iconbtn {
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0;
+  flex: none;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .a3-iconbtn:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+}
+@media (hover: hover) {
+  .a3-iconbtn.danger:hover {
+    color: var(--bad);
+    background: color-mix(in srgb, var(--bad) 12%, transparent);
+  }
+}
+.a3-iconbtn.sm {
+  width: 26px;
+  height: 26px;
+}
+.a3-cols {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.05fr) minmax(0, 1fr);
+  gap: 34px;
+  align-items: start;
+}
+.a3-col-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+.a3-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.a3-block-h {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.a3-block-h .count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--faint);
+}
+.a3-block-h svg {
+  color: var(--good);
+  flex: none;
+}
+.a3-block-note,
+.a3-history-note,
+.a3-muted {
+  font-size: 11.5px;
+  color: var(--fg-3);
+  line-height: 1.5;
+}
+.a3-trigger-detail,
+.a3-model-detail {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.a3-trigger-detail svg {
+  color: var(--accent);
+  flex: none;
+}
+.a3-model-detail svg {
+  color: var(--faint);
+}
+.a3-model-detail b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.a3-instr {
+  font-size: 13px;
+  line-height: 1.62;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+.a3-instr.clamped {
+  max-height: 132px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent);
+  mask-image: linear-gradient(180deg, #000 60%, transparent);
+}
+.a3-instr.clickable {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .a3-instr.clickable:hover {
+    color: var(--ink);
+  }
+}
+.a3-linkbtn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  align-self: flex-start;
+}
+@media (hover: hover) {
+  .a3-linkbtn:hover {
+    text-decoration: underline;
+  }
+}
+.a3-hist {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* Full length with nothing open — the list IS the page then, and a box scrolling inside a
+   page that also scrolls was two scrollbars for one list. With a run open it becomes a
+   scroller about five rows tall so the card stays on screen, still holding every run. */
+.a3-hist.is-windowed {
+  max-height: 232px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.a3-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 10px 11px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+}
+@media (hover: hover) {
+  .a3-hist-row:hover {
+    background: var(--hover);
+  }
+}
+.a3-hist-row.on {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.a3-hist-row .when {
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.a3-hist-row .note {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.a3-hist-row .cost {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rd-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.rd-dot.good {
+  background: var(--good);
+}
+.rd-dot.bad {
+  background: var(--bad);
+}
+.rd-dot.warn {
+  background: var(--warn);
+}
+.rd-dot.run {
+  background: var(--accent);
+}
+.a3-hist-chevron {
+  color: var(--fg-3);
+  flex: none;
+}
+.a3-history-empty {
+  font-size: 12.5px;
+  color: var(--faint);
+  padding: 10px 11px;
+}
+.a3-hand {
+  flex: none;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--warn);
+  display: flex;
+}
+.a3-live {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: a3pulse 1.4s ease-in-out infinite;
+}
+@keyframes a3pulse {
+  50% {
+    opacity: 0.28;
+  }
+}
+.a3-cost-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.a3-cost-nums {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.a3-cost-num {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.a3-cost-num .k,
+.a3-costgrid .k {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.a3-cost-num .v {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.a3-cost-num .s {
+  font-size: 10.5px;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.a3-cost-bars-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.a3-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 46px;
+  overflow: hidden;
+}
+.a3-bars[data-dense] {
+  gap: 2px;
+}
+.a3-bar {
+  flex: 1;
+  min-width: 1px;
+  border-radius: 3px 3px 1px 1px;
+  background: color-mix(in srgb, var(--accent) 55%, var(--surface2));
+  position: relative;
+}
+.a3-bar.bad {
+  background: color-mix(in srgb, var(--bad) 62%, var(--surface2));
+}
+@media (hover: hover) {
+  .a3-bar:hover {
+    background: var(--accent);
+  }
+}
+@media (hover: hover) {
+  .a3-bar.bad:hover {
+    background: var(--bad);
+  }
+}
+.a3-bars-x {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--fg-3);
+}
+.a3-bars-note {
+  font-size: 11px;
+  color: var(--fg-3);
+}
+.a3-tokens {
+  display: flex;
+  gap: 16px;
+  font-size: 11.5px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  border-top: 1px solid var(--line);
+  padding-top: 11px;
+}
+.a3-tokens b {
+  color: var(--muted);
+  font-weight: 600;
+}
+.a3-allow {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.a3-allow-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.a3-allow-row:last-child {
+  border-bottom: none;
+}
+@media (hover: hover) {
+  .a3-allow-row:hover {
+    background: var(--hover);
+  }
+}
+.a3-allow-row .mark {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+.a3-allow-row.internal .mark {
+  border-radius: 5px;
+  font-size: 7.5px;
+  letter-spacing: 0.04em;
+}
+.a3-allow-row b {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.a3-allow-row .d {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.a3-allow-row .revoke {
+  width: 24px;
+  height: 24px;
+  opacity: 0;
+}
+.a3-allow-row:focus-within .revoke {
+  opacity: 1;
+}
+@media (hover: hover) {
+  .a3-allow-row:hover .revoke {
+    opacity: 1;
+  }
+}
+.a3-runcard {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 16px 0 10px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.a3-runcard.bad {
+  border-color: color-mix(in srgb, var(--bad) 30%, var(--line));
+}
+.a3-runcard .top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.a3-runcard .top .when {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.a3-runcard .err {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--bad);
+}
+.a3-runcard .note {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+.a3-runcard .rsec {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+.a3-runcard .top + .rsec {
+  margin-top: 5px;
+}
+.a3-runcard .rsec-h {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+.a3-runcard .rsec-h b {
+  font: inherit;
+}
+.a3-runcard .rsec-h svg {
+  flex: none;
+  color: var(--faint);
+}
+.a3-runcard .rsec-h span {
+  margin-left: auto;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.a3-runcard details summary {
+  list-style: none;
+  cursor: pointer;
+}
+.a3-runcard details summary svg {
+  transition: transform 0.12s;
+}
+.a3-runcard details[open] summary svg {
+  transform: rotate(90deg);
+}
+.a3-context-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.a3-runcard .ctxg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.a3-runcard .ctxk {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.a3-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.a3-step .box {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  font-size: 9.5px;
+}
+.a3-step.done .box {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.a3-step.done .l {
+  color: var(--fg-3);
+  text-decoration: line-through;
+}
+/* The task the run is on RIGHT NOW. Ringed and in full ink so the eye lands on it, with a
+   slow pulse that says "still going" — without it an in-progress task was pixel-identical
+   to one that had not started, and the card could not answer "where is it now". */
+.a3-step.doing .box {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  animation: a3-step-pulse 1.6s ease-in-out infinite;
+}
+.a3-step.doing .l {
+  color: var(--ink);
+  font-weight: 500;
+}
+.a3-step.failed .box {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+.a3-step.failed .l {
+  color: var(--bad);
+}
+@keyframes a3-step-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .a3-step.doing .box {
+    animation: none;
+  }
+}
+.a3-file {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--muted);
+  padding: 4px 0;
+}
+.a3-file .kind {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--faint);
+  letter-spacing: 0.02em;
+}
+.a3-file .n {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.a3-conn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.a3-conn span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 3px 9px;
+}
+.a3-costgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 14px;
+}
+.a3-costgrid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.a3-costgrid .v {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.a3-editor-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.a3-draft-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--lucius) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--lucius) 28%, var(--line));
+  border-radius: var(--radius-lg);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.a3-draft-note > span:first-child {
+  color: var(--lucius);
+}
+.a3-field-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: block;
+}
+.a3-field-label .req,
+.a3-trow-label .req {
+  color: var(--bad);
+}
+.rd-input {
+  width: 100%;
+  height: 34px;
+  box-sizing: border-box;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.rd-input:focus {
+  border-color: var(--accent);
+}
+.a3-instr-box {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 11px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.a3-instr-box:focus-within {
+  border-color: var(--accent);
+}
+.a3-instr-box textarea {
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: vertical;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 300px;
+  max-height: min(560px, 62vh);
+  overflow-y: auto;
+}
+.a3-instr-box textarea::placeholder {
+  color: var(--fg-3);
+}
+.a3-instr-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+/* The menu opens UPWARD. This control lives at the foot of the instructions box, which
+   sits near the bottom of a scrollable modal body — an absolutely-positioned menu dropping
+   downward is clipped by that scroll container, so the options were sliced in half. There
+   is always room above it (the textarea). */
+.a3-trigger-summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 9px 11px;
+  margin-top: -6px;
+}
+.a3-trigger-summary.issue {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+}
+.a3-trigger-summary-ic {
+  flex: none;
+  display: flex;
+}
+.a3-trigger-summary .grow {
+  flex: 1;
+  min-width: 0;
+}
+.a3-trigger-summary-text {
+  display: block;
+  color: var(--ink);
+}
+.a3-trigger-missing {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.a3-trigger-error {
+  color: var(--bad);
+}
+.a3-trigger-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 2px 0;
+  margin-top: -4px;
+}
+.a3-mini-select {
+  height: 27px;
+  box-sizing: border-box;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  padding: 0 7px;
+  outline: none;
+}
+.a3-mini-select:focus {
+  border-color: var(--accent);
+}
+.a3-mini-select.needed {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+.a3-seg {
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.a3-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 27px;
+  padding: 0 13px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* On a phone the two halves split the width evenly. */
+@media (max-width: 600px) {
+  .a3-seg {
+    align-self: stretch;
+  }
+  .a3-seg-btn {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+}
+.a3-seg-btn.on {
+  background: var(--selected);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.a3-trows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.a3-trow {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+.a3-trow-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: right;
+}
+.a3-trow-ctl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+/* One width for every control. A native <select> otherwise sizes itself to its LONGEST
+   option, so "Account" (long account names) came out wider than every row around it. */
+.a3-trow-ctl > .a3-mini-select,
+.a3-trow-ctl > .ui-datefield,
+.a3-trow-ctl > .a3-combo {
+  flex: 0 1 280px;
+  width: 280px;
+  min-width: 0;
+}
+.a3-trow-ctl > .a3-mini-select {
+  height: 30px;
+}
+.a3-trow-ctl > .ui-datefield > .a3-mini-select {
+  width: 100%;
+  height: 30px;
+}
+/* A transaction condition's field + operation: two selects sharing one control's width. */
+.a3-cond-pair {
+  display: flex;
+  gap: 8px;
+  flex: 0 1 280px;
+  width: 280px;
+  min-width: 0;
+}
+.a3-cond-pair > .a3-mini-select {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 30px;
+}
+/* A link beside a control (a condition's Remove) sits on the control's centre line. */
+.a3-trow-ctl > .a3-linkbtn {
+  align-self: center;
+  white-space: nowrap;
+}
+.a3-trow-unit {
+  font-size: 11px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.a3-trow-below {
+  grid-column: 2;
+  margin-top: -2px;
+  margin-bottom: 4px;
+}
+.a3-lucius-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--lucius);
+}
+.a3-option-error,
+.a3-inline-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--bad);
+  font-size: 12px;
+}
+.a3-timepick {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.a3-timepick .a3-mini-select {
+  min-width: 62px;
+}
+.a3-timepick .sep {
+  color: var(--faint);
+  font-size: 12px;
+}
+.a3-combo {
+  position: relative;
+  min-width: 0;
+}
+.a3-combo > .a3-mini-select {
+  width: 100%;
+  height: 30px;
+  padding-right: 28px;
+  cursor: text;
+}
+.a3-combo-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.a3-combo-toggle svg {
+  display: block;
+}
+.a3-combo-pop {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  z-index: var(--z-dropdown);
+  width: 100%;
+  box-sizing: border-box;
+  max-height: 202px;
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid var(--modal-border);
+  border-radius: 9px;
+  background: var(--modal-bg);
+  box-shadow: var(--shadow-lg);
+}
+.a3-combo-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 30px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.a3-combo-option.active {
+  background: var(--hover-surface2);
+}
+.a3-combo-option-label {
+  flex: none;
+  font-weight: 600;
+}
+.a3-combo-option-detail {
+  min-width: 0;
+  margin-left: 8px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.a3-ticker-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  box-sizing: border-box;
+  max-width: 280px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.a3-ticker-card.warn {
+  display: block;
+  border-color: var(--warn);
+  color: var(--ink);
+}
+.a3-ticker-name {
+  font-weight: 600;
+  color: var(--ink);
+}
+.a3-combo-status {
+  padding: 6px 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (hover: hover) {
+  .a3-combo-option:hover {
+    background: var(--hover-surface2);
+  }
+}
+.a3-modal-kicker {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--faint);
+  margin-bottom: 12px;
+}
+.a3-modal-instructions {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+.a3-subtabs {
+  grid-column: 1/-1;
+}
+.a3-cols.stacked {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  margin-top: -19px;
+}
+.a3-cols.stacked[data-tab='history'] > .a3-col-setup {
+  display: none;
+}
+.a3-cols.stacked[data-tab='setup'] > .a3-col-history {
+  display: none;
+}
+.a3-cols.stacked .a3-col-history > .a3-block-h {
+  display: none;
+}
+/* Exact declarations retained from the handoff where the production data seam adds content. */
+.a3-cost-num .v {
+  letter-spacing: -0.01em;
+}
+.a3-costgrid .v {
+  font-variant-numeric: tabular-nums;
+}
+.a3-field-label .req {
+  font-weight: 700;
+}
+.a3-file .kind {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.a3-file .n {
+  min-width: 0;
+}
+.a3-file .kind.remembered {
+  color: var(--lucius);
+}
+.a3-hand {
+  font-size: 13px;
+  line-height: 1;
+}
+.a3-mini-select {
+  cursor: pointer;
+}
+.a3-runcard .rsec-h {
+  justify-content: flex-start;
+  text-align: left;
+}
+.a3-runcard .rsec-h span {
+  font-weight: 600;
+}
+.a3-runcard .top .when {
+  color: var(--ink);
+}
+.a3-editor-modal .ui-modal__body {
+  max-height: calc(100vh - 190px);
+  overflow-y: auto;
+}
+@media (max-width: 980px) {
+  .a3-cols {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .a3-tpl-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .a3-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .a3-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .rd-masthead {
+    border-bottom: none;
+  }
+  .a3-wrap {
+    padding: 10px 0 84px;
+    gap: 16px;
+  }
+  /* Sticks to the very top once the (non-sticky) title above it scrolls out of view. */
+  .a3-toolbar {
+    gap: 8px;
+    flex-wrap: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 29;
+    padding: 8px 0;
+    margin: -8px 0;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(10px);
+  }
+  .a3-toolbar .a3-search {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 30px;
+  }
+  .a3-search input,
+  .a3-search input:focus {
+    width: 100%;
+    height: 30px;
+  }
+  .a3-toolbar > .grow {
+    display: none;
+  }
+  .a3-masthead-head .ui-page-header__subtitle {
+    display: none;
+  }
+  .a3-row {
+    gap: 11px;
+    padding: 13px 13px 14px;
+  }
+  .a3-row-right {
+    position: absolute;
+    top: 8px;
+    right: 6px;
+  }
+  .a3-row-body {
+    padding-right: 30px;
+  }
+  .a3-costgrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .a3-cost-nums {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .a3-hist {
+    max-height: none;
+  }
+  .a3-hist-row {
+    padding: 14px 11px;
+    min-height: 44px;
+  }
+  .a3-hist-row .note {
+    display: none;
+  }
+  .a3-trow {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  .a3-trow-label {
+    text-align: left;
+  }
+  .a3-trow-below {
+    grid-column: 1;
+    margin-top: 0;
+  }
+  .a3-trow-ctl > .a3-mini-select,
+  .a3-trow-ctl > .ui-datefield,
+  .a3-trow-ctl > .a3-combo {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+  .a3-ticker-card {
+    max-width: none;
+  }
+}
+@media (max-width: 600px) {
+  .a3-crumb {
+    display: none;
+  }
+  .a3-detail-head h1,
+  .a3-detail-title h1 {
+    font-size: 19px;
+  }
+  .a3-toolbar .a3-sort,
+  .a3-toolbar .a3-new-button {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    flex: none;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    border-radius: var(--radius-md);
+  }
+  .a3-toolbar .a3-toolbar-label,
+  .a3-toolbar .a3-toolbar-chevron {
+    display: none;
+  }
+  .a3-sort .a3-toolbar-ic {
+    display: block;
+  }
+  .a3-toolbar .a3-toolbar-ic {
+    width: 15px;
+    height: 15px;
+  }
+  .a3-row-title {
+    font-size: 14px;
+  }
+  .a3-iconbtn {
+    width: 40px;
+    height: 40px;
+  }
+  .a3-subtabs .ui-page-tabs__tab {
+    font-size: 13px;
+    padding: 13px 12px;
+  }
+  .a3-costgrid {
+    gap: 14px 12px;
+  }
+}
+
+/* Progress, before a run has written its task list — or on a short run that never will.
+   The section holds its place and says so, instead of materialising a second later and
+   shoving the rest of the card down the page. Decorative: aria-hidden, the sentence
+   underneath carries the meaning. */
+.a3-step-ghosts {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.a3-step-ghost {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--line-strong);
+}
+.a3-step-ghost svg {
+  display: block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+}
+.a3-step-ghost--pending {
+  background: var(--surface2);
+  border-color: var(--line);
+}
+.a3-step-link {
+  flex: none;
+  width: 9px;
+  height: 1.5px;
+  background: var(--line-strong);
+}
+.a3-step-hint {
+  font-size: 11.5px;
+  color: var(--faint);
+}

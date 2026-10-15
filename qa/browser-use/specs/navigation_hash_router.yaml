@@ -1,0 +1,221 @@
+# Spec: NAV-01 — TanStack Router hash-based navigation works correctly
+# Covers: Tab navigation, URL hash changes, Back/Forward history, asset detail
+#         peer stack, drill-in routes, sidebar highlight, refresh persistence
+id: NAV-01
+acceptance_ids:
+  - NAV-TAB-LOAD
+  - NAV-HASH-PERSISTS
+  - NAV-DEEP-LINK
+  - NAV-BACK-FORWARD-BASIC
+  - NAV-BACK-FORWARD-CHAIN
+  - NAV-FORWARD-RESTORES
+  - NAV-ASSET-DETAIL-OPEN
+  - NAV-ASSET-DETAIL-BACK
+  - NAV-ASSET-PEER-STACK
+  - NAV-ASSET-PEER-BACK-STEP
+  - NAV-DRILL-IN-PAYEES
+  - NAV-DRILL-IN-BACK-PAYEES
+  - NAV-DRILL-IN-MONITORS
+  - NAV-DRILL-IN-BACK-MONITORS
+  - NAV-SIDEBAR-HIGHLIGHT
+  - NAV-SIDEBAR-HIGHLIGHT-ASSET
+  - NAV-NO-JS-ERROR
+
+title: "TanStack Router hash navigation — tabs, Back/Forward, asset peers, drill-ins"
+
+description: >
+  The app uses TanStack Router with hash history (`/#/accounts`, `/#/intel`, etc.).
+  This spec verifies:
+  - Tab navigation updates the URL hash correctly
+  - Refresh persists the current tab
+  - Deep links (direct hash URLs) work
+  - Browser Back/Forward steps through history
+  - Asset detail routes work with peer stacking
+  - Drill-in sub-routes (Payees, Monitors) navigate correctly
+  - Sidebar highlight matches the active route
+  - No JS errors during navigation
+
+acceptance_criteria:
+  - AC1: Clicking a tab in the sidebar updates the URL hash to /#/<tab>
+  - AC2: Refreshing the page keeps the current tab
+  - AC3: Manually navigating to a hash loads that tab
+  - AC4: Browser Back/Forward step through tab history correctly
+  - AC5: Opening an asset detail changes URL to /#/asset/<id>
+  - AC6: Asset detail Back returns to parent tab
+  - AC7: Clicking a peer asset updates the URL and stacks history
+  - AC8: Drill-in routes (/accounts/payees, /intel/monitors) work
+  - AC9: No JS console errors during navigation
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to fully load.
+
+  ====== PART 1: TAB NAVIGATION AND HASH ======
+  Step 1a — Check starting tab.
+  What is the current tab name (look in sidebar or page heading)?
+  What is the current URL hash (the part after #)?
+  Record: TAB_START = <name>, HASH_START = <hash>
+
+  Step 1b — Click a different tab.
+  Click on "Accounts" in the sidebar. Wait 1 second for it to load.
+  What is the URL hash now?
+  Expected: #/accounts (or similar format)
+  If hash did not change to #/accounts: return "FAIL: tab click did not update hash"
+
+  Step 1c — Verify content.
+  Does the Accounts tab content appear (accounts, transactions, or similar)?
+  If not: return "FAIL: Accounts tab did not load after click"
+
+  ====== PART 2: REFRESH PERSISTENCE ======
+  Step 2a — Refresh the page.
+  Press F5 or click the refresh button. Wait for the page to reload.
+
+  Step 2b — Check tab after refresh.
+  Is the Accounts tab still shown? Is the URL hash still #/accounts?
+  If not: return "FAIL: refresh did not preserve the Accounts tab"
+
+  ====== PART 3: DEEP LINK ======
+  Step 3a — Navigate via hash.
+  Manually change the URL hash to #/intel (or paste a full URL with #/intel).
+  Wait 1 second for the page to load.
+
+  Step 3b — Verify Intel loads.
+  Does the Intel tab open? Is the content visible?
+  If not: return "FAIL: deep link to #/intel did not work"
+
+  ====== PART 4: BACK/FORWARD BASIC ======
+  Step 4a — Build history.
+  From Intel, click on "Dashboard" in the sidebar. Wait 1 second.
+  You are now on: Dashboard (tab should be #/dashboard).
+  Record the URL hash.
+
+  Step 4b — Click Back.
+  Press the browser Back button. Wait 1 second.
+  What tab are you on now? What is the URL hash?
+  Expected: Should return to Intel (#/intel).
+  If not: return "FAIL: Back did not return to Intel"
+
+  Step 4c — Click Forward.
+  Press the browser Forward button. Wait 1 second.
+  Expected: Should return to Dashboard (#/dashboard).
+  If not: return "FAIL: Forward did not return to Dashboard"
+
+  ====== PART 5: BACK/FORWARD CHAIN (3+ tabs) ======
+  Step 5a — Visit multiple tabs in sequence.
+  Starting from any tab, visit: Commitments → Cashflow → Tax
+  (Click each in sidebar, wait 1 second between clicks.)
+  Record the hash at each step:
+    Commitments: #/commitments
+    Cashflow: #/cashflow
+    Tax: #/tax
+
+  Step 5b — Press Back 3 times.
+  Click Back, wait. Click Back, wait. Click Back, wait.
+  After 3 Backs from Tax, you should be at Commitments.
+  What hash are you at?
+  If not at #/commitments: return "FAIL: 3× Back did not return to Commitments"
+
+  ====== PART 6: ASSET DETAIL (if available) ======
+  Step 6a — Navigate to Investments tab.
+  Click "Investments" in the sidebar. Wait for content to load.
+  Look for an asset card or holding listed (e.g. AAPL, MSFT, or "Cash").
+
+  Step 6b — Click on an asset.
+  Click on any asset card to open its detail view.
+  Wait 1 second. What is the URL hash now?
+  Expected format: #/asset/<instrumentId> (e.g. #/asset/AAPL)
+  If hash is not in this format: return "FAIL: asset click did not set hash to #/asset/..."
+
+  Step 6c — Verify asset detail renders.
+  Does the asset detail panel/view show the asset name and info?
+  If blank or errored: return "FAIL: asset detail did not render"
+
+  Step 6d — Back from asset detail.
+  Click the browser Back button. Wait 1 second.
+  Are you back on the Investments tab (#/investments)?
+  If not: return "FAIL: Back from asset detail did not return to Investments"
+
+  ====== PART 7: SIDEBAR HIGHLIGHT ======
+  Step 7a — On Investments tab.
+  You should still be on the Investments tab after Step 6d.
+  Look at the sidebar: is "Investments" highlighted/marked as active?
+  (Highlight may be bold, underlined, or background-colored.)
+  If not highlighted: return "FAIL: sidebar did not highlight Investments"
+
+  Step 7b — Sidebar highlight matches hash.
+  Click on "Dashboard" (another tab). Wait 1 second.
+  Is "Dashboard" now highlighted in the sidebar and "Investments" is no longer?
+  If not: return "FAIL: sidebar highlight did not update when tab changed"
+
+  ====== PART 8: DRILL-IN ROUTE (Accounts → Payees) ======
+  Step 8a — Go to Accounts tab.
+  Click "Accounts" in the sidebar. Wait for it to load.
+
+  Step 8b — Find Manage Payees.
+  Look for a "Manage payees" button, link, or control in the Accounts tab.
+  If not found:
+    Note this as SKIP and continue to Step 9.
+  Otherwise:
+    Click it. Wait 1 second.
+    What is the URL hash now?
+    Expected: #/accounts/payees
+    If not: return "FAIL: Manage Payees did not navigate to #/accounts/payees"
+
+  Step 8c — Verify payees view.
+  Is a payees management interface shown?
+  If not: return "FAIL: payees view did not render"
+
+  Step 8d — Back from payees.
+  Click the browser Back button. Wait 1 second.
+  Are you back on the Accounts tab (#/accounts)?
+  If not: return "FAIL: Back from payees did not return to #/accounts"
+
+  ====== PART 9: DRILL-IN ROUTE (Intel → Monitors) ======
+  Step 9a — Go to Intel tab.
+  Click "Intel" in the sidebar. Wait for it to load.
+
+  Step 9b — Find Manage Monitors.
+  Look for a "Manage monitors", "All", or similar drill-in control.
+  If not found:
+    Note as SKIP and continue to final check.
+  Otherwise:
+    Click it. Wait 1 second.
+    What is the URL hash now?
+    Expected: #/intel/monitors
+    If not: return "FAIL: Manage Monitors did not navigate to #/intel/monitors"
+
+  Step 9c — Verify monitors view.
+  Is a monitors management interface shown?
+  If not: return "FAIL: monitors view did not render"
+
+  Step 9d — Back from monitors.
+  Click the browser Back button. Wait 1 second.
+  Are you back on the Intel tab (#/intel)?
+  If not: return "FAIL: Back from monitors did not return to #/intel"
+
+  ====== FINAL CHECK: NO JS ERRORS ======
+  Step 10 — Take a screenshot.
+  Take a screenshot showing the final page state. Then open the browser
+  DevTools Console (F12 → Console tab). Are there any red error messages
+  logged during the test?
+  If YES: List the error message and return "FAIL: JS console errors — <errors>"
+
+  ====== DECISION ======
+  If all steps above passed (or were reasonably SKIPped due to UI unavailability):
+  return "PASS: hash navigation works — tabs, Back/Forward, asset detail, drill-ins all functional"
+
+  If any step failed:
+  return "FAIL: <description of which step failed and the specific issue>"
+
+max_steps: 100
+timeout_seconds: 300
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "NAV-01-hash-router.png"
+  note: >
+    This spec is comprehensive and covers all major navigation paths.
+    It may take multiple agent attempts to get through all steps (many manual
+    verifications). If a specific part consistently fails (e.g., asset detail),
+    a separate more-focused spec can be created. Drill-in controls (Manage Payees,
+    Manage Monitors) may not exist in all data states — SKIPing them is acceptable.
+    JS errors are the most important final check — any console error is a FAIL.

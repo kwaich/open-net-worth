@@ -1,0 +1,160 @@
+# Spec: WLMON-01 — Intel Watchlists: Monitoring settings panel (INT11 flagged gap)
+# Covers: frontend/src/components/intel/MonitoringPanel.tsx — the RSS-freshness help copy,
+#         the "Breaking news lane" row (status text + Outlet headlines switch) across
+#         active/off/paused states, the Outlet headlines toggle's PATCH round-trip, the
+#         collapsed header's cadence label, and the pre-existing auto-save-on-change contract.
+id: WLMON-01
+timeout_seconds: 600
+max_steps: 55
+acceptance_ids:
+  - WL-MONITORING-SETTINGS-SAVE
+  - WL-MON-RSS-HELP-COPY
+  - WL-MON-BREAKING-ROW-ACTIVE
+  - WL-MON-BREAKING-ROW-OFF
+  - WL-MON-BREAKING-ROW-MONITORING-PAUSED
+  - WL-MON-OUTLET-TOGGLE-ROUNDTRIP
+  - WL-MON-BREAKING-ROW-NO-CLUTTER-HEADER
+title: "Intel Watchlists — Monitoring settings panel (RSS freshness, breaking-news lane, outlet toggle)"
+description: >
+  Exercises the Monitoring settings panel on the Intel tab end to end: auto-save on the
+  "Price check interval" (no separate Save button), the exact "RSS freshness" help copy,
+  the "Breaking news lane" status row in its Active / Off / Monitoring-paused states plus
+  the "Outlet headlines" switch's enabled/disabled + tooltip behavior in each state, the
+  outlet toggle's PATCH round-trip and reload persistence, and the collapsed header's
+  cadence label staying "Alerts X · News Y" / "Paused" with no third token added.
+
+acceptance_criteria:
+  - "AC1 (WL-MONITORING-SETTINGS-SAVE): Changing 'Price check interval' saves automatically
+     (PATCH /api/watchlist/config) with a visible 'Saved' confirmation — no separate Save button"
+  - "AC2 (WL-MON-RSS-HELP-COPY): The RSS freshness field's help text reads exactly 'Sets the
+     fast-lane cadence (holdings + topics) and keeps the ~90s breaking-news lane running. Off
+     stops both — no fast polling, no breaking-news lane, only the slow ~30 min backfill.'"
+  - "AC3 (WL-MON-BREAKING-ROW-ACTIVE): With Monitoring active and RSS freshness NOT Off, the
+     'Breaking news lane' row (right after RSS freshness, before Web search) reads 'Breaking
+     news lane · Active · ~90s' with a lit status dot, and 'Outlet headlines' is enabled"
+  - "AC4 (WL-MON-BREAKING-ROW-OFF): With RSS freshness set to Off, the row reads 'Breaking news
+     lane · Off · ~90s' (muted) and 'Outlet headlines' is disabled with tooltip 'Turn RSS
+     freshness on to enable outlet headlines'"
+  - "AC5 (WL-MON-BREAKING-ROW-MONITORING-PAUSED): With 'Monitoring active' off, the row still
+     reads 'Breaking news lane · Off · ~90s' (never hidden) and 'Outlet headlines' stays disabled"
+  - "AC6 (WL-MON-OUTLET-TOGGLE-ROUNDTRIP): Toggling 'Outlet headlines' off PATCHes
+     {\"outlet_feeds_enabled\": false} and persists across reload; toggling back on PATCHes
+     {\"outlet_feeds_enabled\": true} and persists"
+  - "AC7 (WL-MON-BREAKING-ROW-NO-CLUTTER-HEADER): The collapsed panel's header cadence label
+     still reads exactly 'Alerts X · News Y' (active) or 'Paused' (inactive) — no third,
+     breaking-news-specific token was added to the collapsed header"
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load. Open the "Intel" tab (left sidebar,
+  may be labeled "Intel" or "Watchlist").
+
+  Scroll to find the "Monitoring" settings card/panel (it has a collapsed header reading
+  "Monitoring" with an Active/Paused status pill and a cadence label like "Alerts 5m · News 4h").
+  If it is collapsed, click its header to expand it. Take a screenshot (name it mon-expanded).
+
+  === Setup: make sure Monitoring is active and RSS freshness is NOT Off ===
+  Find the "Monitoring active" switch near the bottom of the panel. If it is off, turn it on
+  and wait 1 second. Find the "RSS freshness" field (a select/dropdown). If its value is
+  "Off (no fast poll)", change it to "Balanced (15 min)" and wait 1 second.
+
+  Step 1 (AC1, WL-MONITORING-SETTINGS-SAVE). Find the "Price check interval" field near the
+  top of the panel (a select/dropdown). Note its current value. Change it to a DIFFERENT
+  option from the dropdown. Wait 2 seconds. Look for any visible save confirmation near the
+  field or panel (e.g. text like "Saved" or a brief flash/checkmark) — there should be NO
+  separate "Save" button anywhere for this field; the change should apply just by selecting
+  a new option. Reload the page, re-expand the Monitoring panel if needed, and confirm the
+  "Price check interval" field still shows the NEW value you picked (proof it auto-saved via
+  PATCH /api/watchlist/config even if no textual "Saved" flash was visible).
+  Record AC1 = "pass" if the value persisted after reload (note separately whether you also
+  saw a textual "Saved" confirmation), or "fail" with why if it did not persist.
+
+  Step 2 (AC2, WL-MON-RSS-HELP-COPY). Look directly under the "RSS freshness" select for its
+  help/hint text. Read it carefully, character for character. Confirm it reads EXACTLY:
+  "Sets the fast-lane cadence (holdings + topics) and keeps the ~90s breaking-news lane
+  running. Off stops both — no fast polling, no breaking-news lane, only the slow ~30 min
+  backfill." Confirm the literal substring "~90s" appears (never rendered as "2m" or any
+  other duration). Take a screenshot (name it mon-rss-help).
+  Record AC2 = "pass" or "fail" with the exact text you actually saw if it differs.
+
+  Step 3 (AC3, WL-MON-BREAKING-ROW-ACTIVE). With Monitoring active and RSS freshness NOT
+  "Off" (from Setup), look at the row immediately AFTER "RSS freshness" and BEFORE "Web
+  search" — it should be labeled "Breaking news lane". Confirm:
+  (a) it reads "Breaking news lane · Active · ~90s" (the status word between the two ·
+  separators is "Active"),
+  (b) the small status dot next to "Active" looks lit/colored (not muted grey),
+  (c) the "Outlet headlines" switch on the right of that row is ENABLED (clickable, not
+  greyed out).
+  Also read the small sub-text under the row's label and note it verbatim (for your own
+  reference — this does not need to match a fixed AC, just record what it says).
+  Take a screenshot (name it mon-breaking-active).
+  Record AC3 = "pass" or "fail" with why.
+
+  Step 4 (AC4, WL-MON-BREAKING-ROW-OFF). Change "RSS freshness" to "Off (no fast poll)" and
+  wait 1 second. Look at the "Breaking news lane" row again. Confirm:
+  (a) it now reads "Breaking news lane · Off · ~90s",
+  (b) the status dot now looks muted/grey (not the lit/active color),
+  (c) the "Outlet headlines" switch is now DISABLED (greyed out / not clickable),
+  (d) hovering or inspecting the disabled switch shows a tooltip/title reading "Turn RSS
+  freshness on to enable outlet headlines" (check the element's title attribute if hovering
+  doesn't surface a visible tooltip).
+  Take a screenshot (name it mon-breaking-off).
+  Record AC4 = "pass" or "fail" with why.
+
+  Step 5 (AC5, WL-MON-BREAKING-ROW-MONITORING-PAUSED). Now find "Monitoring active" and turn
+  it OFF. Wait 1 second. Look at the "Breaking news lane" row once more. Confirm it is still
+  VISIBLE (not hidden/removed) and still reads "Breaking news lane · Off · ~90s", and
+  "Outlet headlines" is still disabled. Take a screenshot (name it mon-breaking-paused).
+  Record AC5 = "pass" or "fail" with why.
+
+  === Restore for the remaining steps ===
+  Turn "Monitoring active" back ON. Set "RSS freshness" back to "Balanced (15 min)" (NOT
+  Off). Wait 1 second. Confirm "Outlet headlines" is enabled again.
+
+  Step 6 (AC6, WL-MON-OUTLET-TOGGLE-ROUNDTRIP). Open the browser's Network tab if available
+  (otherwise proceed best-effort). Note whether "Outlet headlines" is currently ON or OFF.
+  Click it to toggle it OFF. If the Network tab was visible, confirm a PATCH request fired to
+  a URL containing "/api/watchlist/config" with a JSON body containing
+  {"outlet_feeds_enabled": false}. Reload the page, re-expand Monitoring and restore the
+  Setup state (active + RSS freshness not Off) if needed, and confirm "Outlet headlines"
+  is STILL OFF after reload. Now click it again to toggle it back ON. If the Network tab was
+  visible, confirm the PATCH body this time contains {"outlet_feeds_enabled": true}. Reload
+  again and confirm it is STILL ON after reload.
+  Record AC6 = "pass", "fail", or "unable to verify PATCH body (no network tab, but
+  persistence across reload was <pass/fail>)".
+
+  Step 7 (AC7, WL-MON-BREAKING-ROW-NO-CLUTTER-HEADER). Collapse the Monitoring panel (click
+  its header again). Read the collapsed header's cadence label (next to the small clock/undo
+  icon) — it should read EXACTLY "Alerts <duration> · News <duration>" (e.g. "Alerts 5m ·
+  News 4h") while Monitoring is active, with no third "breaking news" token appended anywhere
+  in that collapsed header. (If you had left Monitoring paused from a prior step, it would
+  instead read exactly "Paused" — but you restored it to active above, so expect the
+  two-token cadence label.) Take a screenshot (name it mon-collapsed-header).
+  Record AC7 = "pass" or "fail" with the exact text you saw if it differs.
+
+  Decision:
+  Count how many of AC1–AC7 are "fail". If 0 are fail, return
+  "PASS: all criteria satisfied — AC1=<>, AC2=<>, AC3=<>, AC4=<>, AC5=<>, AC6=<>, AC7=<>".
+  If 1 or more are fail, return "FAIL: <N> criteria failed — <list which and why>".
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "WLMON-01-monitoring-panel.png"
+  note: >
+    Requires no ANTHROPIC_API_KEY beyond what the harness itself needs to drive the agent
+    (standard for every browser-use spec) — this spec was authored and the YAML/coverage
+    wiring verified (parses cleanly, acceptance_check.py resolves all 7 IDs), but a graded
+    run was NOT executed in the authoring environment: no qa/browser-use/.venv (Python
+    3.11+, browser-use, playwright chromium) was present there, and the app was not booted
+    on 8091/8092. Run `make qa-e2e-setup && make qa-e2e` (or
+    `python3 runner.py --specs WLMON-01` from an activated qa/browser-use/.venv against a
+    booted QA instance) to execute it for real. Two notes for whoever runs it: (1) AC1's
+    literal "Saved" textual flash was NOT found in MonitoringPanel.tsx at authoring time —
+    the panel auto-saves via PATCH with no visible confirmation UI, so this step may
+    legitimately FAIL on a real run; that gap is orthogonal to this QA-asset task (no
+    app-code changes were made here) and should be triaged separately if it fails. (2) The
+    six WL-MON-* criteria this spec covers were sourced from the shipped Monitoring-panel
+    code (INT11 chain) and added to docs/qa/acceptance/intel.md on this lane, since this
+    lane's base branch predates that merge; the switch's own sub-text copy ("Checked while
+    the switch is on: FT, CNBC, MarketWatch, WSJ and TechCrunch headlines.") went through
+    three post-merge revision rounds but was never quoted by any of the six criteria, so no
+    stale-quote correction was needed in the doc — only the six missing entries themselves.

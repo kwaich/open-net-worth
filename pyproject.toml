@@ -1,0 +1,332 @@
+# --- packaging: `uv build` produces the wheel a user installs with `uv tool install` ---
+# The wheel is the `backend` package plus the built frontend, the embedded docs site and the
+# product-docs corpus, copied under backend/_bundled/ by scripts/bundle_assets.py first
+# (`make wheel` runs the whole sequence). Runtime dependencies stay in requirements.txt —
+# the one list the Dockerfile, Makefile and CI already install from — and reach the wheel's
+# metadata through the hatch-requirements-txt hook, so there is exactly one source of truth.
+[build-system]
+requires = ["hatchling>=1.27", "hatch-requirements-txt>=0.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "open-net-worth"
+version = "0.1.2"
+description = "Open-source self-hosted wealth manager with an AI assistant (Lucius)."
+readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
+keywords = ["personal-finance", "net-worth", "budgeting", "self-hosted", "ai-assistant"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial",
+]
+
+[project.urls]
+Homepage = "https://opennetworth.ai"
+Documentation = "https://docs.opennetworth.ai"
+Releases = "https://github.com/open-net-worth-ai/open-net-worth-releases/releases"
+
+[project.scripts]
+onw = "backend.cli:main"
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend"]
+# backend/_bundled/ is gitignored (hatchling would drop it); `artifacts` ships it anyway.
+artifacts = ["backend/_bundled/**"]
+exclude = [
+    "backend/evals/**",
+    "backend/data/**",
+    "backend/dev-data/**",
+    "backend/cache/**",
+    "backend/logs/**",
+    "backend/**/__pycache__/**",
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["backend/**", "requirements.txt", "README.md", "LICENSE", "NOTICE"]
+artifacts = ["backend/_bundled/**"]
+exclude = [
+    "backend/evals/**",
+    "backend/data/**",
+    "backend/dev-data/**",
+    "backend/cache/**",
+    "backend/logs/**",
+    "backend/**/__pycache__/**",
+]
+
+# --- ruff: linter + formatter (replaces black/isort/flake8) ---
+# Per docs/ENGINEERING_GUIDE.md §5. Starts LENIENT: the bar is "green on the
+# existing tree", not a cleanup. Rule cleanup + the one-shot format pass are
+# deferred to later phases (E3 / R5).
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [
+    ".venv",
+    "frontend",
+    "backend/_bundled",
+    "backend/data",
+    "backend/dev-data",
+    "backend/data_backup_20260603_022916",
+    "test_transactions",
+    ".claude/skills/skill-creator",
+    ".agents/skills/skill-creator",
+]
+
+[tool.ruff.lint]
+# Guide §5 names E,F,I,UP,B,C901,SIM as the eventual target. We enable the
+# safe baseline now (pyflakes + import sorting) and leave the stricter style
+# families (B/C901/SIM/UP) for the ratchet in R5 so this lands green.
+select = ["E", "F", "I"]
+ignore = [
+    "E501", # line length — handled by the formatter, not the linter
+    # E402 fires on the deliberate "module docstring / router = APIRouter() /
+    # sys.path setup, then a late import" pattern used across backend/main.py and
+    # several api/ modules. It is NOT ruff-autofixable, so the P0-E3 format+autofix
+    # pass could not clear it. Reordering these imports is a code change out of
+    # scope for the guardrail wiring (P0-E2); silence it here under the same
+    # lenient-baseline rationale as E501, to be revisited in the R5 ratchet.
+    "E402", # module-import-not-at-top-of-file — intentional late imports
+]
+
+# Re-export shims left at the old import paths so the ~34 `backend.paths` and the
+# `backend.units` call sites keep working without a sweep in P1-A1. The wildcard
+# re-export is intentional; the explicit `__all__` documents the surface.
+[tool.ruff.lint.per-file-ignores]
+"backend/paths.py" = ["F401", "F403", "F405"]
+"backend/units.py" = ["F401", "F403", "F405"]
+# alert_store is the alphabetically-first store backend/db/__init__.py imports, so it is the
+# one file that must anchor the tables-before-payload_store resolution order for the genuine
+# two-way reference between those two modules (see alert_store.py's own import-block comment,
+# and tables.py's docstring on its own late payload_store import). isort would otherwise
+# alphabetize this back to the order that deadlocks the circular import.
+"backend/db/alert_store.py" = ["I001"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# --- mypy: lenient mode ---
+# Per docs/ENGINEERING_GUIDE.md §5: "start lenient". ignore_missing_imports so
+# untyped third-party deps (yfinance, apscheduler, tavily, telegram…) don't
+# error; NOT strict. Tightening (services/+core/ typed, ratchet outward) is R5.
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+# The gate checks first-party backend code only. Do not let a locally upgraded
+# third-party stub package (for example NumPy using PEP 695 syntax) silently
+# raise the configured Python 3.12 floor or make results environment-dependent.
+no_site_packages = true
+follow_imports = "silent"
+warn_unused_configs = true
+# The backend is imported as the `backend.*` package (e.g. `backend.ai.prompts`).
+# Without this, mypy also discovers `backend/` as a namespace root and reports
+# the same file under two module names ("found twice"). Pin the import root.
+explicit_package_bases = true
+namespace_packages = true
+mypy_path = "."
+# Lenient: do not require annotations or flag untyped code yet.
+disallow_untyped_defs = false
+check_untyped_defs = false
+# The existing tree predates type-checking and carries ~180 first-party type
+# findings (union-attr/arg-type/assignment/…). Per ENGINEERING_GUIDE.md §5 the
+# bar here is "lenient + green on the existing tree", with tightening deferred
+# to the R5 ratchet ("services/+core/ typed, ratchet outward"). We silence the
+# pre-existing categories now so mypy runs green; R5 re-enables them one family
+# at a time as layers get annotated. Do NOT add new code that relies on these.
+disable_error_code = [
+    "import-untyped",
+    "union-attr",
+    "arg-type",
+    "assignment",
+    "attr-defined",
+    "no-redef",
+    "dict-item",
+    "call-overload",
+    "return-value",
+    "index",
+    "override",
+    "var-annotated",
+    "str-bytes-safe",
+    "misc",
+    "type-var",
+    "operator",
+    "name-defined",
+    # Informational notes under the lenient profile (check_untyped_defs is off).
+    "annotation-unchecked",
+]
+exclude = [
+    "frontend/",
+    "backend/data/",
+    "backend/dev-data/",
+    "backend/data_backup_20260603_022916/",
+    "test_transactions/",
+    "\\.venv/",
+]
+
+# --- pytest ---
+# Mirrors the existing tests/conftest.py (asyncio + integration marker).
+# tmp_path_retention_policy="failed": a passing test's tmp_path dirs are removed at
+# session end instead of accumulating under pytest-of-<user> forever — this repo runs
+# many concurrent/background pytest invocations (agents, CI, manual runs sharing one
+# machine), and with the default "all" policy those never-cleaned dirs grew to 30+GB
+# and repeatedly filled the disk. retention_count=2 still keeps the last couple of
+# failure runs around for postmortem debugging.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+tmp_path_retention_count = 2
+tmp_path_retention_policy = "failed"
+markers = [
+    "integration: requires ANTHROPIC_API_KEY and makes LLM calls",
+    "network: requires live network access (Yahoo/CoinGecko); skipped in default suite",
+    "real_price_backfill: opts OUT of conftest's no-op patch of positions._trigger_backfill_async",
+    "real_session_title: opts OUT of conftest's no-op patch of session_titles.schedule_title",
+]
+
+# --- coverage: measure shippable code, not one-off scripts ---
+# `pytest --cov=backend` (pytest-cov). One-off migration/eval scripts under
+# backend/scripts/ are run manually, not part of the app surface — excluding them
+# keeps the % a meaningful signal for code we ship. Network connector adapters are
+# left IN (they want integration-tier tests, tracked in the cleanup register), not
+# silently omitted.
+[tool.coverage.run]
+omit = [
+    "backend/scripts/*",
+]
+
+# --- import-linter: the dependency rule (P1-A6, ENGINEERING_GUIDE §2.1) ---
+# Enforces api/ai -> services -> db -> core. A lower layer importing an upper
+# one (or db reaching into ai, services into api, core into anything) fails CI.
+# Run locally: `make imports` (also part of `make lint`). Docs: ENGINEERING_GUIDE
+# §2.1 + .claude/rfcs/phase1/a4-inversion.md (P1-A6).
+#
+# Why sub-packages as roots (not a single "backend") — `backend/` has no
+# __init__.py (it imports as a namespace package off the repo root), which grimp
+# cannot analyze as one root. Listing the layer packages explicitly keeps the
+# package layout untouched while still graphing every cross-package edge.
+[tool.importlinter]
+root_packages = [
+    "backend.cli",
+    "backend.api",
+    "backend.ai",
+    "backend.services",
+    "backend.db",
+    "backend.core",
+    "backend.monitoring",
+    "backend.connectors",
+    "backend.ingest",
+    "backend.models",
+    "backend.mcp",
+    "backend.sandbox",
+]
+include_external_packages = false
+
+# Contract 1 — the layered spine. api is above ai: api routers mount ai features
+# (downward ok); ai tools must NOT import api (upward blocked). Both may import
+# services → db → core.
+[[tool.importlinter.contracts]]
+name = "Dependency rule: cli -> api -> ai -> services -> db -> core"
+type = "layers"
+layers = [
+    "backend.cli",  # the `onw` entrypoint: imports everything, imported by nothing
+    "backend.api",
+    "backend.ai",
+    "backend.services",
+    "backend.db",
+    "backend.core",
+]
+# No exceptions: all ai → api violations were removed in the layer-cleanup RFC
+# (ai-tools-layer-cleanup.md). The former services.reconcile → ai edge was inverted
+# in P3-DS2 S2 via core.llm_seam, so the spine holds with ZERO ignore_imports.
+
+# Contract 2 — db must never import ai (the inverted checkpoint hook lives in
+# core.write_hooks). Belt over the layers contract: names the exact A4 violation
+# so a regression is loud and specific.
+[[tool.importlinter.contracts]]
+name = "db must not import ai (checkpoint hook is inverted via core.write_hooks)"
+type = "forbidden"
+source_modules = ["backend.db"]
+forbidden_modules = ["backend.ai"]
+
+# Contract 3 — services must never import api (FX cache relocated to core.fx;
+# cash baseline / projection relocated to services.cashflow in P1-A5). This
+# pins the *direct* V2/V3 edges; `allow_indirect_imports` keeps it from
+# re-flagging a transitive services -> ... -> api chain that runs through the
+# api/ai top-tier (api/ai are siblings that legitimately import each other, so
+# `ai` reaching `api` is not a service violation — only a *direct* services ->
+# api import is).
+[[tool.importlinter.contracts]]
+name = "services must not import api (direct)"
+type = "forbidden"
+source_modules = ["backend.services"]
+forbidden_modules = ["backend.api"]
+allow_indirect_imports = true
+
+# Contract 4 — core depends on nothing internal (must stay a leaf). core.fx /
+# core.write_hooks import only stdlib + backend.paths (itself a core-tier
+# re-export of backend.core.config), so the leaf property holds.
+[[tool.importlinter.contracts]]
+name = "core is a leaf (no internal deps)"
+type = "forbidden"
+source_modules = ["backend.core"]
+forbidden_modules = [
+    "backend.db",
+    "backend.services",
+    "backend.api",
+    "backend.ai",
+    "backend.monitoring",
+    "backend.connectors",
+    "backend.ingest",
+    "backend.models",
+    "backend.mcp",
+    "backend.sandbox",
+]
+
+# Contract 5 — the code-execution sandbox is a SECRET-FREE leaf
+# (script-bundling-skills S2). backend.sandbox runs a bundle's python as an
+# isolated subprocess; its load-bearing security property is that the
+# secret-bearing layers are PHYSICALLY OFF its import path, so a bug in the
+# runner cannot leak credentials by import. In fact the runner imports ONLY
+# stdlib — not even backend.core.paths (the S3 caller resolves the bundle dir and
+# passes it in). This contract asserts it reaches NO data-access / secret module:
+# never backend.db (every *_config_store + auth.json), never backend.services
+# (which can reach db), never backend.core.security. NOTE: backend.core.config
+# DOES read AUTH_* secrets from env (it is NOT secret-free); it is simply not
+# forbidden here because core.paths re-exports it and the runner imports neither —
+# the runner is secret-free by IMPORTING NOTHING from core, not because config is
+# harmless. Enforced in make lint / make imports / CI; the run_script tool that
+# calls it (S3) lives in the api/ai tier and is the only caller — the sandbox
+# itself stays a leaf.
+[[tool.importlinter.contracts]]
+name = "sandbox is a secret-free leaf (only stdlib + core.paths)"
+type = "forbidden"
+source_modules = ["backend.sandbox"]
+forbidden_modules = [
+    "backend.db",
+    "backend.services",
+    "backend.api",
+    "backend.ai",
+    "backend.monitoring",
+    "backend.connectors",
+    "backend.ingest",
+    "backend.models",
+    "backend.mcp",
+    "backend.core.security",
+    "backend.core.fx",
+    "backend.core.io",
+    "backend.core.llm_seam",
+    "backend.core.channels",
+    "backend.core.agent_runner",
+]

@@ -1,0 +1,67 @@
+# Skills workspace and direct invocation seam.  It deliberately stops before
+# submitting chat: the browser-use navigation model itself needs an Anthropic
+# key, but this UI path must never spend the application's configured provider.
+id: SKILLS-01
+acceptance_ids:
+  - SKILLS-LOAD
+  - SKILLS-CARD-BODY-OPENS-DETAIL
+  - SKILLS-RUN-NO-PARAMS
+  - SKILLS-RUN-WITH-PARAMS
+  - SKILLS-RUN-PARAMS-SUBMIT
+  - SKILLS-CREATE-OPENS
+  - SKILLS-CREATE-SAVE
+  - SKILLS-CREATE-VALIDATION
+  - SKILLS-EDIT-PREPOPULATED
+  - SKILLS-DISABLE-ENABLE
+title: "Skills workspace selects, authors, and stages immutable direct slash invocations"
+description: >
+  Exercises the real Skills master-detail UI and its handoff to chat.  Run
+  actions must stage an exact direct slash command built from the immutable skill
+  identifier plus canonical shell-safe named arguments for the host runtime; this
+  spec intentionally does not send that command or require an application LLM.
+
+acceptance_criteria:
+  - AC1: Skills opens with starter rows and selecting one shows a read-only detail pane.
+  - AC2: A no-parameter Run stages the exact /budget-review slash command in chat.
+  - AC3: A parameterized Run requires required input and stages the exact slash command.
+  - AC4: A custom skill can be validated, created, edited with its values retained, and disabled.
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load. Do not send a chat
+  message: this test verifies the UI-to-runtime direct-invocation handoff only.
+
+  1. Open Skills. Confirm a searchable skills tree, a "+ New skill" button,
+  and at least one starter are visible. Select the `budget-review` row (not the
+  chevron). Confirm its read-only detail pane and SKILL.md preview appear.
+
+  2. Click Run. Confirm chat opens and the composer contains exactly
+  `/budget-review`; do not press Enter. Return to Skills.
+
+  3. Select `monthly-close`, click Run, and confirm its run dialog appears.
+  If the month field is required, confirm Run is disabled while it is blank.
+  Enter `2026-05`, click Run, and confirm chat opens with
+  `/monthly-close month='2026-05'` in its composer; do not submit it. Return to
+  Skills.
+
+  4. Click "+ New skill" then "Write skill instructions". First click Create
+  skill with the name blank and confirm the inline error says "A skill needs a
+  name." Then create a skill named `qa-runtime-direct`, with a short
+  description/body and one available tool selected. Confirm it appears in the
+  tree. Select it, use its actions menu to Edit it, and confirm the name,
+  description, body, and selected tool remain populated. Close the editor.
+
+  5. Toggle the custom skill off. Confirm it says Disabled and its Run button
+  is disabled. Do not delete or otherwise change starter skills.
+
+  Decision:
+  - Return "PASS: Skills UI staged direct slash invocations and custom-skill controls worked"
+    only if every observation above succeeded.
+  - Otherwise return "FAIL: <the failed step and what was visible>".
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "SKILLS-01-direct-run.png"
+  note: >
+    The repository browser-use runner itself is Claude-driven and therefore
+    requires ANTHROPIC_API_KEY. This spec makes no application-provider call:
+    it checks the staged direct slash command before the user sends it.

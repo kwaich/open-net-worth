@@ -1,0 +1,175 @@
+// Browse & add — the directory grid (spec §6). Ported VERBATIM from the `else` branch of the
+// prototype's directory Modal body.
+//
+// ONE SCROLL LAYER, ONE FIXED HEIGHT. The previous design nested a fixed-height scrolling grid
+// inside the modal's own scrolling body, so the search field and filters scrolled away while the
+// results scrolled independently underneath. Here:
+//
+//   - search + family chips + sort are ONE sticky block pinned to the top of the modal body's
+//     scroll (`position: sticky; top: -18px`, with negative margins so it spans the body's full
+//     width and its own padding re-establishes the gutter);
+//   - the results area holds a 480px floor, so filtering down to two results does not shrink the
+//     dialog and the header/footer never move.
+//
+// Both are inline styles because the prototype styles them inline — connectors.css is a verbatim
+// port of the prototype stylesheet and carries no rule for either.
+
+import type { JSX } from 'react'
+import { DirectoryCard } from './DirectoryCard'
+import { Empty, Mono } from './primitives'
+import { Icons } from './icons'
+import {
+  DIRECTORY_FAMILY_CHIPS,
+  filterDirectory,
+  popularEntries,
+  skipsPreview,
+  type DirectoryRow,
+  type DirectoryFamilyFilter,
+  type DirectorySort,
+} from './catalog'
+
+/** The shared floor for the results area AND every step of the MCP flow, so the dialog never
+ *  jumps between them (spec §6 and §7 pin the same number). */
+export const MODAL_BODY_MIN_HEIGHT = 480
+
+export interface DirectoryBrowserProps {
+  entries: DirectoryRow[]
+  family: DirectoryFamilyFilter
+  onFamily: (family: DirectoryFamilyFilter) => void
+  query: string
+  onQuery: (query: string) => void
+  sort: DirectorySort
+  onSort: (sort: DirectorySort) => void
+  onAdd: (entry: DirectoryRow) => void
+  onPreview: (entry: DirectoryRow) => void
+  onConfigure: (entry: DirectoryRow) => void
+}
+
+export function DirectoryBrowser({
+  entries,
+  family,
+  onFamily,
+  query,
+  onQuery,
+  sort,
+  onSort,
+  onAdd,
+  onPreview,
+  onConfigure,
+}: DirectoryBrowserProps): JSX.Element {
+  const shown = filterDirectory(entries, family, query, sort)
+  const popular = popularEntries(entries)
+  // Popular is a shortcut through the DEFAULT view — once the user has filtered or searched,
+  // it is noise competing with the result they asked for.
+  const showPopular = !query.trim() && family === 'all' && popular.length > 0
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div
+        style={{
+          position: 'sticky',
+          top: -18,
+          zIndex: 2,
+          background: 'var(--modal-bg)',
+          margin: '-18px -20px 0',
+          padding: '18px 20px 14px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 14,
+          borderBottom: '1px solid var(--line)',
+        }}
+      >
+        <span className="cn-dirsearch">
+          <Icons.search />
+          <input
+            className="rd-input"
+            type="search"
+            placeholder="Search connectors…"
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            aria-label="Search directory"
+          />
+        </span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div className="cn-chiprow">
+            {DIRECTORY_FAMILY_CHIPS.map(([k, l]) => (
+              <button
+                key={k}
+                className={'cn-chip' + (family === k ? ' on' : '')}
+                aria-pressed={family === k}
+                onClick={() => onFamily(k)}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+          <select
+            className="rd-select cn-sortselect"
+            style={{ width: 'auto' }}
+            value={sort}
+            onChange={(e) => onSort(e.target.value as DirectorySort)}
+            aria-label="Sort directory"
+          >
+            <option value="popular">Sort: Popular</option>
+            <option value="az">Sort: A–Z</option>
+          </select>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          minHeight: MODAL_BODY_MIN_HEIGHT,
+        }}
+      >
+        {showPopular && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+            <span className="cn-sublabel">Popular</span>
+            <div className="cn-poprow">
+              {popular.map((d) => (
+                <button
+                  key={d.id}
+                  className="cn-poptile"
+                  onClick={() => {
+                    if (d.installed) onConfigure(d)
+                    else if (skipsPreview(d)) onAdd(d)
+                    else onPreview(d)
+                  }}
+                >
+                  <Mono icon={d.icon} hue={d.hue} logo={d.logo} />
+                  <b>{d.name}</b>
+                  {d.installed ? <Icons.settings /> : <Icons.plus />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="cn-dirgrid">
+          {shown.map((d) => (
+            <DirectoryCard
+              key={d.id}
+              d={d}
+              onAdd={onAdd}
+              onPreview={onPreview}
+              onConfigure={onConfigure}
+            />
+          ))}
+        </div>
+        {shown.length === 0 ? (
+          <Empty title="No matches" body="Try a different search or category." />
+        ) : null}
+      </div>
+    </div>
+  )
+}

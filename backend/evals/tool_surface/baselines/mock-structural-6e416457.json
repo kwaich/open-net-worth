@@ -1,0 +1,199 @@
+{
+  "arms": [
+    "A"
+  ],
+  "captured_at": "2026-07-18T21:12:29.611106+00:00",
+  "git_branch": "lane/cost-correctness-baseline",
+  "git_commit": "6e416457cc9b17f22571f3294e3eb39f22985f84",
+  "meta": {
+    "MOCK_CAPTURE_WARNING": "This document's correctness numbers are NOT measured \u2014 the scripted persona behaves identically regardless of what changed, so every per_task_success value is an artifact of the mock, not a finding about the real assistant. Cost figures are ~4-chars/token ESTIMATES, not API-measured. Use only to prove the capture/compare mechanism works or to pin the task-set/fixture shape at a commit \u2014 never as evidence the assistant is fast, cheap, or correct.",
+    "arm C describe": "local implementation (services.domain_introspect EXISTS but describes the live service chokes, a different op namespace than arm C's apply executes)",
+    "arms": "A (surface=A, model=claude-sonnet-4-6)",
+    "catalog decoys": 258,
+    "data dir": "/var/folders/n_/9hyf3qp56yz3184bkgmrtcfc0000gn/T/onw-tool-surface-eval-pq14vfan",
+    "fixture": "deterministic seed book (see fixture.py)",
+    "model": "mock:perfect",
+    "real system prompt (informational)": "45,608 chars (~11,402 tok est.) \u2014 NOT used in any arm's turn loop, see comment",
+    "repeats per cell": 3,
+    "tasks": 19,
+    "total runs": 57
+  },
+  "mock": true,
+  "per_task_success": {
+    "budget_assign": {
+      "A": 1.0,
+      "category": "budget_write"
+    },
+    "budget_move_money": {
+      "A": 1.0,
+      "category": "budget_write"
+    },
+    "categorised_transfer": {
+      "A": 1.0,
+      "category": "ledger_transfer"
+    },
+    "fx_settled_charge": {
+      "A": 1.0,
+      "category": "ledger_fx"
+    },
+    "fx_transfer": {
+      "A": 1.0,
+      "category": "ledger_fx"
+    },
+    "investment_buy_with_cash_leg": {
+      "A": 1.0,
+      "category": "invest"
+    },
+    "lot_disposal": {
+      "A": 1.0,
+      "category": "invest"
+    },
+    "near_miss_no_account": {
+      "A": 1.0,
+      "category": "near_miss"
+    },
+    "near_miss_oversell": {
+      "A": 1.0,
+      "category": "near_miss"
+    },
+    "near_miss_unknown_account": {
+      "A": 1.0,
+      "category": "near_miss"
+    },
+    "read_card_balance": {
+      "A": 1.0,
+      "category": "read_computed"
+    },
+    "read_groceries_available": {
+      "A": 1.0,
+      "category": "read_computed"
+    },
+    "read_lots_lazy": {
+      "A": 1.0,
+      "category": "lazy_discovery"
+    },
+    "read_net_worth": {
+      "A": 1.0,
+      "category": "read_computed"
+    },
+    "read_realized_pnl_lazy": {
+      "A": 1.0,
+      "category": "lazy_discovery"
+    },
+    "recategorise_existing": {
+      "A": 1.0,
+      "category": "ledger_simple"
+    },
+    "simple_expense": {
+      "A": 1.0,
+      "category": "ledger_simple"
+    },
+    "statement_import_with_dup": {
+      "A": 1.0,
+      "category": "ledger_import"
+    },
+    "transfer_own_accounts": {
+      "A": 1.0,
+      "category": "ledger_transfer"
+    }
+  },
+  "summaries": {
+    "A": {
+      "api_calls": {
+        "mean": 3.0526315789473686,
+        "n": 57,
+        "stddev": 1.0593301898500862
+      },
+      "arm": "A",
+      "cache_read": {
+        "mean": 7137.1578947368425,
+        "n": 57,
+        "stddev": 3261.599683051432
+      },
+      "cache_write": {
+        "mean": 4713.105263157895,
+        "n": 57,
+        "stddev": 1786.2207678724787
+      },
+      "cost_per_run": {
+        "mean": 0.023594473684210526,
+        "n": 57,
+        "stddev": 0.009379151048821878
+      },
+      "cost_per_success": 0.023594473684210526,
+      "discovery": {
+        "mean": 0.21052631578947367,
+        "n": 57,
+        "stddev": 0.4113063728303113
+      },
+      "errors": {
+        "mean": 0.0,
+        "n": 57,
+        "stddev": 0.0
+      },
+      "estimated": true,
+      "input_tokens": {
+        "mean": 12860.736842105263,
+        "n": 57,
+        "stddev": 5235.346528053037
+      },
+      "intended": {
+        "mean": 1.0,
+        "n": 57,
+        "stddev": 0.0
+      },
+      "label": "surface=A, model=claude-sonnet-4-6",
+      "output_tokens": {
+        "mean": 49.8421052631579,
+        "n": 57,
+        "stddev": 37.92652175762469
+      },
+      "recovered": {
+        "mean": 0.0,
+        "n": 57,
+        "stddev": 0.0
+      },
+      "round_trips": {
+        "mean": 3.0526315789473686,
+        "n": 57,
+        "stddev": 1.0593301898500862
+      },
+      "runs": 57,
+      "selection": {
+        "mean": 1.0,
+        "n": 57,
+        "stddev": 0.0
+      },
+      "success": {
+        "mean": 1.0,
+        "n": 57,
+        "stddev": 0.0
+      },
+      "tool_calls": {
+        "mean": 2.0526315789473686,
+        "n": 57,
+        "stddev": 1.0593301898500862
+      },
+      "uncached_in": {
+        "mean": 1010.4736842105264,
+        "n": 57,
+        "stddev": 883.8838826707458
+      },
+      "unintended": {
+        "mean": 0.0,
+        "n": 57,
+        "stddev": 0.0
+      },
+      "wall": {
+        "mean": 0.5259649122807017,
+        "n": 57,
+        "stddev": 0.31141875602476166
+      },
+      "wrong_value": {
+        "mean": 0.0,
+        "n": 24,
+        "stddev": 0.0
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+/* ZoomImage — a photo that zooms in place (ZoomImage.tsx). The frame clips; the photo fills it
+   whole at 1× (contain) and scales from its top-left corner, panned by translate. */
+.ui-zoomimage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* At 1× a finger still scrolls whatever holds the photo; zoomed in, every touch pans it. */
+  touch-action: pan-y;
+  cursor: zoom-in;
+}
+.ui-zoomimage.is-zoomed {
+  touch-action: none;
+  cursor: grab;
+}
+.ui-zoomimage > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: 0 0;
+  user-select: none;
+  -webkit-user-select: none;
+}

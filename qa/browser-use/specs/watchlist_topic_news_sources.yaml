@@ -1,0 +1,127 @@
+# Spec: NSRC-01 — Topic & ticker "Advanced: news sources" (linked tickers + custom feeds)
+# Covers: TopicDetailModal.tsx (lg size, Linked tickers + Custom feeds) and
+#         PriceAlertsModal.tsx (Custom feeds only, gated on item.id truthy).
+id: NSRC-01
+timeout_seconds: 480
+max_steps: 45
+acceptance_ids:
+  - NSRC-1
+  - NSRC-2
+  - NSRC-5
+  - NSRC-6
+  - NSRC-7
+  - NSRC-8
+  - NSRC-10
+  - NSRC-12
+  - NSRC-13
+  - NSRC-14
+title: "Topic + ticker editors — Advanced: news sources (linked tickers + custom feeds)"
+description: >
+  Verifies the collapsed-by-default Advanced: news sources section on both the topic
+  editor (Linked tickers + Custom news feeds) and the ticker editor (Custom news feeds
+  only), the live count badge, the 10/5 caps, paste-splitting, the single-PATCH save,
+  and 422 field-error routing (force-open + inline message + bad-row highlight).
+acceptance_criteria:
+  - "AC1: Topic modal renders at the larger (lg) size with an Advanced: news sources section, collapsed by default, no badge when empty"
+  - "AC2: The header badge live-updates (e.g. '2 linked · 1 feed') as tickers/feeds are added, before Save"
+  - "AC3: Pasting a comma/space-separated block of tickers into Linked tickers adds multiple chips at once"
+  - "AC4: Custom news feeds shows 'No custom feeds yet.' when empty, and '+ Add feed URL' adds a row"
+  - "AC5: Adding a 6th feed row is blocked — the add control is replaced by 'Maximum 5 feeds.'"
+  - "AC6: Pasting a multi-line block of feed URLs into a feed row splits across multiple rows, up to the cap"
+  - "AC7: Save fires exactly ONE PATCH request per modal (network tab / no duplicate request)"
+  - "AC8: A 422 validation failure force-opens the section and shows the error inline (no generic banner)"
+  - "AC9: The ticker (Price Alerts) editor shows Custom news feeds only — no Linked tickers field"
+  - "AC10: The ticker editor's Advanced section is absent for a standalone alert with no watchlist item"
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load. Open the Intel tab (left sidebar,
+  may be labeled "Intel" or "Watchlist").
+
+  === Part A — Topic editor ===
+
+  Step 1 (AC1). In the watchlist/monitors sidebar card, find an existing TOPIC row (look
+  for a small "topic" tag/pill next to a row, as opposed to a stock ticker) and click it to
+  open its detail modal. If no topic exists, use the "+ Follow a topic" affordance to add one
+  first (name it "QA test topic"), then reopen it.
+  Confirm the modal is noticeably wider than a small dialog (it should comfortably fit two
+  columns of content) and note whether you see a collapsed section header reading
+  "Advanced: news sources" with NO number/count badge next to it. Take a screenshot
+  (name it topic-collapsed).
+  Record: AC1 = "pass" or "fail" with why.
+
+  Step 2 (AC2, AC3). Click the "Advanced: news sources" header to expand it. Take a
+  screenshot (name it topic-expanded). Confirm you now see two field groups: "Linked
+  tickers" (a chip/tag input) and "Custom news feeds" (a list of URL rows).
+  Click into the Linked tickers input. Select and copy the text "AAPL, MSFT NVDA" from
+  somewhere (e.g. type it into the browser's address bar, select it, copy it, then click
+  back into the Linked tickers field) and paste it (Ctrl+V / Cmd+V) into the field.
+  Confirm THREE separate chips appear (AAPL, MSFT, NVDA), not one chip containing the
+  whole pasted string.
+  Look at the "Advanced: news sources" header — does it now show a count like "3 linked"?
+  Record: AC2 = "pass" or "fail", AC3 = "pass" or "fail".
+
+  Step 3 (AC4, AC5). Under "Custom news feeds", if it says "No custom feeds yet.", click
+  "+ Add feed URL" once. Confirm a text input row (with a placeholder like
+  "https://example.com/feed.xml") plus a small remove button appears.
+  Click "+ Add feed URL" repeatedly until you have 5 rows total. Confirm that once 5 rows
+  exist, the "+ Add feed URL" control is gone/replaced by muted text reading roughly
+  "Maximum 5 feeds." (no way to add a 6th row). Take a screenshot (name it topic-feeds-cap).
+  Record: AC4 = "pass" or "fail", AC5 = "pass" or "fail".
+
+  Step 4 (AC6). Remove feed rows until only 1 remains (use each row's remove button).
+  Click into that remaining feed row. Paste a multi-line block of URLs, e.g. select+copy
+  this text from the address bar first: "https://a.example.com/feed.xml
+  https://b.example.com/feed.xml
+  https://c.example.com/feed.xml" (three lines) and paste it into the single feed row.
+  Confirm it expands into 3 separate rows (one URL per row), not one row with all three
+  URLs jammed together.
+  Record: AC6 = "pass" or "fail".
+
+  Step 5 (AC7). Open the browser's Network tab if available (or otherwise just proceed —
+  this step is best-effort). Click the modal's "Save" button. Confirm the modal closes
+  (or shows a clear success — no error banner) and, if the network tab was visible, that
+  only ONE PATCH request fired to a URL containing "/api/watchlist/items/".
+  Record: AC7 = "pass", "fail", or "unable to verify (no network tab)".
+
+  === Part B — a 422 validation failure (topic) ===
+
+  Step 6 (AC8). Reopen the same topic (or another topic). Expand "Advanced: news sources".
+  Add a feed URL row and type a non-http(s) URL into it, e.g. "ftp://not-allowed.example.com".
+  Click Save. Confirm: (a) the Advanced section is expanded/open, (b) a red/error-styled
+  message appears near "Custom news feeds" whose text mentions the URL you typed, (c) the
+  modal STAYS OPEN (does not close), (d) there is no separate generic "Could not save"
+  banner replacing this specific message.
+  Record: AC8 = "pass" or "fail" with the exact error text seen.
+
+  === Part C — Ticker (Price Alerts) editor ===
+
+  Step 7 (AC9). Close this modal. Find a TICKER row in the watchlist (a stock symbol, not
+  a topic) that is on a watchlist, and click it to open its Price Alerts modal. Expand
+  "Advanced: news sources" if collapsed. Confirm you see "Custom news feeds" but there is
+  NO "Linked tickers" field anywhere in this modal.
+  Record: AC9 = "pass" or "fail".
+
+  Step 8 (AC10). Close this modal. Navigate to Watchlists & monitors → All monitors →
+  Price alerts tab. If there is a price alert on a ticker that shows a "not in any
+  watchlist" chip/label (a standalone alert), click it to open its editor. Confirm there
+  is NO "Advanced: news sources" section at all in this case (it should be completely
+  absent, not just collapsed). If no such standalone alert exists in the demo data, record
+  AC10 = "skip: no standalone alert row in this dataset".
+  Record: AC10 = "pass", "fail", or "skip: <reason>".
+
+  Decision:
+  Count how many of AC1–AC10 are "fail". If 0 are fail (skips are OK), return
+  "PASS: all checked criteria satisfied — AC1=<>, AC2=<>, AC3=<>, AC4=<>, AC5=<>, AC6=<>,
+  AC7=<>, AC8=<>, AC9=<>, AC10=<>".
+  If 1 or more are fail, return "FAIL: <N> criteria failed — <list which and why>".
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "NSRC-01-news-sources.png"
+  note: >
+    Requires ANTHROPIC_API_KEY (or another configured browser-use LLM) — this spec was
+    authored and the harness wiring verified (boots, seeds, serves), but a graded run
+    was NOT executed in the authoring environment because no LLM key was available
+    there. Equivalent behavioral coverage for every AC above exists as deterministic
+    vitest DOM tests (TopicDetailModal.test.tsx, PriceAlertsModal.test.tsx,
+    TagInput.test.tsx) plus the deterministic visual-qa geometry gate (`make ui-gate`).

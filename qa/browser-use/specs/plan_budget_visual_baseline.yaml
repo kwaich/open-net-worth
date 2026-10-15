@@ -1,0 +1,88 @@
+# Spec: PLAN-BUD-VIS-01 — Plan Budget tab visual baseline for design system migration
+# Captures screenshots of the Budget sub-tab visual elements before CSS migration
+# Covers: category table, hidden-categories popover, target editor, color picker, what-if modals
+id: PLAN-BUD-VIS-01
+acceptance_ids:
+  - PLAN-LOAD
+  - PLAN-BUD-SUMMARY
+  - PLAN-BUD-COLOR
+  - PLAN-BUD-TARGET
+  - PLAN-CF-WHATIF
+acceptance_criteria:
+  - AC1: Plan tab Budget sub-tab loads without error
+  - AC2: Category table is visible with rows
+  - AC3: Category color picker can be opened
+  - AC4: Target editor can be opened
+  - AC5: What-if modal in Cash Flow tab can be opened
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1: Navigate to Plan tab and Budget sub-tab.
+  Click on "Plan" in the left sidebar. Wait for the Budget sub-tab to load.
+  You should see a Ready to Assign hero and a category table below.
+  Take a screenshot of the initial Budget view.
+
+  Step 2: Scroll down to see the category table and any hidden-categories popover controls.
+  Scroll down in the budget section. Look for category rows in the table.
+  Take a screenshot showing the category table with multiple rows visible.
+
+  Step 3: Open the color picker.
+  Find a category row and look for a color dot / swatch icon on the left or in the row.
+  Click on a category color swatch to open the color picker (preset palette + custom hex picker).
+  Wait 1 second for it to appear. Take a screenshot of the color picker UI.
+
+  Step 4: Close the color picker and open the target editor.
+  Press Escape or click away to close the color picker.
+  Find a category row's kebab menu (⋯) or right-click affordance and select "Edit target"
+  (or look for a "Set target" control in the row itself).
+  Wait 1 second for the target editor to appear. Take a screenshot showing:
+  - The switch/toggle for "Set aside" vs "Refill up to"
+  - The cadence selector (weekly/monthly/yearly)
+  - The amount input field
+  - The funding preview ring or bar
+
+  Step 5: Close the target editor and navigate to Cash Flow tab.
+  Press Escape to close the target editor. Click on the "Cash Flow" sub-tab at the top of Plan.
+  Wait 2 seconds for the Cash Flow view to load. You should see a balance trajectory chart.
+
+  Step 6: Open the What-if modal in Cash Flow.
+  Look for a "What-if" button or link (usually near the chart legend or in a toolbar).
+  Click it to open the What-if modal. Wait 1 second for it to appear.
+  Take a screenshot showing:
+  - The modal header
+  - Income/expense input fields
+  - Growth % field
+  - Safety floor input
+  - Asset toggle checkboxes or buttons
+  - Include commitments toggle
+  - The OK/Apply/Save button
+
+  Step 7: Close What-if modal and navigate to Outlook tab (if available).
+  Press Escape or click Cancel to close the What-if modal.
+  Click on the "Outlook" sub-tab (if visible). Wait 2 seconds for it to load.
+
+  Step 8: Attempt to open What-if in Outlook (if available).
+  If the Outlook tab loaded and has a What-if button, click it and take a screenshot
+  showing the What-if modal from the Outlook context.
+
+  Decision:
+  - If all screenshots were captured without errors:
+    return "PASS: All Plan tab visual elements captured and rendered correctly"
+  - If any element failed to render or showed an error:
+    return "FAIL: <specific element that failed>"
+  - If navigation to Plan tab failed:
+    return "FAIL: Could not navigate to Plan tab"
+
+max_steps: 50
+timeout_seconds: 600
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "PLAN-BUD-VIS-01-visual-baseline.png"
+  note: >
+    This spec captures visual-baseline screenshots of Plan tab UI elements
+    before the CSS design-system migration. The screenshots are used to verify
+    that the rendered output does not change visually after the migration.
+    All visual elements (buttons, selects, color picker, target editor, modals)
+    must be fully rendered and interactive.

@@ -1,0 +1,57 @@
+{
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "declaration-property-value-allowed-list": [
+      {
+        "/^font-size$/": ["/^var\\(--text-/", "inherit", "initial", "unset", "revert"]
+      },
+      {
+        "message": "Use a --text-* token for font-size (e.g. var(--text-base)), not a raw value. See docs/FRONTEND_CONVENTIONS.md.",
+        "severity": "warning"
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.css"],
+      "rules": {
+        "alpha-value-notation": null,
+        "color-function-notation": null,
+        "color-function-alias-notation": null,
+        "hue-degree-notation": null,
+        "lightness-notation": null,
+        "shorthand-property-no-redundant-values": null,
+        "declaration-block-no-redundant-longhand-properties": null,
+        "declaration-block-no-duplicate-properties": null,
+        "no-descending-specificity": null,
+        "selector-class-pattern": null,
+        "keyframes-name-pattern": null,
+        "custom-property-pattern": null,
+        "value-keyword-case": null,
+        "function-url-quotes": null,
+        "media-feature-range-notation": null,
+        "property-no-vendor-prefix": null,
+        "value-no-vendor-prefix": null,
+        "selector-no-vendor-prefix": null,
+        "at-rule-no-vendor-prefix": null,
+        "comment-empty-line-before": null,
+        "rule-empty-line-before": null,
+        "custom-property-empty-line-before": null,
+        "declaration-empty-line-before": null,
+        "at-rule-empty-line-before": null,
+        "no-empty-source": null,
+        "no-invalid-double-slash-comments": null,
+        "font-family-name-quotes": null,
+        "font-family-no-missing-generic-family-keyword": null,
+        "number-max-precision": null,
+        "length-zero-no-unit": null,
+        "declaration-property-value-no-unknown": null,
+        "comment-whitespace-inside": null,
+        "selector-attribute-quotes": null,
+        "no-duplicate-selectors": null,
+        "block-no-empty": null,
+        "declaration-block-single-line-max-declarations": null
+      }
+    }
+  ]
+}

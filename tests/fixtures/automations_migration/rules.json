@@ -1,0 +1,77 @@
+[
+  {
+    "id": "rule_a",
+    "name": "Coffee purchases",
+    "enabled": true,
+    "priority": 15,
+    "stop": true,
+    "override_existing": false,
+    "match": {
+      "description_contains": "coffee",
+      "keywords": null,
+      "description_regex": null,
+      "memo_contains": null,
+      "memo_keywords": null,
+      "memo_regex": null,
+      "account_id": "acc_card",
+      "kind": "expense",
+      "direction": "debit",
+      "currency": "SGD",
+      "min_amount": 2.5,
+      "max_amount": 50.0
+    },
+    "set": {
+      "category": "cat_food",
+      "tags": [
+        "cafe"
+      ],
+      "note_append": "Coffee run",
+      "memo_append": null,
+      "route_to_account": null
+    },
+    "source": "manual",
+    "created_at": "2026-01-02T03:04:05Z",
+    "updated_at": "2026-03-04T05:06:07Z",
+    "last_matched_at": "2026-07-31T08:09:10Z",
+    "match_count": 19
+  },
+  {
+    "id": "rule_b",
+    "name": "Route savings deposits",
+    "enabled": false,
+    "priority": 5,
+    "stop": false,
+    "override_existing": true,
+    "match": {
+      "description_contains": null,
+      "keywords": [
+        "save",
+        "reserve"
+      ],
+      "description_regex": null,
+      "memo_contains": "monthly",
+      "memo_keywords": null,
+      "memo_regex": null,
+      "account_id": null,
+      "kind": "expense",
+      "direction": "debit",
+      "currency": "SGD",
+      "min_amount": 100.0,
+      "max_amount": null
+    },
+    "set": {
+      "category": null,
+      "tags": [
+        "savings"
+      ],
+      "note_append": null,
+      "memo_append": "Routed automatically",
+      "route_to_account": "acc_savings"
+    },
+    "source": "suggested",
+    "created_at": "2026-02-03T04:05:06Z",
+    "updated_at": "2026-04-05T06:07:08Z",
+    "last_matched_at": null,
+    "match_count": 0
+  }
+]

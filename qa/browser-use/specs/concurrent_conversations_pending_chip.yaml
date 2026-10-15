@@ -1,0 +1,85 @@
+# Spec: CC-04 — a message sent into a busy conversation reads as queued, then delivers
+# Covers: acceptance C1, C2, C6
+#
+# C2 is an explicit owner requirement: "we need to also ensure users know when the
+# message is still waiting to be sent". Twenty passing unit tests do not discharge
+# it — the question is whether a person looking at the screen can tell. This spec
+# is the only thing that answers that.
+id: CC-04
+acceptance_ids:
+  - CONC-PENDING-VISIBLE
+  - CONC-INJECT-DELIVERED
+title: "Concurrent conversations: a message sent while busy reads as queued, then delivers into the turn"
+timeout_seconds: 600
+max_steps: 80
+
+description: >
+  While a conversation is mid-turn, send a second message into that SAME
+  conversation. It must be visibly marked as not-yet-delivered, must not open a
+  second turn, and must later be acted on inside the running turn — with the
+  queued marking clearing exactly when that happens.
+
+acceptance_criteria:
+  - AC1: Sending into a busy conversation is possible at all (the composer is not disabled)
+  - AC2: The message is visibly marked as queued/not-yet-delivered, distinct from a sent message
+  - AC3: The marking clears once the message is delivered into the turn
+  - AC4: The assistant acts on it within the same turn rather than starting a new one
+
+browser_use_task: |
+  Navigate to {app_url}.
+  IMPORTANT: this app loads real financial data and a cold boot is slow. Wait until the
+  main content has actually rendered — if you see a spinner or "Loading your dashboard",
+  keep waiting and re-checking for up to 60 seconds before doing anything else. Do not
+  give up or return a result while the page is still loading.
+  Open Lucius (a chat/spark button on a wide viewport, or the Lucius slot in the
+  bottom tab bar on a narrow one).
+
+  STEP 1 — start a slow turn.
+  Click "New chat" in the conversation sidebar.
+  Type exactly:
+  list all of my accounts and their balances
+  Press Enter. Do NOT wait for it to finish.
+
+  STEP 2 — send a SECOND message into the SAME conversation while it works.
+  Within about 3 seconds, while the first reply is still streaming, click the
+  message box again and type exactly:
+  also tell me which one has the highest balance
+  Press Enter.
+
+  If the message box is disabled, greyed out, or the send control has turned into
+  a Stop button so you cannot send, return
+  "FAIL: C1 - cannot send into a conversation that is busy".
+
+  STEP 3 — look for the queued marking. THIS IS THE POINT OF THE SPEC.
+  Immediately after sending, look carefully at your second message in the
+  transcript. There should be some visible indication that it has NOT yet been
+  delivered — wording such as "Queued", "waiting", or "will read this at its next
+  step", or a clearly distinct visual treatment compared with your first message.
+
+  Describe exactly what you see on that second message, word for word if there is
+  text. If there is NO visible difference at all between your second message and a
+  normally-sent message, return
+  "FAIL: C2 - a queued message is indistinguishable from a sent one".
+
+  STEP 4 — wait for delivery.
+  Wait up to 120 seconds. Watch for the queued marking to disappear from your
+  second message.
+
+  STEP 5 — evaluate.
+  - If the queued marking appeared and then cleared, AND the assistant's reply
+    addresses the highest-balance question (showing it was read inside the turn),
+    return "PASS: queued marking shown then cleared; message was acted on - <what the marking said>"
+  - If the marking appeared but never cleared within 120 seconds, return
+    "FAIL: C2 - queued marking never cleared - <what it said>"
+  - If the marking appeared and cleared but the assistant never addresses the
+    second question at all, return
+    "FAIL: C1 - message was marked delivered but never acted on"
+  - If an error mentioning API key, model, or configuration appears, return
+    "SKIP: AI not configured - <error text>"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CC-04-pending-chip.png"
+  note: >
+    The screenshot is the artifact that discharges C2 — it must show the queued
+    state on a real message in a real transcript, not a component in isolation.

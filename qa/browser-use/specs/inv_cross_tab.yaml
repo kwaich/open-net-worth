@@ -1,0 +1,148 @@
+# Spec: INV-CT-01 — Cross-tab: Portfolio brief priority order, sparkline
+#                   suppressed when < 2 data points, state persistence
+# Covers: docs/qa/acceptance/investments-cross-tab.md
+id: INV-CT-01
+acceptance_ids:
+  - INV-CT-BRIEF-RENDERS
+  - INV-CT-BRIEF-PRIORITY-ORDER
+  - INV-CT-BRIEF-TODAY-SIGNED
+  - INV-CT-BRIEF-TODAY-ABSENT-GRACEFUL
+  - INV-CT-SPARKLINE-SHOWN-SUFFICIENT
+  - INV-CT-SPARKLINE-OMITTED-INSUFFICIENT
+  - INV-CT-SPARKLINE-OMITTED-NO-HISTORY
+  - INV-CT-GROUPBY-PERSISTS
+  - INV-CT-DENSITY-PERSISTS-RELOAD
+  - INV-CT-SUBTAB-PERSISTS-RELOAD
+title: "Investments cross-tab — Portfolio brief priority order, sparkline < 2 pts omitted, state persistence"
+description: >
+  Exercises cross-tab invariants on the redesigned Investments tab:
+    1. The Portfolio brief summary bar renders all stat cards in priority order
+       (Total Value first, Today second, Unrealized P&L third, % of NW last).
+    2. "Today" is signed (+/−) when day data exists; shows "—" when absent.
+    3. Sparklines are omitted for positions with < 2 historical price points —
+       no broken chart element or JS error.
+    4. Group-by, density, and sub-tab selections persist across sub-tab switches
+       and full page reloads.
+
+acceptance_criteria:
+  - "AC1: Portfolio brief renders all four stat cards without error"
+  - "AC2: Total Value is the first (leftmost) stat card"
+  - "AC3: Today stat is signed when day-change data exists"
+  - "AC4: Today shows dash when no day-change data (not $0 or 0%)"
+  - "AC5: Sparklines are visible for positions with 2+ price history points"
+  - "AC6: Sparklines are absent for positions with fewer than 2 price history points"
+  - "AC7: Group-by persists across sub-tab switches"
+  - "AC8: Last-active sub-tab persists across page reload"
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open the Investments tab (AC1, AC2).
+  Click "Investments" in the left sidebar. Wait 3 seconds.
+  Look at the Portfolio brief / SummaryBar at the top of the Investments tab.
+  This is a row or cluster of stat cards (each has a label and a value).
+
+  Is the brief rendered (not blank, not erroring)?
+  Record: BRIEF_RENDERED = "yes" or "no".
+
+  If BRIEF_RENDERED = "yes":
+    Read the labels of the stat cards from left to right (or top to bottom
+    on mobile). List them in order.
+    Record: BRIEF_ORDER = [<label1>, <label2>, <label3>, <label4>, ...]
+
+    Is the first card labelled "Total Value" (or "Total", "Portfolio Value")?
+    Record: TOTAL_FIRST = "yes" or "no".
+
+  Step 2 — Check "Today" stat signed (AC3, AC4).
+  Look at the "Today" stat card. What value does it show?
+  Record: TODAY_VALUE = <the text exactly, e.g. "+$1,234", "−$567", "—", "$0">
+
+  If TODAY_VALUE is NOT "—" and NOT "N/A":
+    Does it include a "+" or "−" sign (or is it coloured green/red)?
+    Record: TODAY_SIGNED = "yes" or "no".
+  Else:
+    Is the value exactly "—" (an em-dash or two hyphens) rather than "$0" or "0%"?
+    Record: TODAY_DASH = "yes (correct)" or "no (shows zero, wrong)".
+
+  Step 3 — Check sparklines on Holdings (AC5, AC6).
+  Click the "Holdings" sub-tab. Wait 2 seconds.
+  Look at the position rows in the holdings table. Do any rows show a small
+  inline line chart / sparkline (a mini price trend chart, usually in the
+  rightmost columns or within the row)?
+  Record: SPARKLINES_VISIBLE = "yes", "no", or "unclear".
+
+  If SPARKLINES_VISIBLE = "yes":
+    Look at all sparklines. Are any of them broken — zero-width, invisible
+    canvas, or showing an error/placeholder instead of a line?
+    Record: BROKEN_SPARKLINES = "yes (some broken)" or "no (all ok)".
+    Note: a position with only one price point should have NO sparkline (not a
+    broken one). Are there any rows that appear to have a broken/empty sparkline
+    rather than a cleanly absent one?
+    Record: SILENT_ABSENCE = "yes (sparkline cleanly absent for some rows)"
+             or "no (all rows either have sparkline or have nothing at all — check which)".
+
+  Step 4 — Check Group-by persistence (AC7).
+  Ensure a Group-by control is visible. Select "Account" from the Group-by
+  dropdown (or any option other than the default). Wait 1 second.
+  Now click the "Performance" sub-tab. Wait 1 second.
+  Now click back to "Holdings". Wait 1 second.
+  What is the current Group-by value?
+  Record: GROUPBY_AFTER_SWITCH = "Account (persisted)" or "<other value> (reset)".
+
+  Step 5 — Check sub-tab persistence across page reload (AC8).
+  Click the "Performance" sub-tab. Wait 1 second.
+  Reload the page (press F5 or use browser refresh). Wait 5 seconds.
+  After reload: click "Investments" in the sidebar (it may re-open directly).
+  Which sub-tab is active after reload?
+  Record: SUBTAB_AFTER_RELOAD = "Performance (persisted)" or "<other> (reset)".
+
+  Decision:
+  - If BRIEF_RENDERED = "no":
+    return "FAIL: INV-CT-01 — Portfolio brief not rendered"
+
+  - Evaluate brief priority (AC1, AC2):
+    if TOTAL_FIRST = "no": BRIEF_CHECK = "fail — Total Value is not the first stat card"
+    else: BRIEF_CHECK = "pass"
+
+  - Evaluate Today stat (AC3, AC4):
+    if TODAY_VALUE is NOT "—" and TODAY_SIGNED = "no":
+      TODAY_CHECK = "fail — Today stat has a value but is unsigned (no +/− sign)"
+    elif TODAY_VALUE appears to be "$0" or "0%" (not "—"):
+      TODAY_CHECK = "fail — Today shows $0/0% instead of — when no day data"
+    elif TODAY_DASH = "yes (correct)":
+      TODAY_CHECK = "pass (no day data — shows — correctly)"
+    else: TODAY_CHECK = "pass"
+
+  - Evaluate sparklines (AC5, AC6):
+    if SPARKLINES_VISIBLE = "unclear": SPARKLINE_CHECK = "skip — could not determine"
+    elif SPARKLINES_VISIBLE = "no": SPARKLINE_CHECK = "skip — no sparklines in redesign or no price history"
+    elif BROKEN_SPARKLINES = "yes (some broken)": SPARKLINE_CHECK = "fail — broken sparkline elements found (should be absent for < 2 points, not broken)"
+    else: SPARKLINE_CHECK = "pass"
+
+  - Evaluate group-by persistence (AC7):
+    if GROUPBY_AFTER_SWITCH contains "Account": GROUPBY_CHECK = "pass"
+    else: GROUPBY_CHECK = "fail — Group-by reset after sub-tab switch"
+
+  - Evaluate sub-tab persistence (AC8):
+    if SUBTAB_AFTER_RELOAD contains "Performance": SUBTAB_CHECK = "pass"
+    else: SUBTAB_CHECK = "fail — sub-tab not restored after page reload"
+
+  - If any check is "fail":
+    return "FAIL: INV-CT-01 — BRIEF=<BRIEF_CHECK>, TODAY=<TODAY_CHECK>, SPARKLINE=<SPARKLINE_CHECK>, GROUPBY=<GROUPBY_CHECK>, SUBTAB=<SUBTAB_CHECK>"
+
+  - If all pass or skip:
+    return "PASS: INV-CT-01 — BRIEF=<BRIEF_CHECK>, TODAY=<TODAY_CHECK>, SPARKLINE=<SPARKLINE_CHECK>, GROUPBY=<GROUPBY_CHECK>, SUBTAB=<SUBTAB_CHECK>"
+
+max_steps: 35
+timeout_seconds: 300
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "INV-CT-01-cross-tab.png"
+  note: >
+    SKIP is acceptable for sparkline checks if the redesign has not yet added
+    sparklines or if the demo seed data contains only manually-priced instruments
+    (no price history series). The brief order, Today sign, and persistence checks
+    (Group-by / sub-tab) can all be evaluated against the current codebase —
+    they are not redesign-specific gates.
+    No ANTHROPIC_API_KEY required.

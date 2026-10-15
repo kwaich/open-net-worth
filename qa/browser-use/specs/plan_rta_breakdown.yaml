@@ -1,0 +1,92 @@
+# Spec: PLAN-RTA-BRK-01 — Ready-to-Assign breakdown popover
+# Verifies the RESTORED identity (ADR `2026-09-09-ready-to-assign-follows-ynab-envelopes-are-the-category`,
+# superseding `2026-09-08-ready-to-assign-is-unassigned-cash` one day after it shipped): clicking
+# the RTA hero opens the breakdown popover, its terms ("Cash on hand" / a SIGNED "Held in
+# envelopes" term that can be negative when envelopes are net overspent / "Card spending not
+# covered this month" / optional Baseline / optional Assigned in future months) sum exactly to
+# the hero figure, and Escape closes it. The rows ARE the formula — there is no footer restating
+# it. Row labels below are the shipped strings, verbatim from
+# `frontend/src/components/tabs/plan/rtaLines.ts`.
+id: PLAN-RTA-BRK-01
+timeout_seconds: 300
+acceptance_ids:
+  - BUD-RTA-4
+  - BUD-RTA-BREAKDOWN-OPEN
+  - BUD-RTA-BREAKDOWN-LINES-EXACT
+  - BUD-RTA-BREAKDOWN-NO-RESIDUAL
+  - BUD-RTA-BREAKDOWN-DISMISS-AND-MASK
+acceptance_criteria:
+  - AC1: Clicking the Ready-to-Assign hero figure opens an anchored popover titled "Ready to Assign · <month>"
+  - AC2: The popover lists, in order, "Cash on hand" and "Held in envelopes" (always shown, even at zero, and CAN be negative when envelopes are net overspent — in which case the row renders with a "+" glyph and an UNSIGNED amount, because held overspending lends room back until the roll; that sign flip is the shipped, correct behavior, pinned by `budgetRta.test.ts`), then "Card spending not covered this month", "Baseline" and "Assigned in future months" only when nonzero — each row a "+"/"−" glyph in its own column and an UNSIGNED amount beside it (never a second minus on the amount) — ending in a bold "Ready to Assign" total row
+  - AC3: Combining the rows BY THEIR OWN GLYPHS — start at "Cash on hand", add every "+" row, subtract every "−" row, so a "+ Held in envelopes" row is ADDED — equals the final total row, which equals the large hero figure that was clicked
+  - AC4: Pressing Escape closes the popover
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1: Open the Plan tab, Budget sub-tab.
+  Click "Plan" in the left sidebar and wait for the Budget view to load. You should see a
+  "Ready to Assign" card at the top with a large currency figure (it may be positive,
+  negative, or zero — any is fine, and it may now read ABOVE the account's cash on hand if any
+  envelope is currently overspent — that is expected under the restored identity, not a bug).
+  Note the exact text of that large figure (including any minus sign) — you'll compare it
+  against the popover's total row later.
+  Take a screenshot of the Ready to Assign card before interacting with it.
+
+  Step 2: Open the breakdown popover (AC1).
+  Click directly on the large Ready-to-Assign figure. Confirm a popover appears anchored
+  near it, with a header titled "Ready to Assign · <Month Year>" (the month name should
+  match the month currently shown at the top of the card) and a small "×" close button.
+  Take a screenshot of the open popover.
+
+  Step 3: Verify the terms render, in order (AC2).
+  Within the popover, confirm you can see, top to bottom:
+  - "Cash on hand", with a "+" glyph in its own narrow left column
+  - "Held in envelopes" — ALWAYS present, even if the amount is 0.00. Its glyph follows the
+    term's REAL sign: "−" while the envelopes are net holding money, "+" when they are net
+    overspent this month. If you see "+ Held in envelopes", that is CORRECT, not a bug — a held
+    overspend lends room back until the roll settles it. If any envelope in the table shows a
+    negative Available (overspent), this row's amount should be SMALLER than the plain sum of
+    every positive envelope balance alone — the overspent envelope's negative balance is
+    partially offsetting the positive ones inside this one signed term. It is NOT clamped to
+    zero at the envelope level.
+  - (only when nonzero) "Card spending not covered this month", with a "−" glyph
+  - (only when nonzero) "Baseline", with a "−" glyph
+  - (only when nonzero) "Assigned in future months", with a "−" glyph
+  - a bold final row labelled "Ready to Assign" with an amount
+  Every AMOUNT is unsigned — the sign is spelled once, by the glyph column, so no row shows
+  something like "−  Held in envelopes  −S$458.17". A row printing two minuses for one fact is a
+  FAIL.
+  There should be NO "Left over from <month>", "Inflows in <month>", "Assigned in <month>",
+  or "Investing & other movements" lines — those belonged to older designs and are gone.
+  Take a screenshot showing all the rows.
+
+  Step 4: Verify the arithmetic sums to the hero figure (AC3).
+  Combine the rows BY THEIR GLYPHS: start from "Cash on hand", ADD every row whose glyph is "+",
+  SUBTRACT every row whose glyph is "−". If "Held in envelopes" shows a "+", ADD it — do not
+  subtract it; the glyph already carries the sign, and a "+" there is the correct rendering of a
+  net-overspent month. Confirm the result equals the bold "Ready to Assign" row at the bottom of
+  the popover, which in turn matches the large hero figure you noted in Step 1 (same digits and
+  sign — cents may appear in the popover where the hero figure omitted them, that's fine as long
+  as the whole-dollar amount and sign agree).
+  Also confirm there is NO "Unexplained — refresh" row and no "Investing & other movements"
+  row anywhere in the popover: the operator-prefixed rows ARE the formula, so a residual line
+  would mean the terms failed to close.
+
+  Step 5: Verify Escape closes it (AC4).
+  With the popover still open, press the Escape key. Confirm the popover disappears from
+  the page and the Ready-to-Assign hero figure is still visible (and appears focused/
+  highlighted, since focus should return to it). Take a screenshot confirming the popover
+  is closed.
+
+  Step 6 (best-effort, skip if it doesn't apply): Verify covering an overspent envelope is
+  described as costing Ready to Assign, not as free.
+  If any envelope in the table shows a negative Available (overspent), and there is any nearby
+  help text or coaching copy about it, confirm it says covering/funding that envelope REDUCES
+  Ready to Assign (up to the size of the hole) — text claiming covering it "doesn't change Ready
+  to Assign" or that spending "already left RTA when it happened" is the RETIRED 2026-09-08
+  behavior and is now a FAIL if found. An overspent envelope not yet covered should NOT, by
+  itself, print any RTA-shortfall coaching, since RTA does not move just because a category
+  reads red — only actually assigning money to cover it should read as costing RTA.
+
+  Report PASS/FAIL per AC with what you observed.

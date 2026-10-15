@@ -1,0 +1,104 @@
+---
+// The public landing page — deliberately NOT part of the `docs` collection (the
+// one-corpus rule only binds pages built from docs/product/**/*.md). Nothing
+// below restates how to use the app; it only teases each doc category and links
+// into it. Astro's own file-based routing (src/pages/index.astro) takes
+// priority over Starlight's injected [...slug] route, so this fully replaces
+// the default Starlight homepage.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CATEGORIES, firstDocInCategory } from '../lib/corpus.mjs';
+
+// Empty until a PUBLIC repo exists — see astro.config.mjs. Linking at a private
+// repo just hands a visitor a 404.
+const GITHUB_URL = process.env.PUBLIC_REPO ? `https://github.com/${process.env.PUBLIC_REPO}` : '';
+
+// corpus.mjs is plain JS (shared with astro.config.mjs, which runs outside
+// TypeScript entirely), so CATEGORIES' `id` field is a bare `string` here —
+// this needs an explicit index signature rather than an inferred literal-key
+// object type, or indexing it by `category.id` below doesn't typecheck.
+const categoryBlurbs: Record<string, string> = {
+  'getting-started': 'Install it, run it for the first time, add your first account.',
+  concepts: 'The mental model: ledger, accounts, categories, envelopes, base currency.',
+  features: 'One page per feature — budgeting, investments, planning, and more.',
+  lucius: 'What the AI advisor can do, its permissions, and its memory.',
+  connectors: 'Email ingest, Telegram, MCP, and price-source integrations.',
+  operations: 'Backup and restore, upgrading, security and privacy, performance.',
+  troubleshooting: 'Symptom-first fixes and a frequently-asked-questions page.',
+  reference: 'Environment variables, ports, file layout, API surface, glossary.',
+};
+
+const categoryCards = CATEGORIES.map((category) => ({
+  ...category,
+  firstDoc: firstDocInCategory(category.id),
+})).filter((category) => category.firstDoc);
+
+const gettingStartedDoc = firstDocInCategory('getting-started');
+const primaryCtaHref = gettingStartedDoc ? `/${gettingStartedDoc}/` : '/';
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Documentation',
+    description:
+      'An open-source agent harness for personal finance. A real multi-currency ledger, and an AI that can act on it — running entirely on your own machine.',
+    /* The four fields below are required by this site's shared docs frontmatter
+       schema (src/content.config.ts) so real corpus pages can't skip them —
+       they carry no meaning on this non-corpus marketing page. */
+    category: 'getting-started',
+    order: 0,
+    audience: ['user'],
+    status: 'stable',
+  }}
+>
+  <p class="docs-lede">
+    Install it, understand the model behind it, and see what the assistant can do on your
+    behalf — on a machine you control.
+  </p>
+
+  <!-- Hero card: prose left, a concrete artifact right. The install command is the
+       most useful thing this page can hand someone in the first five seconds. -->
+  <section class="docs-hero">
+    <div class="docs-hero__copy">
+      <h2>Run it in one command</h2>
+      <p>
+        Install it, start it, and open the app. No configuration file, no account, no cloud —
+        your data stays in a folder you pick.
+      </p>
+      <div class="docs-hero__ctas">
+        <a class="docs-btn docs-btn--primary" href={primaryCtaHref}>Get started</a>
+        <a class="docs-btn" href="/getting-started/installation/">Installation</a>
+      </div>
+    </div>
+    <div class="docs-hero__code">
+      <div class="docs-hero__codebar"><span>bash</span></div>
+      <pre><code><span class="c-dim">$</span> curl -fsSL <span class="c-url">…/open-net-worth-releases/…/install-server.sh</span> | sh
+<span class="c-dim">$</span> onw start --open
+
+<span class="c-ok">→ http://localhost:8080</span></code></pre>
+    </div>
+  </section>
+
+  <p class="docs-eyebrow">Browse the docs</p>
+
+  {
+    categoryCards.length > 0 ? (
+      <section class="home-section">
+        <CardGrid>
+          {categoryCards.map((category) => (
+            <LinkCard
+              title={category.label}
+              description={categoryBlurbs[category.id]}
+              href={`/${category.firstDoc}/`}
+            />
+          ))}
+        </CardGrid>
+      </section>
+    ) : (
+      <p class="home-empty-corpus">
+        The documentation is still being written — check back soon, or browse the
+        documentation source.
+      </p>
+    )
+  }
+</StarlightPage>

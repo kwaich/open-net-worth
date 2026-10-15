@@ -1,0 +1,53 @@
+# Spec: CDS-CONNECT-ROUTING-01 — both dead-end "Connect to bank" affordances now route to
+# Connectors, with no toast and no fake modal.
+# Covers: AccountsTab.tsx's Add Account method step (Region 5) and AccountHeader.tsx's
+#         kebab "Connect to bank" action (the follow-up fix, ConnectModal.tsx deleted).
+id: CDS-CONNECT-ROUTING-01
+acceptance_ids:
+  - CDS-UI-19
+  - CDS-UI-21
+title: "Add Account 'Connect' card and the account header's 'Connect to bank' both route to Connectors"
+description: >
+  Two separate "connect a bank" affordances used to dead-end (a toast that did nothing, or a
+  fake review-then-spinner modal). Both must now navigate straight to the Connectors tab,
+  with no toast and no modal.
+
+acceptance_criteria:
+  - "AC1: The Add Account modal's method-step Connect a bank or broker card navigates to the Connectors tab, no toast"
+  - "AC2: A manually-tracked account's kebab menu Connect to bank action navigates to the Connectors tab, no toast, no modal"
+
+browser_use_task: |
+  Navigate to {app_url}/accounts and wait for the page to load.
+
+  Step 1 — Add Account method step.
+  Click the button to add a new account (e.g. "+ Add account" or similar). On the method
+  chooser, click "Connect a bank or broker".
+  Check: did the app navigate to the Connectors tab (the URL and page content change to
+  show the Connectors list)? Did any toast/snackbar message appear at any point during this
+  action?
+  Record STEP1_NAVIGATED = "yes" or "no".
+  Record STEP1_TOAST = "yes" or "no".
+
+  Step 2 — Account header "Connect to bank".
+  Navigate back to {app_url}/accounts. Select a manually-tracked account (one that shows
+  "Manual" rather than "Synced" near its name — e.g. a cash or savings account you added by
+  hand). Open its "More actions" (kebab) menu and click "Connect to bank".
+  Check: did the app navigate to the Connectors tab? Did any toast appear? Did a modal
+  titled "Connect to bank" with a spinner or a list of numbered steps open instead?
+  Record STEP2_NAVIGATED = "yes" or "no".
+  Record STEP2_TOAST = "yes" or "no".
+  Record STEP2_MODAL = "yes" or "no".
+
+  Decision:
+  - If STEP1_NAVIGATED = "no" or STEP1_TOAST = "yes":
+    return "FAIL: Add Account's Connect card did not navigate cleanly (STEP1_NAVIGATED, STEP1_TOAST)"
+  - If STEP2_MODAL = "yes":
+    return "FAIL: the account header's Connect to bank still opens the old review modal"
+  - If STEP2_NAVIGATED = "no" or STEP2_TOAST = "yes":
+    return "FAIL: the account header's Connect to bank did not navigate cleanly (STEP2_NAVIGATED, STEP2_TOAST)"
+  - Otherwise:
+    return "PASS: both Connect affordances route straight to Connectors with no toast and no modal"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CDS-CONNECT-ROUTING-01-connectors-landed.png"

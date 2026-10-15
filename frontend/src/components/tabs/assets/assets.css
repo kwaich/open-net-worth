@@ -1,0 +1,1904 @@
+/* Assets tab — ported from frontend/design_handoffs/assets_handoff/prototype/assets_tab/
+   assets.css, verbatim class vocabulary (as- prefix). Stripped of shell scaffolding: the
+   standalone prototype's own html/body reset, `* { box-sizing }`, `tnum`, bare `a`/`a:hover`,
+   and its `:root {…}` token override block — the app's generated tokens already collapse
+   --surface/--surface2/--modal-bg onto --bg and define --hover/--selected/--lucius (the same
+   values the prototype's block re-declared); the one genuinely NEW set, the --cat-* category
+   aliases, moved to src/design/tokens.source.mjs (regenerated via `npm run build:tokens`) so
+   they're real design tokens, not a per-tab override. `.as-page`'s own padding is gone too —
+   `.app-layout` owns the page gutter (24px desktop / 16px ≤640px), mirroring commitments.css's
+   `.c2-page` scaffold; `.as-head` no longer needs to bleed past it (see the comment there).
+   The privacy-mask `.mask` class is NOT defined here (superseded by the app's real
+   `body.hide-amounts .money` convention, used by the ported components instead of `.mask`).
+   `.mk-density` (Investments' density toggle, never mounted by this tab) and the standalone
+   shell's `.onw-*` app-nav phone rules are dropped. `.ui-select`/`.ui-input` overrides that
+   target MODAL content are scoped under `.as-modal` (a class the modals.tsx port must add to
+   each `<Modal className="as-modal">` — Radix portals a dialog to document.body, so it is
+   never a descendant of `.as-page` the way `.as-head .ui-page-header` is). Unlayered — wins
+   like plan.css/commitments.css. Registered in frontend/scripts/check-css-classes.mjs's
+   CSS_FILES. Dead-class count is expected non-zero until the register/detail/modals sub-lanes
+   land (frontend/scripts/css-debt.json (the dot-file)'s ratchet is NOT touched by this change — see the
+   foundation PR notes). */
+
+/* ── page scaffold (mirrors Commitments' .c2-page: no horizontal/top padding of its own —
+   .app-layout already owns the 24px desktop / 16px ≤640px gutter, and the topbar owns the
+   top safe area) ── */
+.as-page {
+  padding-bottom: 90px;
+  min-width: 0;
+}
+/* Title + Add asset row. Plain scrolling flow on desktop — the whole page (title, KPIs,
+   chips, cards) scrolls together as one normal column; nothing sticks until the ≤640px
+   mobile override below, where .as-head and .as-bar EACH become their own sticky band. */
+.as-head {
+  min-width: 0;
+}
+.as-wrap {
+  max-width: 1460px;
+  margin: 0 auto;
+  min-width: 0;
+}
+.as-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.as-more {
+  margin-top: 26px;
+}
+.as-more-h {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.as-more .as-tiles {
+  margin-top: 10px;
+}
+/* Empty book: one compact tile per kind of thing the page holds; the tile is how you add one.
+   Dashed, because a tile is a place for a holding, not a holding; solid on hover. */
+.as-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+.as-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.as-tile:hover,
+.as-tile:focus-visible {
+  border-style: solid;
+  background: var(--bg-2);
+}
+.as-tile-thumb {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+}
+.as-tile-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.as-tile-nm {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.as-tile-ex {
+  font-size: 12px;
+  color: var(--muted);
+}
+.as-tile-plus {
+  color: var(--faint);
+  display: grid;
+  place-items: center;
+}
+.as-tile:hover .as-tile-plus {
+  color: var(--ink);
+}
+.as-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+  margin-top: 16px;
+}
+@media (max-width: 1180px) {
+  .as-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* The asset page is one column: its value and chart, then its record — the sections where it
+   is edited — as a two-up grid, then its history. A fixed 300px side rail wrapped a real
+   record's long values and, sticky, hid its last card while the history scrolled. */
+/* The asset page reads at a comfortable width, centred — on a wide screen its cards and rows
+   no longer stretch edge to edge (owner, 2026-09-28). The register keeps .as-wrap's width. */
+.as-dpage {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.as-body.as-dbody {
+  grid-template-columns: minmax(0, 1fr);
+  position: relative;
+}
+/* Files dragged over the asset page: one plain target — they attach to this asset. Pointer
+   events pass through, so leaving the page (not a child) is what ends it. */
+.as-drop {
+  position: absolute;
+  inset: calc(-1 * var(--space-3));
+  z-index: var(--z-sticky);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  pointer-events: none;
+}
+.as-drop-label {
+  position: sticky;
+  top: 40%;
+  margin-top: var(--space-9);
+  padding: var(--space-4) var(--space-7);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+/* "or drop files on this page" — only where a mouse can drag a file here. */
+.as-drop-hint {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .as-drop-hint {
+    display: inline;
+  }
+}
+
+/* ── summary strip ─────────────────────────────────────────── */
+.as-sum {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.as-sum > div {
+  padding: 13px 16px;
+  border-right: 1px solid var(--line);
+  min-width: 0;
+}
+.as-sum > div:last-child {
+  border-right: 0;
+}
+/* 11px, matching Investments' own KPI strip (.mk-sum-label) — was 9.5px unconditionally,
+   noticeably smaller. Investments' own CSS has a 9.5px "compact" variant gated behind
+   `@container (max-width: 1000px)`, but nothing in that file ever declares a matching
+   `container-type` on an actual ancestor — the query has no container to measure, so it
+   never fires and Investments' label is 11px in every real layout. Kept at a flat 11px
+   here to match what Investments ACTUALLY renders, not what its unreachable rule implies. */
+.as-sum-k {
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 700;
+}
+.as-sum-v {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.as-sum-v.pos {
+  color: var(--good);
+}
+.as-sum-v.neg {
+  color: var(--bad);
+}
+@media (max-width: 1240px) {
+  .as-sum-v {
+    font-size: 18px;
+  }
+  .as-sum > div {
+    padding: 12px 13px;
+  }
+}
+@media (max-width: 1040px) {
+  .as-sum {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .as-sum > div:nth-child(2) {
+    border-right: 0;
+  }
+  .as-sum > div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+  .as-sum-v {
+    font-size: 20px;
+  }
+}
+
+/* ── filter bar ────────────────────────────────────────────── */
+.as-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  min-width: 0;
+}
+.as-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
+}
+.as-chip {
+  flex: none;
+}
+.as-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .as-chip:hover {
+    border-color: var(--line-strong);
+    color: var(--ink);
+  }
+}
+.as-chip.on {
+  background: var(--selected);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.as-chip i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  flex: none;
+  background: currentColor;
+}
+.as-chip em {
+  font-style: normal;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── stacks: a category of 4+ as one card, opened as a list (owner, 2026-09-28) ── */
+/* Its layers are drawn below it — two card edges peeking out, each a little narrower. Box
+   shadows, not pseudo-elements: the card clips what overflows it, never its own shadow. */
+/* One card behind it, narrower and peeking 6px out below — two read as a pile; three was
+   too many (owner, 2026-09-28). Real elements with their own radius: a box-shadow's
+   corners shrink by its inset, so the back layer came out square (owner: "why the hell is the
+   last card not rounded?"). */
+.as-stack-pile {
+  position: relative;
+  display: grid;
+  /* The one-line list of names must truncate, never widen the column. */
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+.as-stack-pile > .as-stack {
+  position: relative;
+  z-index: 1;
+}
+.as-stack-layer {
+  position: absolute;
+  inset: 8px 12px -6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface);
+}
+/* --hover is a translucent tint; over a stack's front card it let the layer behind show through
+   as a second outline inside the card. Flatten the tint onto the opaque surface instead. */
+@media (hover: hover) {
+  .as-card.as-stack:hover {
+    background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  }
+}
+.as-stack-top {
+  margin-top: var(--space-3);
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* ── grid ──────────────────────────────────────────────────── */
+.as-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  /* Every row (a real card's own row, or "Add an asset" alone in its own trailing row) is at
+     least a card's natural height — .as-add's `min-height: 100%` only stretches to fill an
+     ALREADY-tall row; without this, a lone Add-an-asset row sized to nothing but its own
+     short content instead of matching the cards above it. 112px = .as-card's actual computed
+     height: 30px vertical padding + 46px thumb row + 12px gap + ~24px value-line row. */
+  grid-auto-rows: minmax(112px, auto);
+  gap: 14px;
+  /* Every card in a row matches the row's tallest neighbour (e.g. a two-row Investments
+     breakdown) — `.as-card`'s own top-packed flex column (no bottom-anchoring) is what
+     keeps the extra height from disturbing anything ABOVE it: a short card's own content
+     stays exactly where it'd sit unstretched, and the leftover space lands below it, at
+     the bottom of the card, never between the title and its value. */
+  align-items: stretch;
+}
+
+.as-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 15px 17px;
+  cursor: pointer;
+  transition:
+    border-color 0.14s,
+    background 0.14s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+/* Guarded (not a bare :hover) — on a touch device with no real hover, a scroll gesture that
+   happens to start on a card would otherwise trigger and "stick" this highlight until the
+   next unrelated tap, since touch simulates :hover on contact rather than never firing it.
+   Same fix already applied in Accounts' own transaction rows. */
+@media (hover: hover) {
+  .as-card:hover {
+    border-color: var(--line-strong);
+    background: var(--hover);
+  }
+}
+.as-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.as-thumb {
+  width: 46px;
+  height: 46px;
+  border-radius: 11px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--ink);
+}
+.as-card-id {
+  min-width: 0;
+  flex: 1;
+}
+.as-card-nm {
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-wrap: pretty;
+}
+.as-card-sub {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.as-card-val {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+.as-card-val.neg {
+  color: var(--bad);
+}
+.as-card-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.as-card-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.as-card-rows {
+  /* No margin-top of its own — .as-card's own `gap: 12px` (flex column) already spaces it
+     from .as-card-row above, same as every other row pair in the card. An extra 6px here
+     used to make that ONE gap 18px while every other internal gap (and the card's own
+     15px top/bottom padding) stayed near 12-15px — visibly uneven rhythm. */
+  display: grid;
+  gap: 4px;
+}
+.as-card-brow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--faint);
+}
+.as-card-brow-lbl {
+  color: var(--faint);
+}
+.as-card-brow-val {
+  font-variant-numeric: tabular-nums;
+}
+.as-card-brow-val.neg {
+  color: var(--bad);
+}
+.as-delta {
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.as-delta.pos {
+  color: var(--good);
+}
+.as-delta.neg {
+  color: var(--bad);
+}
+.as-delta.flat {
+  color: var(--faint);
+}
+.as-split {
+  display: flex;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--bg-2);
+  gap: 2px;
+}
+.as-split i {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.as-add {
+  border: 1px dashed var(--line-strong);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 100%;
+}
+@media (hover: hover) {
+  .as-add:hover {
+    color: var(--ink);
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
+  }
+}
+
+/* ── table view ────────────────────────────────────────────── */
+.as-tbl-wrap {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 18px;
+}
+.as-tbl-scroll {
+  overflow-x: auto;
+}
+.as-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  min-width: 900px;
+}
+.as-tbl thead th {
+  text-align: right;
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 700;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  background: var(--bg);
+}
+.as-tbl thead th:first-child,
+.as-tbl thead th.l {
+  text-align: left;
+}
+.as-tbl td {
+  padding: 9px 13px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.as-tbl td.l {
+  text-align: left;
+}
+.as-tbl td.dim {
+  color: var(--faint);
+}
+.as-tbl tbody tr.data {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .as-tbl tbody tr.data:hover {
+    background: var(--hover);
+  }
+}
+.as-tbl tr.grp td {
+  background: var(--bg-2);
+  padding: 7px 13px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.as-tbl tbody tr:last-child td {
+  border-bottom: 0;
+}
+.as-tname {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+/* An attachment's name opens it — a row-wide target, with the name as its keyboard control. */
+.as-doc-open {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.as-doc-thumb-icon {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.as-doc-list {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+.as-doc-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--line);
+}
+.as-doc-list-row:last-child {
+  border-bottom: 0;
+}
+.as-doc-list-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+/* A file's note under its name: one line here — the whole note is in Edit note and in
+   Documents. */
+.as-doc-name {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.as-doc-note {
+  max-width: 44ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--text-xs);
+  color: var(--faint);
+}
+.as-doc-list-text {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-0);
+}
+.as-doc-thumb {
+  flex: none;
+  width: var(--space-9);
+  height: var(--space-9);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--surface);
+}
+.as-doc-menu {
+  width: 1%;
+  text-align: right;
+}
+.as-doc-kebab .kebab-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+}
+.as-viewer {
+  display: grid;
+  place-items: center;
+  min-height: calc(6 * var(--space-9));
+}
+.as-viewer-img {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+/* ── rail ──────────────────────────────────────────────────── */
+.as-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 18px;
+}
+.as-rcard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 13px 15px;
+}
+.as-rcard.warn {
+  border-color: color-mix(in srgb, var(--warn) 42%, var(--line));
+}
+/* A real card title (matches Investments' .mk-card-title: sentence case, 13px, --ink) — was a
+   small uppercase eyebrow label, which read as a caption rather than the card's own heading. */
+.as-rk {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.as-rk.w {
+  color: var(--warn);
+}
+
+/* ── the asset's record (sections.tsx): Ownership and Purchase beside Details and Notes — flat
+   groups in two columns that keep their own heights, no card and no divider; a group with
+   nothing is not drawn, and what is missing is one row of "+" chips (owner, 2026-09-28) ── */
+.as-record {
+  container-type: inline-size;
+  margin-top: var(--space-8);
+}
+.as-rec-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-7) var(--space-9);
+  align-items: start;
+}
+.as-rec-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  min-width: 0;
+}
+.as-rec-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.as-rec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.as-rec-title {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+/* A quiet text link, with a finger-sized target that doesn't push the rows down. */
+.as-rec-edit {
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) 0;
+  padding: var(--space-3);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .as-rec-edit:hover {
+    color: var(--ink);
+    text-decoration: underline;
+  }
+}
+.as-rec-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.as-rec-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-1) 0;
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+}
+.as-rec-row dt {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+}
+.as-rec-row dd {
+  margin: 0;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.as-rec-loan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.as-rec-dot {
+  flex: none;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: 50%;
+}
+.as-rec-dot--owed {
+  background: var(--bad);
+  opacity: 0.55;
+}
+.as-rec-caption {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.as-rec-link {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+.as-rec-notes {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.as-rec-add {
+  margin-top: var(--space-8);
+}
+/* "Missing — come add it": the page's own chip, dashed and in the accent. */
+.as-chip--add {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--accent);
+}
+@media (hover: hover) {
+  .as-chip--add:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    color: var(--accent);
+  }
+}
+@container (max-width: 600px) {
+  .as-rec-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* A note's own text in the Notes card, kept as typed (line breaks included). */
+.as-comp {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 11px;
+}
+/* A composition row: the label and its percentage on one line, the bar full width under
+   them — the label gets the card's whole width, so "Watches & jewellery" never wraps. */
+.as-comp-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'label pc'
+    'bar bar';
+  align-items: baseline;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--muted);
+}
+.as-comp-row > span:first-child {
+  grid-area: label;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.as-comp-bar {
+  grid-area: bar;
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  overflow: hidden;
+}
+.as-comp-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  min-width: var(--space-1);
+}
+.as-comp-pc {
+  grid-area: pc;
+  text-align: right;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+/* ── detail ────────────────────────────────────────────────── */
+.as-crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  margin-bottom: 16px;
+  color: var(--faint);
+  min-width: 0;
+}
+.as-crumb button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .as-crumb button:hover {
+    text-decoration: underline;
+  }
+}
+.as-crumb .cur {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.as-dhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+/* The asset's photo, when it has one: big enough to see, and tapping it opens it (a <button>:
+   its base padding, border and 8px corners are reset). */
+.as-dphoto {
+  flex: none;
+  width: calc(6 * var(--space-9));
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--surface);
+  cursor: zoom-in;
+}
+.as-dphoto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Phone (only rendered there): the photo is the page's cover, full width above the name,
+   inside the same 16px gutter as the header row under it. */
+.as-dphoto.as-dcover {
+  display: block;
+  width: calc(100% - 2 * var(--space-6));
+  aspect-ratio: 16 / 10;
+  margin: var(--space-3) var(--space-6) var(--space-6);
+}
+/* No photo yet: the SAME place, the category's icon on its tint — tapping it adds one, and the
+   page around it never moves (owner, 2026-09-28). */
+.as-dphoto.as-dphoto-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+.as-dphoto-add {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.as-photo-view {
+  display: grid;
+  place-items: center;
+}
+.as-photo-view img {
+  display: block;
+  max-width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+.as-dtitle {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+/* Wraps rather than single-line-ellipsizing (`.as-card-sub`'s own default) — the same
+   fix as `.as-card-nm`'s own comment: a hard nowrap+ellipsis cut a free-text description
+   off mid-word (mid-parenthesis, in practice), which read as broken rather than shortened.
+   Clamped to 2 lines so a very long description still can't grow the header unbounded. */
+.as-dhead-sub {
+  max-width: 72ch;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: unset;
+}
+/* Update value and the ⋯ menu (ui/ActionMenu) on the header's right, one height: the menu is
+   drawn as a bordered square beside the button. */
+.as-dhead-title {
+  flex: 1;
+  min-width: 220px;
+}
+/* Desktop, with a photo: a media block — the name, description and figures stacked beside the
+   photo from its top (a name centred beside a 144px photo floated in empty space). */
+.as-dhead-media {
+  align-items: flex-start;
+}
+.as-dhead-media .as-dhead-actions {
+  align-self: flex-start;
+}
+.as-dhead-title .as-dstats {
+  margin-top: var(--space-6);
+}
+.as-dhead-actions {
+  flex: none;
+  margin-left: auto;
+}
+.as-dhead-actions .ui-btn {
+  height: var(--space-9);
+}
+.as-dhead .kebab-trigger {
+  width: var(--space-9);
+  height: var(--space-9);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.as-dhead .kebab-trigger[aria-expanded='true'] {
+  color: var(--ink);
+  border-color: var(--line-strong);
+  background: var(--hover);
+}
+@media (hover: hover) {
+  .as-dhead .kebab-trigger:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+    background: var(--hover);
+  }
+}
+.as-dstats {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin-top: 0;
+}
+.as-dstat-k {
+  font-size: var(--text-xs);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 700;
+}
+/* One size for every figure — Value, Net equity, Unrealized: mixed sizes read as messy
+   (owner, 2026-09-28); the order and the labels carry the hierarchy. */
+.as-dstat-v {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.as-dstat-v.pos {
+  color: var(--good);
+}
+.as-dstat-v.neg {
+  color: var(--bad);
+}
+.as-dstat-s {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 3px;
+}
+/* "Your 50% · S$425,000" — the part of the value that counts in net worth. */
+.as-dstat-share {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: var(--space-0);
+  font-variant-numeric: tabular-nums;
+}
+/* A phone's Update value closes the Value stat (its header has room only for the menu). */
+/* Phone: Update value is the page's action, one full-width button under all the figures —
+   inside the Value figure it read as part of that one number. */
+.as-dstat-value-cta {
+  margin-top: var(--space-5);
+}
+.as-chart {
+  position: relative;
+  margin-top: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 14px 10px;
+}
+.as-chart-canvas {
+  position: relative;
+  height: 200px;
+}
+.as-chart-lg {
+  display: flex;
+  gap: 16px;
+  font-size: 10.5px;
+  color: var(--faint);
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.as-chart-lg i {
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  vertical-align: middle;
+  margin-right: 5px;
+  border-radius: 2px;
+}
+.as-subtabs {
+  margin-top: 18px;
+}
+
+/* ── add flow ──────────────────────────────────────────────── */
+/* As many ~104px tiles as fit, every row the same height; the last is "New category". */
+.as-pick {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(3 * var(--space-9) + var(--space-3)), 1fr));
+  grid-auto-rows: 1fr;
+  gap: var(--space-4);
+}
+.as-pick button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-3);
+  text-wrap: balance;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.3;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .as-pick button:hover {
+    border-color: var(--accent);
+    background: var(--hover);
+  }
+}
+.as-pick .as-pick-new {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+}
+.as-pick .as-pick-new[aria-expanded='true'] {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.as-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.as-form .full {
+  grid-column: 1 / -1;
+}
+@media (max-width: 560px) {
+  .as-form {
+    grid-template-columns: 1fr;
+  }
+}
+.as-hint {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* A dialog's destructive side action — a ghost button in the danger colour on the footer's
+   left (Correct this value's "Remove value"), apart from Cancel and the primary on the right. */
+.as-footer-danger {
+  margin-right: auto;
+}
+.ui-btn--ghost.as-footer-danger {
+  color: var(--bad);
+}
+@media (hover: hover) {
+  .ui-btn--ghost.as-footer-danger:hover:not(:disabled) {
+    color: var(--bad);
+    background: color-mix(in srgb, var(--bad) 10%, transparent);
+  }
+}
+/* ── edit details ──────────────────────────────────────────── */
+/* The Details editor's free-form rows read as their own section under the guided fields. */
+.as-details-other {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-6);
+}
+.as-facts-ed {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 10px;
+}
+.as-facts-ed > div {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr 30px;
+  gap: 8px;
+  align-items: center;
+}
+.as-fact-x {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--faint);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  /* Centres its "×" or icon — value history, attachments and other details all use it. */
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+}
+@media (hover: hover) {
+  .as-fact-x:hover {
+    color: var(--bad);
+    border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+  }
+}
+/* native controls inside the asset dialogs: match the text field exactly. `.as-modal` is the
+   marker class every Assets dialog adds to its own `<Modal className="as-modal">` — these
+   rules target content Radix portals to document.body, never a descendant of `.as-page`. */
+.as-modal .ui-select {
+  height: 36px;
+  padding: 0 32px 0 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a93a6' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.as-newcat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+  min-height: 36px;
+}
+.as-newcat > input,
+.as-newcat > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.as-newcat > button {
+  height: 36px;
+  min-height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.as-hint > svg {
+  flex: none;
+  margin-top: var(--space-0);
+}
+
+/* ── create wizard frame (AssetWizard.tsx) ── */
+/* The same md dialog every step, sized to the step's own content — a short step leaves no
+   empty band (owner, 2026-09-26). A tall step (step 1's tiles, step 3 with the loan form
+   open) is bounded by the dialog body's own max-height and scrolls there; the frame itself
+   never clips (a clip cut off focus rings). */
+.as-wizard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+/* The four steps as thin segments, those reached so far filled. Decorative — the subtitle
+   says "Step n of 4" in words. */
+.as-wizard-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  flex: none;
+}
+.as-wizard-progress > span {
+  height: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+}
+.as-wizard-progress > span.on {
+  background: var(--accent);
+}
+.as-wizard-back {
+  margin-right: auto;
+}
+
+/* ── create wizard steps (CategoryStep, OwnershipStep, InlineAddLoan) ── */
+/* Step 1's "Create a category" row keeps its full height in the step's flex column. */
+.as-wizard-pinned {
+  flex: none;
+}
+/* Step 1's footer — a quiet link with its caption under the label, not a second door. */
+/* Step 1's other way in: Lucius, as a card of its own — tinted with its colour so it reads as
+   a real option, not a footnote (owner, 2026-09-28). A <button>: base styles reset. */
+.as-lucius-cta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  width: 100%;
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid color-mix(in srgb, var(--lucius) 40%, var(--line));
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--lucius) 9%, transparent);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .as-lucius-cta:hover {
+    border-color: color-mix(in srgb, var(--lucius) 65%, var(--line));
+    background: color-mix(in srgb, var(--lucius) 15%, transparent);
+  }
+}
+.as-lucius-cta-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--space-9);
+  height: var(--space-9);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--lucius) 18%, transparent);
+  color: var(--lucius);
+}
+.as-lucius-cta-text {
+  display: grid;
+  gap: var(--space-0);
+  min-width: 0;
+}
+.as-lucius-cta-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+.as-lucius-cta-sub {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--muted);
+}
+/* A ghost link whose text lines up with the content edge — its own padding would indent it. */
+.as-flush-ghost {
+  margin-left: calc(-1 * var(--space-5));
+}
+/* "+ Add a loan": an inset form under the loan select. */
+.as-loan-add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-2);
+}
+.as-loan-add-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* A sub-tab's content under the tabs (Value history, Attachments). */
+.as-tab-panel {
+  margin-top: var(--space-5);
+}
+.as-tab-panel > .as-tbl-wrap {
+  margin-top: 0;
+}
+
+/* ── value history ─────────────────────────────────────────── */
+/* Each row is the control that opens its editor; this › says so, in the faint ink. On
+   desktop it is also the row's keyboard/AT button (the row itself takes the mouse). */
+.as-row-chevron {
+  color: var(--faint);
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+button.as-row-chevron {
+  background: none;
+  border: 0;
+  padding: 0 var(--space-2);
+  font-family: inherit;
+  cursor: pointer;
+}
+/* A phone's history: one grid for the whole list, each row a button spanning it as a
+   subgrid — date and value, then note and change, the › across both lines — so every
+   row's amounts line up in one column, whatever each row's own widths. Each part is placed
+   by name: a row without a note or a change keeps its columns, and with neither is one line. */
+.as-history-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+.as-history-list-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-template-rows: auto auto;
+  align-items: center;
+  row-gap: var(--space-0);
+  width: 100%;
+  padding: var(--space-4) var(--space-6);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  /* A <button>: the base style's 8px corners bent this row's divider up at both ends. */
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .as-history-list-row:hover {
+    background: var(--hover);
+  }
+}
+.as-history-list-row:last-child {
+  border-bottom: 0;
+}
+.as-history-list-row.one-line {
+  grid-template-rows: auto;
+}
+.as-history-when {
+  grid-area: 1 / 1;
+}
+.as-history-note {
+  grid-area: 2 / 1;
+}
+.as-history-amount,
+.as-history-change {
+  grid-column: 2;
+  justify-self: end;
+  font-variant-numeric: tabular-nums;
+}
+.as-history-amount {
+  grid-row: 1;
+}
+.as-history-change {
+  grid-row: 2;
+}
+.as-history-list-row > .as-row-chevron {
+  grid-column: 3;
+  grid-row: 1 / -1;
+}
+
+.as-empty {
+  border: 1px dashed var(--line-strong);
+  border-radius: 14px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--faint);
+  font-size: 12.5px;
+}
+.as-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-lg);
+  z-index: 90;
+}
+
+/* ── class cards (cash, investments) — peers of the asset cards ─── */
+.as-thumb.editable {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.as-thumb-edit {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  opacity: 0;
+}
+@media (hover: hover) {
+  .as-thumb.editable:hover .as-thumb-edit {
+    opacity: 1;
+  }
+}
+
+/* ── responsive ─────────────────────────────────────────────── */
+/* Tablet: rail drops under the grid as a two-up row. */
+@media (max-width: 1180px) {
+  .as-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .as-rail {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+}
+
+/* Phone. Breakpoint recalibrated from the prototype's standalone 720px to the app's real
+   mobile boundary (≤640px, src/components/ui/breakpoints.ts's BP.mobile). The prototype's
+   own edge-to-edge bleed trick (cancel the shell's fixed 24px gutter, re-pad each section by
+   16px) is re-derived from the REAL gutters here: .app-layout owns 24px desktop / 16px
+   ≤640px, so the cancel amount below is 16px (not the prototype's 24px, which assumed its
+   own fixed shell gutter at every width). */
+@media (max-width: 640px) {
+  .as-page {
+    /* Shared with .as-head's min-height and .as-bar's sticky `top` below — ONE source for
+       the header's height so the chip bar lines up directly under it instead of drifting
+       out of sync with a second hand-picked number. 34px = a size="sm" Button's own natural
+       height, now that .as-head carries no padding of its own (matches Dashboard's .ov-page,
+       which has none either) — was 56px then 44px, each still forcing dead centering slack
+       that read as an oversized top gap next to Dashboard's own flush title. */
+    --as-head-h: 34px;
+    margin: 0 -16px;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .as-wrap {
+    margin: 0;
+    max-width: none;
+  }
+  /* Two INDEPENDENT sticky bands, not one: title+Add-asset pins at the very top, the KPI
+     strip in between scrolls away normally, then the chip bar (.as-bar, below) pins right
+     under the header. --as-head-h is the one shared source for the header's height, so the
+     chip bar's own `top` (below) can line up under it exactly instead of drifting out of
+     sync with a second hand-picked number. */
+  .as-head {
+    /* No top OR bottom padding — Dashboard's own mobile title (.ov-page, no padding at all)
+       sits flush against the scroll area's top edge with zero extra inset, and this should
+       match it exactly rather than adding a gap Dashboard doesn't have. The KPI row right
+       below (a sibling, not a child, now that it's out of this sticky box) already supplies
+       its own 16px top margin — a bottom padding HERE would stack on top of that instead of
+       replacing it, doubling the gap. */
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    min-height: var(--as-head-h);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0 16px;
+    background: var(--bg);
+  }
+  .as-head .ui-page-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 12px;
+    text-align: left;
+    width: 100%;
+  }
+  .as-head .ui-page-header__titles {
+    flex: 1;
+    min-width: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .as-head .ui-page-header__subtitle {
+    display: none;
+  }
+  .as-head .ui-page-header__actions {
+    flex: none;
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  /* Was relying on .as-head's OWN padding for its left/right gutter, back when both were
+     inside one shared sticky box — now a sibling of it, so it needs its own. */
+  .as-kpi-row {
+    padding: 0 16px;
+  }
+  /* The empty book's header, tiles and "add more" list are one section: one gutter. */
+  .as-empty-book {
+    padding: 0 16px;
+  }
+  /* The loading skeleton renders inside .as-page too: its header re-pads through .as-head,
+     but its body (figures, chips, cards) has to re-add the gutter like every real section. */
+  .as-page .ui-tab-skeleton__assets {
+    padding: 0 16px;
+  }
+
+  /* summary: plain 2×2, no outer box */
+  .as-sum {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .as-sum > div {
+    padding: 10px 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .as-sum > div:nth-child(odd) {
+    border-right: 0;
+    padding-right: 14px;
+  }
+  .as-sum > div:nth-child(even) {
+    padding-left: 14px;
+  }
+  /* the tablet rule above draws a rule under cells 1-2; on a phone the 2×2 has no rules */
+  .as-sum > div:nth-child(-n + 2) {
+    border-bottom: 0;
+  }
+  /* No mobile override — Investments' own eyebrow label has none either (its only
+     size variant is unreachable dead CSS, see the base .as-sum-k comment), so it stays
+     11px on every width including this one. */
+  .as-sum-v {
+    font-size: 17px;
+    margin-top: 3px;
+  }
+
+  /* chips: sticky directly under .as-head (a SEPARATE sticky band — the KPI strip between
+     them stays in normal scrolling flow), a single scrolling row, edge-to-edge. The bottom
+     padding is breathing room so a card scrolling up doesn't visually run flush into this
+     bar; the ::after below softens that boundary further — a card now fades INTO view as
+     it emerges from under the bar instead of appearing behind a hard solid-color edge. */
+  .as-bar {
+    /* Bottom padding trimmed from 10px to 4px — that solid 10px sat IN FRONT of the fade
+       below, so a card had to clear a fully-opaque strip before any visible fading even
+       started. The ::after fade now does the breathing-room job on its own. */
+    position: sticky;
+    top: var(--as-head-h);
+    z-index: 5;
+    margin: 4px 0 0;
+    padding: 8px 0 4px;
+    background: var(--bg);
+  }
+  .as-bar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -20px;
+    height: 20px;
+    pointer-events: none;
+    /* A plain two-stop linear alpha ramp reads as solid for its first third or so — dark
+       colors don't visually register as "fading" until well past 50% alpha. Multiple stops
+       front-load the drop so the fade is perceptible immediately instead of after a delay. */
+    background: linear-gradient(
+      to bottom,
+      var(--bg) 0%,
+      color-mix(in srgb, var(--bg) 60%, transparent) 40%,
+      color-mix(in srgb, var(--bg) 20%, transparent) 75%,
+      transparent 100%
+    );
+  }
+  .as-bar-wrap {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    /* Left padding gives the first chip a real 16px gutter (this side works fine — it's the
+       row's resting scroll position). The RIGHT side is a trailing flex spacer in the JSX
+       instead of padding-right: a scroll container's trailing padding isn't reliably
+       honored as real scroll space once content overflows (a Chrome/WebKit quirk) — with
+       padding alone the last chip sat flush against the screen edge at full scroll, no
+       gutter at all despite the CSS saying otherwise. */
+    padding: 1px 0 1px 16px;
+    margin: -1px;
+    /* A right-only fade — the "soft fade at the right" this file's own comment already
+       claimed, but never actually implemented (no mask/gradient existed at all, so a
+       partially-visible chip at the resting scroll position was just hard-cut by the
+       viewport edge). Left edge is deliberately NOT faded: at the true start of the list
+       there's nothing more to the left, so dimming the first chip would be misleading. */
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  }
+  .as-bar-wrap::-webkit-scrollbar {
+    display: none;
+  }
+  .as-chip {
+    padding: 7px 12px;
+    font-size: 12.5px;
+  }
+
+  /* cards: single column, tighter */
+  .as-body {
+    margin-top: 16px;
+    gap: 14px;
+    padding: 0 16px;
+  }
+  .as-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    /* The desktop base rule's `minmax(112px, auto)` pads every row shorter than 112px up to
+       that floor before the real 10px gap even starts — invisible on a card whose own
+       content already clears 112px (e.g. Investments, tall enough to show its Positions/
+       Settlement cash breakdown), but it stacks an extra ~8px onto every SHORTER card's gap,
+       so the gap after a tall card reads visibly smaller than every other one. That floor
+       existed only to give the lone trailing "Add an asset" row a full card height to
+       stretch into (`.as-add`'s own `min-height: 100%`) — moot here since `.as-add` is
+       `display: none` on mobile (below), so every row can just size to its own content. */
+    grid-auto-rows: auto;
+  }
+  .as-card {
+    padding: 13px 14px 14px;
+    border-radius: 13px;
+    gap: 8px;
+  }
+  .as-thumb {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+  }
+  .as-card-nm {
+    font-size: 14.5px;
+  }
+  /* Was 20px — bigger than .as-sum-v's own 17px on this same breakpoint, so a single line
+     item's value outshouted the page's own grand totals. Desktop keeps the correct
+     hierarchy (totals 21px > card value 18px); this restores it on mobile instead of
+     inverting it. */
+  .as-card-val {
+    font-size: 16px;
+  }
+  /* Redundant with the sticky "Add asset" button in the header on this width. */
+  .as-add {
+    display: none;
+  }
+
+  /* rail: back to a single column under the cards */
+  .as-rail {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  /* detail */
+  /* The register's own back-navigation already lives in the bottom tab bar on a phone —
+     "Assets / <name>" here just repeated the title one line down. */
+  .as-crumb {
+    display: none;
+  }
+  /* The header sits outside the page body; the figures and tabs are inside it, which already
+     pads them 16px — a margin of their own set them 32px in, off the name's edge. */
+  .as-dhead {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+  .as-dhead {
+    gap: 12px;
+  }
+  /* The name takes the row, wrapping to 2+ lines, whatever sits before it (a thumb, or
+     nothing when the photo is the cover above) — by class, never by position. */
+  .as-dhead-title {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+  /* One row: the name wraps inside it, and ⋯ stays beside its first line — never pushed to
+     a line of its own under a long name. */
+  .as-dhead {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+  .as-dhead-actions {
+    align-self: flex-start;
+  }
+  .as-dtitle {
+    font-size: 20px;
+  }
+  /* The table's own `min-width: 640` is an inline style (HistoryTable's <table>), which
+     beats any stylesheet rule short of !important — without it, this override is a no-op
+     and the table stays wide enough that Source always needs a horizontal scroll to read,
+     even once it can wrap. Source (the 3rd column) wraps instead of clipping at the
+     viewport edge with nothing to show it was cut (no ellipsis — plain `nowrap` overflow). */
+  .as-tbl {
+    min-width: 0 !important;
+    width: 100%;
+  }
+  .as-tbl td:nth-child(3) {
+    white-space: normal;
+    word-break: break-word;
+  }
+  .as-dstats {
+    gap: 12px 22px;
+    margin-top: 14px;
+  }
+  .as-dstat-v {
+    font-size: var(--text-xl);
+  }
+  .as-chart {
+    /* Genuinely full-bleed now — -16px cancels .app-layout's own gutter outright, instead
+       of just trimming this card's OWN padding down while still sitting inset from the
+       real screen edge like every other card. */
+    margin: 12px -16px 0;
+    border-radius: 0;
+    border: 0;
+    padding: 12px 0 8px;
+  }
+  /* The separating rule is back, but as an INSET line (16px each side, matching the page's
+     own gutter) rather than a real border on this now-full-bleed card, which would span
+     edge to edge same as its background does. Absolutely positioned (.as-chart already has
+     `position: relative`) so it sits at the card's true top/bottom regardless of the
+     card's own padding, rather than a `::before`/`::after` drawn in normal flow. */
+  .as-chart::before,
+  .as-chart::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: var(--line);
+  }
+  .as-chart::before {
+    top: 0;
+  }
+  .as-chart::after {
+    bottom: 0;
+  }
+  .as-chart-canvas {
+    height: 170px;
+  }
+  /* Plain text, not a canvas with its own internal Chart.js reserve — re-pads back to the
+     page's own 16px gutter now that its parent bleeds past it, same convention as every
+     other full-bleed section's inner text in this app. */
+  .as-chart-lg {
+    padding: 0 16px;
+  }
+
+  /* modals: give forms a single column and bigger tap targets */
+  .as-form {
+    grid-template-columns: 1fr;
+  }
+  .as-facts-ed > div {
+    grid-template-columns: 1fr 1fr 30px;
+  }
+  .as-newcat {
+    flex-wrap: wrap;
+  }
+  .as-newcat > input,
+  .as-newcat > div:first-child {
+    flex: 1 1 100%;
+  }
+  /* Bottom clearance comes from `mb-anchored` (index.css), not a hardcoded offset here —
+     see the `.as-toast mb-anchored` className and mobileClearance.contract.test.ts. */
+  .as-toast {
+    max-width: calc(100% - 28px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+/* All mine / Shared: a pill, not a square box with a square box in it (owner, 2026-09-29:
+   "this looks ugly — maybe make it rounded?"). Asset dialogs only; the kit keeps its shape. */
+.as-modal .ui-segmented,
+.as-modal .ui-segmented__seg {
+  border-radius: 999px;
+}
+/* The chosen side in the primary blue — the kit's --surface2 all but vanished on the dark
+   page (owner: "the color is so off"); blue reads the same in light and dark. */
+.as-modal .ui-segmented__seg--active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--ink-on-accent);
+}

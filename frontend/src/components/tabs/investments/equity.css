@@ -1,0 +1,346 @@
+/* ── Equity sub-tab: grants table, drawer, timeline, modals ──────────────────
+   These classes are verbatim from the investments_2 prototype design (all eq-*).
+   Values that equal existing design tokens are written as var(--token).
+   The shared .mk-* foundation classes (mk-subt, mk-panel, mk-panel-head, etc.)
+   come from the shell's design.css and are NOT redefined here.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Grants table ────────────────────────────────────────────────────────── */
+.eq-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  min-width: 720px;
+}
+.eq-table thead th {
+  text-align: right;
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 600;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.eq-table thead th.l {
+  text-align: left;
+}
+.eq-table tbody td {
+  padding: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.eq-table tbody td.l {
+  text-align: left;
+}
+.eq-row--click {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+@media (hover: hover) {
+  .eq-row--click:hover {
+    background: var(--hover);
+  }
+}
+.eq-caret {
+  display: inline-block;
+  color: var(--faint);
+  transition: transform 0.15s;
+}
+.eq-caret.open {
+  transform: rotate(90deg);
+}
+
+/* ── Expandable drawer row ───────────────────────────────────────────────── */
+.eq-drawer-cell {
+  padding: 0 !important;
+  background: var(--bg-2);
+  text-align: left !important;
+}
+.eq-drawer {
+  padding: 14px 16px 16px;
+  text-align: left;
+}
+.eq-drawer-since {
+  margin: 0 0 12px;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.eq-drawer-h {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.eq-link {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.eq-link:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+@media (hover: hover) {
+  .eq-link:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+}
+.eq-link--danger {
+  color: var(--bad);
+}
+.eq-drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* ── Drawer: progress bar + next-vest meta ───────────────────────────────── */
+.eq-dr-top {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--line);
+}
+.eq-dr-prog {
+  flex: 1;
+  min-width: 240px;
+}
+.eq-dr-prog-head {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 9px;
+}
+.eq-dr-prog-pct {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.eq-dr-prog-sub {
+  font-size: 12px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.eq-dr-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+}
+.eq-dr-seg {
+  min-width: 3px;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+.eq-dr-since {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.eq-dr-meta {
+  text-align: right;
+}
+.eq-dr-meta-k {
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 600;
+}
+.eq-dr-meta-v {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  margin-top: 3px;
+}
+.eq-dr-meta-sub {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 2px;
+}
+
+/* ── Vesting timeline ────────────────────────────────────────────────────── */
+.eq-tl {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+.eq-tl-row {
+  display: grid;
+  grid-template-columns: 22px 1fr auto auto;
+  align-items: center;
+  gap: 0 14px;
+  padding: 9px 0;
+  position: relative;
+}
+.eq-tl-row::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.eq-tl-row:first-child::before {
+  top: 50%;
+}
+.eq-tl-row:last-child::before {
+  bottom: 50%;
+}
+.eq-tl-row.is-vested::before {
+  background: color-mix(in srgb, var(--good) 42%, var(--line));
+}
+.eq-tl-node {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+.eq-tl-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 2px var(--muted);
+}
+.eq-tl-row.is-vested .eq-tl-dot {
+  background: var(--good);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 22%, transparent);
+}
+.eq-tl-row.is-next .eq-tl-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.eq-tl-date {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.eq-tl-row.is-upcoming .eq-tl-date {
+  color: var(--muted);
+}
+.eq-tl-sub {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+.eq-tl-err {
+  font-size: var(--text-xs);
+  color: var(--bad);
+  margin-top: 2px;
+  white-space: normal;
+}
+.eq-tl-act {
+  min-width: 84px;
+  text-align: right;
+}
+
+/* ── Upcoming vests panel ────────────────────────────────────────────────── */
+.eq-up {
+  display: flex;
+  flex-direction: column;
+}
+.eq-up-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.eq-up-row:last-child {
+  border-bottom: none;
+}
+.eq-up-l {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.eq-up-date {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.eq-up-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Mark-vest modal: preview block ──────────────────────────────────────── */
+.eq-preview {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px 14px;
+}
+.eq-preview-h {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+.eq-preview-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  font-size: 12px;
+}
+.eq-preview-l {
+  color: var(--faint);
+}
+.eq-preview-v {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Add-grant modal: schedule generator ─────────────────────────────────── */
+.eq-sched-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px 14px;
+}
+.eq-tranche-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+.eq-tranche-x {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--faint);
+  cursor: pointer;
+  height: 36px;
+  width: 34px;
+}
+@media (hover: hover) {
+  .eq-tranche-x:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+}

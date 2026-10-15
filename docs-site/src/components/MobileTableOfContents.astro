@@ -1,0 +1,42 @@
+---
+// Overrides Starlight's mobile "On this page" bar so it reads as a BREADCRUMB
+// (page title / current heading) rather than a generic label — the pattern the
+// owner asked for (2026-08-23), matching how Claude's docs use that same strip.
+//
+// Why wrap the default rather than reimplement it: the scroll-spy that keeps
+// `.display-current` in sync with the reader's position lives in Starlight's
+// own `<mobile-starlight-toc>` custom element. Rebuilding the markup would mean
+// rebuilding that observer too. So the default renders untouched and this only
+// supplies the page title, as a custom property the stylesheet can put in a
+// `content:` — CSS `attr()` reads only its own originating element's
+// attributes, and the `<summary>` we need it on belongs to Starlight.
+//
+// The value is JSON-encoded, which yields exactly the double-quoted CSS string
+// `content` requires and escapes any quote inside a title.
+import Default from '@astrojs/starlight/components/MobileTableOfContents.astro';
+
+const { entry, toc } = Astro.locals.starlightRoute;
+const pageTitle = JSON.stringify(entry.data.title ?? '');
+
+// A page with no headings of its own (the landing page, say) still gets a TOC
+// from Starlight: the single synthetic "#_top" entry. A bar built from that
+// reads "Documentation / Overview" directly above an <h1> saying
+// "Documentation" — pure repetition, for a dropdown with one item in it. So
+// the bar is earned by having somewhere to navigate TO, not by being on a
+// page. Gating on the item count rather than on a route id means any
+// heading-less page behaves the same way, now and later.
+//
+// When this renders nothing, custom.css reclaims the row Starlight reserves
+// for it (`.main-frame:not(:has(mobile-starlight-toc))`) — otherwise the space
+// is held open for a bar that never appears, which is the empty-band bug this
+// whole strip started as.
+const hasRealHeadings = (toc?.items?.length ?? 0) > 1;
+---
+
+{
+  hasRealHeadings && (
+    <div class="onw-mobile-toc" style={`--onw-page-title: ${pageTitle};`}>
+      <Default><slot /></Default>
+    </div>
+  )
+}

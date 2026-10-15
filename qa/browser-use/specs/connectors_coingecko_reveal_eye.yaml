@@ -1,0 +1,62 @@
+# Spec: CG-EYE-REVEALS-SAVED-VALUE — CoinGecko Demo API key reveal-eye works
+# Covers: CoinGeckoSection.tsx using secretReveal hook or useSecretReveal
+# IDs: CG-EYE-FIELD-RENDER, CG-EYE-REVEALS-SAVED-VALUE, CG-EYE-HIDES-AGAIN
+id: CONN-CG-01
+acceptance_ids:
+  - CG-EYE-FIELD-RENDER
+  - CG-EYE-REVEALS-SAVED-VALUE
+  - CG-EYE-HIDES-AGAIN
+title: "CoinGecko Demo API key field has reveal-eye that shows saved value"
+description: >
+  The CoinGecko connector card displays a Demo API key field that starts masked
+  (showing dots) with an eye icon. Clicking the eye reveals the saved value
+  in-place (no modal/dialog). Clicking again hides it. This spec verifies the
+  reveal-eye control works as documented in the secret-reveal ADR.
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1 — Open Connectors tab and find CoinGecko.
+  Click "Connectors" in the sidebar. Look for a "CoinGecko" connector card.
+  If not found:
+    return "SKIP: CoinGecko connector not found"
+
+  Step 2 — Open the CoinGecko detail and config view.
+  Click the CoinGecko card to open its detail. Then click "Edit configuration"
+  (or similar) to open the config form. Wait up to 3 seconds.
+
+  Step 3 — Find the Demo API key field.
+  In the config form, look for an input field labelled "Demo API Key" or similar.
+  Verify it shows a masked value (dots ••••) and has an eye icon next to it.
+  Record: FIELD_PRESENT = "yes" or "no", EYE_ICON = "present" or "absent".
+
+  Step 4 — Click the eye icon to reveal.
+  If EYE_ICON = "present", click it. Wait up to 1 second.
+  Observe the field: does the masked value change to show readable text?
+  Record: REVEALS_VALUE = "yes" or "no".
+
+  Step 5 — Verify the field is the SAME input (no separate echo row).
+  Confirm the revealed value appears IN the same input field, not in a separate
+  read-only row, dialog, or echo. Record: SAME_FIELD = "yes" or "no".
+
+  Step 6 — Click the eye again to hide.
+  Click the eye icon again. Wait up to 1 second.
+  Does the field return to showing dots/masked state?
+  Record: HIDES_VALUE = "yes" or "no".
+
+  Decision:
+  - If FIELD_PRESENT = "no": return "FAIL: Demo API Key field not found"
+  - If EYE_ICON = "absent": return "FAIL: Eye icon not present on the field"
+  - If REVEALS_VALUE = "no": return "FAIL: Clicking eye does not reveal the saved value"
+  - If SAME_FIELD = "no": return "FAIL: Revealed value appears in a separate control (should be in-place)"
+  - If HIDES_VALUE = "no": return "FAIL: Clicking eye again does not hide the value"
+  - If all checks pass: return "PASS: Demo API Key eye reveals/hides saved value in-place"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CG-EYE-coingecko-demo-key.png"
+  note: >
+    The eye icon is part of the secret-reveal pattern (ADR 2026-08-14). The
+    Demo API key is stored and revealed through /api/connectors/{id}/secret/{field}.
+    If CoinGecko connector has not been migrated to a connector card yet,
+    this spec returns SKIP.

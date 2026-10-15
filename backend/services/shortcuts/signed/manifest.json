@@ -1,0 +1,14 @@
+{
+  "log-apple-pay": {
+    "signed": "fddbfd152143dfba70b84570b637f9eb2ca75509e942e15f00de6783791d23ef",
+    "source": "6c25bbb58682996f5a9ff52b2171bef7e545d9766b9599dc732b4c979c34db8d"
+  },
+  "log-apple-pay-ios26": {
+    "signed": "9173cd6b6b803263173fc92d1fe6ca7891bc5df32d0257982ebc9eb55f815812",
+    "source": "eeac27e8a710bd065bb2aee2f4f8c04fbcc60a65c074fa1be489c09cb5ae23ac"
+  },
+  "log-notifications": {
+    "signed": "035024779af8146f7d447a1990c0c6d99a0ed8b7c55c81e0dd7de72563e7630d",
+    "source": "dcda3c8fd518365f5c2d7ed2249f8bcc249f17735f8290e30c4e905ca3fa3acb"
+  }
+}

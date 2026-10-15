@@ -1,0 +1,697 @@
+/* Price alerts — manage and create (verbatim port of the "Price Alerts Redesign" prototype).
+   Fields are FormField + Select/NumberField/TextArea/SegmentedControl; amounts go through
+   Money so privacy mode masks them. Only spacing and the manage-view list are drawn here.
+   Unlayered on purpose (wins over @layer legacy, like accounts.css). The standalone shell
+   scaffolding (html/body, the state switcher, the modal-card scroll overrides the app's own
+   Modal already implements) is stripped; the two DS overrides are scoped under .pa-modal. */
+
+.pa-modal .ui-panel__titlerow {
+  align-items: baseline;
+}
+.pa-modal .ui-panel__titlerow > .ui-panel__title {
+  margin-bottom: 0;
+}
+/* Stacked cards (Alerts → Why you're watching) need the same breathing room as the rest of
+   the modal's sections; without it their borders touch. */
+.pa-modal .panel + .panel {
+  margin-top: 16px;
+}
+
+/* ═════════ shared layout ═════════ */
+.pa-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.pa-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+/* The prototype's bundled SegmentedControl fills its column (display:flex, no align-self);
+   the app's has since become inline-flex + align-self:flex-start, which packed the two
+   segments into a narrow box and wrapped "Target price" onto two lines. Restore the
+   prototype geometry here, scoped to this form. */
+.pa-row2 .ui-segmented {
+  display: flex;
+  width: 100%;
+  align-self: stretch;
+  flex-wrap: nowrap;
+}
+.pa-row2 .ui-segmented__seg {
+  flex: 1;
+  justify-content: center;
+  white-space: nowrap;
+}
+.pa-sel {
+  position: relative;
+  display: block;
+}
+.pa-sel .ui-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+}
+.pa-sel-cv {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--muted);
+}
+.pa-quote {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  border-left: 2px solid var(--line-strong);
+  padding: 1px 0 1px 13px;
+  text-wrap: pretty;
+}
+
+/* ═════════ manage view ═════════ */
+.pa-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pa-head {
+  padding-bottom: 16px;
+}
+.pa-body > span,
+.pa-set-b > span,
+.pa-formsw-b > span {
+  display: block;
+}
+.pa-head-px {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.pa-head-ch {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--good);
+}
+.pa-head-ch--dn {
+  color: var(--bad);
+}
+.pa-head-sub {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pa-head-sub--muted {
+  color: var(--warn);
+}
+
+/* Alert prices share one scale; the 52-week range is separate context below. */
+/* The prototype paints this track in --surface2, which the tokens make identical to the
+   modal background — so it never showed, there or here. The owner wants the line seen
+   (review 2026-09-21): the same neutral the ticks use, one shade under them. */
+.pa-scale {
+  position: relative;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line-strong);
+  margin: 34px 26px 22px;
+}
+.pa-scale-title {
+  margin: 0 26px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.pa-now {
+  position: absolute;
+  top: -3.5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translateX(-5px);
+  box-shadow: 0 0 0 3px var(--modal-bg);
+  z-index: 2;
+}
+.pa-nowlab {
+  position: absolute;
+  top: -25px;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pa-tk {
+  position: absolute;
+  top: -5px;
+  width: 2px;
+  height: 13px;
+  border-radius: 1px;
+  background: var(--line-strong);
+  transform: translateX(-1px);
+}
+/* The prototype is dark-only: --line-strong reads as a clear tick there but nearly vanishes
+   on the light and warm surfaces. Same shape, a neutral the light themes can actually see. */
+:root:is([data-theme='warm'], [data-theme='light']) .pa-tk {
+  background: var(--fg-3);
+}
+.pa-tk--near {
+  background: var(--warn);
+}
+.pa-tk--off {
+  background: var(--fg-3);
+  opacity: 0.5;
+}
+.pa-tklab {
+  position: absolute;
+  top: 13px;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pa-tklab--near {
+  color: var(--warn);
+}
+/* Second label row for levels too close to share the first (not in the prototype, whose demo
+   levels never collide); the track grows so the 52w range line keeps its clearance. */
+.pa-tklab--r2 {
+  top: 28px;
+}
+.pa-tklab--r3 {
+  top: 43px;
+}
+.pa-scale--2rows {
+  margin-bottom: 40px;
+}
+.pa-scale--3rows {
+  margin-bottom: 55px;
+}
+.pa-tklab--off {
+  font-style: italic;
+}
+.pa-range {
+  margin: 0 2px 20px;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  padding-top: 5px;
+}
+
+.pa-list {
+  margin: 0 -20px -20px;
+}
+.pa-list > .pa-item:first-child {
+  border-top: 1px solid var(--line);
+}
+.pa-list > .pa-item:last-child {
+  border-bottom-left-radius: 17px;
+  border-bottom-right-radius: 17px;
+}
+
+.pa-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 13px;
+  padding-right: 14px;
+  border-top: 1px solid var(--line);
+  transition: background 0.12s;
+}
+.pa-item:hover {
+  background: var(--hover);
+}
+.pa-item-main {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 0 13px 14px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.pa-item-go {
+  display: flex;
+  align-items: center;
+  padding: 13px 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: inherit;
+  cursor: pointer;
+}
+.pa-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 0;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: none;
+  font-weight: 600;
+}
+.pa-chip i {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.pa-body {
+  min-width: 0;
+}
+.pa-role {
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pa-note {
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 3px;
+}
+.pa-stat {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.pa-stat--near {
+  color: var(--warn);
+}
+.pa-chev {
+  color: var(--fg-3);
+  justify-self: end;
+}
+.pa-item:hover .pa-chev {
+  color: var(--muted);
+}
+.pa-item--off .pa-chip {
+  color: var(--muted);
+}
+.pa-formsw {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  margin-bottom: 4px;
+  border-radius: 11px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+.pa-formsw-b {
+  flex: 1;
+  min-width: 0;
+}
+.pa-formsw-t {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+/* ticker-level settings — out of the alert list, where they belong */
+.pa-set {
+  margin-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.pa-setrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 2px;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  border-radius: 0;
+  text-align: left;
+  color: inherit;
+}
+.pa-set-b {
+  flex: 1;
+  min-width: 0;
+}
+.pa-set-t {
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.pa-set-b {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.pa-sugg {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lucius) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--lucius) 26%, var(--line));
+}
+.pa-sg {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lucius) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--lucius) 26%, var(--line));
+  overflow: hidden;
+}
+.pa-sg-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 14px;
+}
+.pa-sg-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.pa-sg-x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--lucius) 30%, transparent);
+  color: var(--muted);
+  cursor: pointer;
+}
+.pa-sg-x:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.pa-sg-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 13px;
+  padding: 13px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--lucius) 20%, var(--line));
+}
+.pa-sg-lvl {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.pa-sg-lvl i {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.pa-sg-why {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+.pa-sg-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+.pa-sg-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pa-sg-skip {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+}
+.pa-sg-skip:hover {
+  color: var(--ink);
+}
+.pa-sugg-ic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--lucius) 20%, transparent);
+  color: var(--lucius);
+  flex: none;
+}
+/* The call to action wears the Lucius mark's own purple (owner review 2026-09-21; the
+   prototype used a plain secondary button reading "Suggest alerts"). */
+.pa-sugg-btn {
+  color: var(--lucius);
+  background: color-mix(in srgb, var(--lucius) 13%, transparent);
+  border-color: color-mix(in srgb, var(--lucius) 30%, transparent);
+}
+.pa-sugg-btn:hover:not(:disabled) {
+  color: var(--lucius);
+  background: color-mix(in srgb, var(--lucius) 22%, transparent);
+  border-color: color-mix(in srgb, var(--lucius) 45%, transparent);
+}
+/* On a phone the button drops under the text so the copy keeps its line length. */
+/* Literal parity form of --below-sm: @custom-media tokens only resolve inside the file that
+   defines them (postcss-custom-media is per-file), the same reason accounts.css spells it out. */
+@media (max-width: 639.98px) {
+  .pa-sugg {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-items: start;
+  }
+  .pa-sugg-btn {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+.pa-sugg-b {
+  flex: 1;
+  min-width: 0;
+}
+.pa-sugg-t {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.pa-sugg-s {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+.pa-feeds {
+  border-bottom: 1px solid var(--line);
+}
+.pa-feeds-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 2px;
+  background: none;
+  border: none;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.pa-feeds-head:hover .pa-feeds-t {
+  color: var(--ink);
+}
+.pa-feeds-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.pa-feeds-n {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pa-feeds-cv {
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+.pa-feeds-cv--open {
+  transform: rotate(180deg);
+}
+.pa-feeds-body {
+  padding: 0 2px 16px;
+}
+.pa-feeds-help {
+  margin: 0 0 12px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+.pa-feed-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.pa-feed-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 6px;
+}
+.pa-feed-x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.pa-feed-x:hover {
+  background: var(--hover);
+  color: var(--bad);
+}
+.pa-feeds-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pa-feeds-cap {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pa-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--good);
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.pa-saved--on {
+  opacity: 1;
+}
+.pa-addfeed {
+  color: var(--primary);
+}
+.pa-addfeed:hover:not(:disabled) {
+  color: color-mix(in srgb, var(--primary) 75%, #fff);
+}
+.pa-dir {
+  display: grid;
+  grid-template-columns: 34px 34px minmax(0, 1fr);
+  gap: 6px;
+}
+.pa-dir-b {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  cursor: pointer;
+}
+.pa-dir-b:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.pa-dir-b--on {
+  background: var(--selected);
+  border-color: var(--hover-line);
+  color: var(--ink);
+}
+.pa-dir-b--up {
+  color: var(--good);
+}
+.pa-dir-b--dn {
+  color: var(--bad);
+}
+
+.pa-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+.pa-foot-r {
+  margin-left: auto;
+  display: flex;
+  gap: 9px;
+}
+.pa-del {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--bad);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.pa-del:hover {
+  color: color-mix(in srgb, var(--bad) 78%, #fff);
+}
+.pa-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.pa-back:hover {
+  color: var(--ink);
+}
+/* Not in the prototype (it has no failure state): a save that could not be persisted stays
+   visible in the footer so the user can retry instead of the modal silently closing. */
+.pa-err {
+  font-size: 11.5px;
+  color: var(--bad);
+}

@@ -1,0 +1,93 @@
+# Spec: CH-04 — Lucius proposed-change card renders for a position add request
+# Covers: MessageBubble proposed_change rendering; ChangePreview diff card;
+#         Confirm/Discard buttons present; does NOT confirm the change.
+# Requires ANTHROPIC_API_KEY; SKIP otherwise.
+#
+# NOTE: this spec exercises the POSITION/LOT propose→apply two-step
+# (propose_position_add → add_positions), which is why it asks Lucius to add a
+# holding.
+#
+# OUTDATED CLAIM REMOVED (2026-07-19): this note used to say "add_transaction writes
+# DIRECTLY — it does NOT produce a propose→confirm card". That stopped being true with
+# the ledger confirm gate (ADR 2026-07-19-ledger-confirm-gate-one-tool-stored-args): on
+# an interactive WEB turn, add_transactions and update_transaction now preview first via
+# a one-tool/stored-args gate (not a propose/apply pair). The ledger card has its own
+# specs — ledger_confirm_card_render.yaml, ledger_confirm_transfer_commit.yaml,
+# ledger_confirm_dismiss_and_bulk.yaml — and its own acceptance file,
+# docs/qa/acceptance/ledger-confirm-gate.md. This spec is still the POSITION path.
+id: CH-04
+acceptance_ids:
+  - CHAT-PROPOSE-CONFIRM-POSITION
+title: "Lucius shows a proposed-change confirm card when asked to add a holding"
+description: >
+  When the user asks Lucius to add a new position/holding (e.g. "add 1 share of
+  AAPL to my brokerage account"), Lucius calls propose_position_add which returns
+  a proposed_change object. The frontend must render this as a ChangePreview diff
+  card containing Confirm and Discard buttons. This spec verifies the card renders
+  without clicking Confirm, so no data is mutated.
+
+acceptance_criteria:
+  - AC1: The chat panel can be opened and a message can be sent
+  - AC2: Lucius returns a response (not an error)
+  - AC3: A proposed-change confirm card appears (contains "Confirm" or "Apply"
+         and "Discard" or "Cancel" buttons, or similar confirm/reject affordance)
+  - AC4: The confirm action is NOT taken — we only verify the card renders
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  Step 1 — Open chat.
+  Find and click the chat button (speech bubble icon, "Ask Lucius", or a chat
+  toggle button). Wait for the chat panel to slide in from the right.
+
+  Step 2 — Check for API key.
+  Look at the chat area. If you see a message about "API key", "not configured",
+  a setup notice, or a hint pointing to Settings, return
+  "SKIP: AI not configured — cannot test proposed-change card".
+
+  Step 3 — Request a position/holding addition.
+  Click the message input at the bottom of the chat panel.
+  Type exactly: add 1 share of AAPL to my brokerage account
+  Press Enter to send.
+
+  Step 4 — Wait for Lucius to respond.
+  Wait up to 60 seconds for a response. Lucius may first call resolve_instrument,
+  then call propose_position_add. The result should be a proposed-change card.
+
+  If Lucius asks a clarifying question (e.g. "Which account?", "What price?"),
+  reply: "use any account, use current market price" and press Enter.
+  Wait another 30 seconds.
+
+  Step 5 — Check for the proposed-change card.
+  Look for a distinct card or panel within the chat that shows a proposed change.
+  Signs of a proposed-change card include:
+    - A bordered card with a position or holding description (e.g. "AAPL", "1 share")
+    - A button labelled "Confirm", "Apply", or a checkmark / tick button
+    - A button labelled "Discard", "Cancel", or an X button
+    - Text like "Proposed change", "position_add", or a change type label
+
+  Do NOT click Confirm or Apply. Just observe.
+
+  Decision:
+  - If a proposed-change confirm card is visible (has confirm + discard buttons
+    and references the position or instrument):
+    return "PASS: proposed-change card rendered — <describe what the card shows>"
+  - If Lucius replied with plain text only (no confirm card) and seems finished:
+    wait 10 more seconds. If still no card:
+    return "FAIL: Lucius replied but no proposed-change confirm card appeared"
+  - If an error message appeared in the chat:
+    return "FAIL: error in chat — <error text>"
+  - If no reply arrived within the timeout:
+    return "FAIL: no reply from Lucius within timeout"
+
+expected:
+  pass_condition: "result contains 'PASS' or result contains 'SKIP'"
+  screenshot_name: "CH-04-proposed-change-card.png"
+  note: >
+    SKIP is acceptable when ANTHROPIC_API_KEY is not configured. The spec
+    validates the correct propose→confirm path: chat input →
+    /api/chat/stream → resolve_instrument → propose_position_add →
+    MessageBubble ChangePreview card render. It does NOT confirm the change,
+    so demo data is not mutated. add_transaction writes directly and does NOT
+    produce a proposed-change card — only position/lot tools use the
+    propose→apply two-step pattern.

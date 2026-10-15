@@ -1,0 +1,87 @@
+# Spec: CARDS-WIDGET — Credit card statement widget renders cycle numbers
+# Covers: CARDS-WIDGET-RENDER — Credit card account in Cash tab shows Statement widget
+# Verifies: statement_close_day and payment_due_day configured → "Statement" panel renders
+#           with two stat cards ("Current cycle" and "Last statement") and a payment badge
+id: CARDS-WIDGET
+acceptance_ids:
+  - CARDS-WIDGET-RENDER
+title: "Credit card account shows Statement widget with cycle totals and payment badge"
+description: >
+  When a `credit`-type account has statement_close_day and payment_due_day configured,
+  the Cash tab must display a "Statement" panel showing:
+    - Two stat cards: "Current cycle (since …)" with open-cycle charge total,
+      and "Last statement (to …)" with most-recently-closed-cycle total
+    - A payment status badge (PAID, PARTIAL, DUE, or OVERDUE)
+    - The widget does not appear for a non-`credit` account
+
+acceptance_criteria:
+  - AC1: A credit card account (type `credit`) exists with statement_close_day and payment_due_day set
+  - AC2: Clicking that account in the Cash sidebar shows the account detail pane
+  - AC3: A "Statement" panel is visible in the account detail area
+  - AC4: The panel shows two stat cards with cycle dates (e.g. "Current cycle (since Jun 5)")
+  - AC5: Current cycle card displays the total charges for the open period
+  - AC6: Last statement card displays the total charges for the closed period
+  - AC7: A payment status badge is visible below or next to the cards (e.g. "PAID", "PARTIAL")
+  - AC8: The widget does NOT appear on a non-`credit` account (regression guard)
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  1. Load demo data if needed.
+
+  2. Go to the Cash tab (sidebar → Accounts / Cash).
+
+  3. Look for a credit card account in the sidebar. The demo dataset includes
+     a USD credit card account. Click it to select it.
+     Record: CARD_ACCOUNT_FOUND = yes/no
+     If no card account exists, create one:
+       a) Click "+ Add account"
+       b) Name it "Test Credit Card"
+       c) Type: "Credit" (the seven-value type picker — credit card, BNPL, line of credit)
+       d) Currency: USD
+       e) Fill in Statement close day: 25
+       f) Fill in Payment due day: 15
+       g) Click Create
+
+  4. With the credit card account selected, check the account detail pane (right side).
+     Is a "Statement" panel visible? (AC3)
+     Record: STATEMENT_PANEL = yes/no
+
+  5. If STATEMENT_PANEL = yes, read the two stat cards:
+     - First card heading should be like "Current cycle (since …)" (AC4)
+     - Second card heading should be like "Last statement (to …)" or "Last closing balance"
+     Record the headings and the dollar amounts displayed.
+     Record: CURRENT_CYCLE_AMOUNT = "$X", LAST_STATEMENT_AMOUNT = "$Y"
+
+  6. Check if the amounts are numeric (not "—" or "undefined"). (AC5, AC6)
+     Record: AMOUNTS_NUMERIC = yes/no
+
+  7. Below the two cards, is a payment status badge visible?
+     (It may say "PAID", "PARTIAL — $X left", "DUE", "OVERDUE", etc.) (AC7)
+     Record: BADGE_VISIBLE = yes/no, BADGE_TEXT = text shown
+
+  8. Navigate to a non-credit account (e.g. a Cash-type checking or savings account).
+     Does the "Statement" panel appear for that account? (AC8)
+     Record: STATEMENT_ON_NONCREDIT = yes/no
+
+  9. Check for any JS errors. (AC7)
+     Record: JS_ERROR = yes/no
+
+  Decision:
+  - If CARD_ACCOUNT_FOUND = no and unable to create: FAIL "No credit card account available"
+  - If STATEMENT_PANEL = no: FAIL "Statement widget not rendered for credit card account"
+  - If (CURRENT_CYCLE_AMOUNT or LAST_STATEMENT_AMOUNT) is undefined: FAIL f"Amounts not rendered: current={CURRENT_CYCLE_AMOUNT}, last={LAST_STATEMENT_AMOUNT}"
+  - If AMOUNTS_NUMERIC = no: FAIL "Statement amounts show '—' or 'undefined' (not numeric)"
+  - If BADGE_VISIBLE = no: FAIL "Payment status badge not visible"
+  - If STATEMENT_ON_NONCREDIT = yes: FAIL "Statement widget incorrectly appears on non-credit account"
+  - If JS_ERROR = yes: FAIL "JavaScript error during Statement widget rendering"
+  - Otherwise: PASS f"Statement widget renders for credit card — current cycle ${CURRENT_CYCLE_AMOUNT}, last statement ${LAST_STATEMENT_AMOUNT}, badge: {BADGE_TEXT}"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CARDS-WIDGET-statement-panel.png"
+  note: >
+    This spec validates the credit card statement reminder widget added in Phase 4.
+    The demo dataset includes a USD credit card, so the widget should render.
+    The current and last statement totals are computed from the transaction ledger
+    based on statement_close_day and should exclude payments (transfers) from both totals.

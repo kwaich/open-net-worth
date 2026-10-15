@@ -1,0 +1,454 @@
+[
+  {
+    "id": "scenario-09-connector-sync-manual-csv",
+    "label": "scenario #9 — connector sync + manual CSV, same account, same charge",
+    "must": "merge",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Spotify",
+        "from_account_id": "dbs",
+        "from_amount": 10.99,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "simplefin",
+        "external_refs": [
+          {
+            "source": "simplefin",
+            "ref": "sf-spotify-1"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-9",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Spotify",
+        "from_account_id": "dbs",
+        "from_amount": 10.99,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-spotify-0301"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "near_duplicate",
+      "engine_action": "review",
+      "engine_action_note": "cross-prefix (simplefin vs csv); descriptions both 'Spotify' — exact token match, same amount, same date",
+      "canonical": "dbs-1",
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-10-pending-to-posted",
+    "label": "scenario #10 — pending → posted (Plaid/connector); same connector, distinct IDs",
+    "must": "merge",
+    "decided_by": "L3",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Amazon",
+        "from_account_id": "dbs",
+        "from_amount": 50.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "simplefin",
+        "external_refs": [
+          {
+            "source": "simplefin",
+            "ref": "pending-amzn-123"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-10",
+        "kind": "expense",
+        "date": "2026-03-03",
+        "description": "AMAZON.COM",
+        "from_account_id": "dbs",
+        "from_amount": 50.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "simplefin",
+        "external_refs": [
+          {
+            "source": "simplefin",
+            "ref": "posted-amzn-456"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "none",
+      "engine_action": "create",
+      "engine_action_note": "invariant 1: both simplefin IDs, distinct — two real connector events; L3 would need pending/settled lifecycle context (Phase 5) to correctly merge; deterministic engine correctly keeps both",
+      "canonical": null,
+      "become_transfer": false,
+      "pending_l3": true
+    }
+  },
+  {
+    "id": "scenario-11-connector-email-same-charge",
+    "label": "scenario #11 — connector sync + email receipt, same charge, different source prefixes",
+    "must": "merge",
+    "accounts": [
+      {
+        "id": "cc",
+        "name": "AMEX",
+        "kind": "liability",
+        "type": "credit",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "cc-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Netflix",
+        "from_account_id": "cc",
+        "from_amount": 19.99,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "simplefin",
+        "external_refs": [
+          {
+            "source": "simplefin",
+            "ref": "sf-netflix-1"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-11",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Netflix",
+        "from_account_id": "cc",
+        "from_amount": 19.99,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-netflix-1"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "near_duplicate",
+      "engine_action": "review",
+      "engine_action_note": "cross-prefix (simplefin vs email); same amount, same date, description both 'Netflix'",
+      "canonical": "cc-1",
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-12-recurring-subscription-different-months",
+    "label": "scenario #12 — recurring subscription: Netflix Oct vs Nov (30+ days apart → keep both)",
+    "must": "keep_both",
+    "accounts": [
+      {
+        "id": "cc",
+        "name": "AMEX",
+        "kind": "liability",
+        "type": "credit",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "cc-oct",
+        "kind": "expense",
+        "date": "2026-10-05",
+        "description": "Netflix",
+        "from_account_id": "cc",
+        "from_amount": 19.99,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-oct",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-netflix-oct"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-12",
+        "kind": "expense",
+        "date": "2026-11-05",
+        "description": "Netflix",
+        "from_account_id": "cc",
+        "from_amount": 19.99,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-nov",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-netflix-nov"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "none",
+      "engine_action": "create",
+      "engine_action_note": "31 days apart — outside WINDOW_DAYS=4; engine correctly creates a new transaction",
+      "canonical": null,
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-13-split-bill-paynow-refund",
+    "label": "scenario #13 — partial split-bill Paynow receipt: keep both, do not pair as transfer",
+    "must": "keep_both",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Lunch split",
+        "from_account_id": "dbs",
+        "from_amount": 50.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-lunch-01"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-13",
+        "kind": "income",
+        "date": "2026-03-03",
+        "description": "Paynow received John",
+        "from_account_id": null,
+        "from_amount": null,
+        "from_currency": null,
+        "to_account_id": "dbs",
+        "to_amount": 25.0,
+        "to_currency": "SGD",
+        "batch_id": "batch-dbs-recv",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-paynow-recv"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "none",
+      "engine_action": "create",
+      "engine_action_note": "amount mismatch (50.0 vs 25.0) — partial refund falls outside 1% tolerance; and same-account both sides prevents transfer pair",
+      "canonical": null,
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-14-manual-entry-then-csv",
+    "label": "scenario #14 — manual AI entry + later CSV import, same charge (cross-source only)",
+    "must": "merge",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Starbucks",
+        "from_account_id": "dbs",
+        "from_amount": 8.5,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "manual",
+        "external_refs": []
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-14",
+        "kind": "expense",
+        "date": "2026-03-02",
+        "description": "STARBUCKS",
+        "from_account_id": "dbs",
+        "from_amount": 8.5,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-starbucks-14"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "near_duplicate",
+      "engine_action": "review",
+      "engine_action_note": "manual vs csv_import — not both manual, invariant 4 does not veto; cross-source near-dup",
+      "canonical": "dbs-1",
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-15-same-statement-reformatted",
+    "label": "scenario #15 — same statement re-uploaded with different format (different hash ID)",
+    "must": "merge",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Amazon",
+        "from_account_id": "dbs",
+        "from_amount": 100.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-orig",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-amazon-orig"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-15",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Amazon",
+        "from_account_id": "dbs",
+        "from_amount": 100.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-reformat",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-amazon-reformat"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "near_duplicate",
+      "engine_action": "review",
+      "engine_action_note": "same amount, date, description, different batch — cross-batch csv near-dup correctly surfaced",
+      "canonical": "dbs-1",
+      "become_transfer": false
+    }
+  }
+]

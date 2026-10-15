@@ -1,0 +1,549 @@
+/* budgetLens.css — the pluggable-budget-engines frontend (.claude/rfcs/
+   2026-08-22-pluggable-budget-engines.md, Phase 1): the lens switcher + the 50/30/20
+   "design option 1b" pane (one stacked hero bar). bgl- prefixed throughout. Registered in
+   frontend/scripts/check-css-classes.mjs's CSS_FILES per CLAUDE.md's CSS-class discipline. */
+
+/* Each pane supplies its own top spacing, exactly as BudgetTab always did — the switcher lives
+   in Plan.tsx's masthead row now, so nothing here interacts with `.pl-mast-sticky +
+   .pl-tabwrap`'s negative pull. */
+.bgl-pane {
+  margin-top: var(--space-6);
+}
+/* The Budget view inside a lens pane already gets the pane's top spacing — its own `.pl-sub`
+   margin doubled it to 32px under the tabs, where every other sub-tab sits at 16px. */
+.bgl-pane > .pl-sub {
+  margin-top: 0;
+}
+
+.bgl-generic {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.bgl-generic__headline {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: var(--text-lg);
+}
+.bgl-generic__row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  font-size: var(--text-sm);
+}
+
+/* ── Setup / empty state ──────────────────────────────────────────────────────── */
+/* No card, full pane width (owner: "why are we limiting the size of it? ... the card makes
+   things look too fragmented"). This screen is the method's introduction, not a "no data" tile:
+   it aligns to the same left edge as every other pane instead of floating in the middle. */
+.bgl-setup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin-top: var(--space-5);
+  padding: var(--space-7);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+}
+.bgl-setup__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.bgl-setup__title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+.bgl-setup__sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-base);
+  max-width: 60ch;
+}
+/* Lucius on its own row, the two manual paths together beneath it — the visual hierarchy IS
+   the message: the AI drafts, the human reviews, manual is the fallback. */
+/* ONE row, primary first. The stacked version (Lucius alone above the two manual paths) was
+   built for a CENTERED card, where a lone primary over a centered pair reads as a hierarchy.
+   Left-aligned in a full-width surface the same stack reads as a stray button with two
+   orphans under it. Lucius keeps the emphasis by variant, sparkle and position — it does not
+   need its own row to lead. */
+.bgl-setup__stack {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+/* Sits between the primary and the manual pair — marks them as the fallback, not peers. */
+.bgl-setup__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.bgl-setup__actions::before {
+  content: 'or';
+  margin-inline: var(--space-2) 0;
+  font-size: var(--text-xs);
+  color: var(--faint);
+}
+@media (max-width: 720px) {
+  .bgl-setup__stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .bgl-setup__actions::before {
+    display: none;
+  }
+}
+
+.bgl-hero__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+.bgl-hero__legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+.bgl-hero__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--radius-pill);
+  flex: none;
+}
+.bgl-hero__legend-label {
+  color: var(--muted);
+}
+
+/* Segment / legend-dot colors — categorical, never --primary/--accent (that token means
+   "interactive action" in this design language; these are pure measurements). Needs/Wants
+   are neutral (the plan itself isn't good or bad), Unmapped is amber (needs attention,
+   matching --warn's existing meaning elsewhere), Savings is green/red by sign (a real value
+   judgment, matching the app-wide green=good/red=bad convention). */
+.bgl-seg-needs {
+  background: var(--muted);
+}
+.bgl-seg-wants {
+  background: color-mix(in srgb, var(--muted) 50%, var(--surface2));
+}
+
+.bgl-seg-savings-pos {
+  background: var(--good);
+}
+
+/* ── Setup / re-draft review list ─────────────────────────────────────────────── */
+/* The SAME full-width surface .bgl-setup carries. The review state was the only screen in this
+   feature with no container at all — GenericEnginePane returns it bare — so once its siblings
+   each gained a surface it was left as naked controls on the page background, which is what
+   "completely unstyled / white background" actually was. Not a theming bug: every token here
+   was always correct, there was simply nothing to paint. */
+.bgl-review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+  padding: var(--space-7);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+}
+/* A note, not a field. The filled+bordered box read as something to type into; a left rule
+   marks it as an aside without imitating an input. */
+.bgl-review__honesty {
+  margin: 0;
+  padding: 0 0 0 var(--space-4);
+  border-left: 2px solid var(--line-strong);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  max-width: 92ch;
+}
+
+.bgl-review__error {
+  margin: 0;
+  color: var(--bad);
+  font-size: var(--text-sm);
+}
+.bgl-review__bulk {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.bgl-review__bulk-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+.bgl-review__bulk-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+/* Sticky: with ~25 categories the primary action was simply off-screen, and "scroll to the
+   bottom to find Apply" is not a design. Sits at the foot of the viewport while the list
+   scrolls past it. */
+.bgl-review__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1; /* z-local: above the scrolling rows only */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--line);
+  /* --surface, not --bg: it sticks over the container it lives in, not over the page. */
+  background: var(--surface);
+}
+.bgl-review__recap {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.bgl-review__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* Two columns on a wide screen: these rows are one short label plus one small control, so a
+   single column across a 1100px pane left a vast dead gap between the two and pushed the footer
+   (with Apply in it) far below the fold on a real book's ~25 categories. */
+/* A real ROW gap, not 0: rows used to be separated by a bottom border and painted nothing, so
+   zero worked. Every row is a bordered box now, and at zero they sit edge-to-edge and read as
+   one run-on block. */
+.bgl-review-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-6);
+}
+@media (max-width: 900px) {
+  .bgl-review-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bgl-review-list__empty {
+  margin: 0;
+  color: var(--faint);
+  font-size: var(--text-sm);
+}
+
+/* Muted, not outlined-amber: this marks "worth a glance", and 12 loud chips down one column read
+   as 12 errors. `nowrap` because "low confidence" wrapping to two lines was what made the label
+   column ragged. */
+.bgl-review-row__lowconf {
+  flex: none;
+  font-size: var(--text-2xs);
+  color: var(--faint);
+  background: none;
+  border-radius: var(--radius-sm);
+  padding: 0;
+  white-space: nowrap;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* ── Method diagrams (MethodExplainer) ─────────────────────────────────────────────
+   Diagrams — illustrative mini-meters only, built from the shared Meter primitive. Static,
+   obviously-round numbers; never fetched, never real user data (see MethodExplainer.tsx).
+   Row 2 of the shared band grid; top-aligned so a shorter diagram (50/30/20's one bar) doesn't
+   float to the middle of the row a 4-row diagram (Zero-Based) sets the height of. */
+.bgl-intro-diagram {
+  grid-row: 2;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.bgl-intro-diagram__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.bgl-intro-diagram__row-label {
+  flex: 0 0 auto;
+  min-width: 8ch;
+  font-size: var(--text-2xs);
+  color: var(--faint);
+}
+.bgl-intro-diagram__meter {
+  flex: 1;
+}
+.bgl-intro-diagram__divider {
+  height: 1px;
+  background: var(--line);
+  margin: var(--space-1) 0;
+}
+/* 50/30/20's diagram reuses .bgl-hero__legend/__dot/__legend-item verbatim (same shape the
+   real hero renders) — this override only tightens the legend's gap for the compact card. */
+.bgl-intro-diagram--proportional {
+  gap: var(--space-3);
+}
+.bgl-intro-diagram__legend {
+  gap: var(--space-3);
+}
+
+/* ── Method explainer — the diagram + for/strength/cost, reused by every engine's empty state
+   (MethodExplainer.tsx). ─────────────────────────────────────────────────────────────────── */
+.bgl-explainer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-7);
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .bgl-explainer {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+}
+/* The diagram is ILLUSTRATIVE — obviously-round fake numbers. Left unbounded it stretched to
+   400px+ and started reading as real data about the user's own money. */
+.bgl-explainer__diagram {
+  width: 300px;
+  max-width: 100%;
+}
+/* A plain fixed-label grid, not a subgrid — see MethodExplainer's comment. */
+.bgl-explainer__guidance {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  max-width: 62ch;
+}
+.bgl-explainer__row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: baseline;
+}
+.bgl-explainer__row dt {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+.bgl-explainer__row dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── Pick row — the whole row IS the toggle (GenericEngineReview) ─────────────────────────── */
+.bgl-pickrow {
+  display: grid;
+  /* Exactly TWO columns, always — see GenericEngineReview.tsx on why a conditional third
+     column misaligned every toggle whose row had no marker. */
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  /* 8/12, not 6/8: this padding is invisible on an unselected row but becomes the inset of a
+     real bordered box the moment one is selected, where 6/8 left the toggle almost touching
+     the border. Applied to EVERY row, selected or not, so nothing shifts on toggle. */
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .bgl-pickrow:hover {
+    background: var(--hover);
+  }
+}
+.bgl-pickrow:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* Included rows are tinted so the whole selection is scannable in one pass — the old list gave
+   25 identical rows whose only difference was a small blue dot at the far right. --accent, not
+   --good: including a category is a SELECTION, not a verdict on it. */
+.bgl-pickrow--on {
+  background: var(--selected);
+  border-color: var(--line-strong);
+}
+@media (hover: hover) {
+  .bgl-pickrow--on:hover {
+    background: var(--hover-strong);
+  }
+}
+.bgl-pickrow__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+.bgl-pickrow__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bgl-pickrow__track {
+  flex: none;
+  width: 30px;
+  height: 18px;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+  transition: background 0.12s ease;
+}
+.bgl-pickrow--on .bgl-pickrow__track {
+  background: var(--accent);
+}
+.bgl-pickrow__thumb {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  transition: transform 0.12s ease;
+}
+.bgl-pickrow--on .bgl-pickrow__thumb {
+  transform: translateX(12px);
+}
+
+/* ── Bucket segmented control (ProportionalReviewList) ────────────────────────────────────
+   The active segment carries the bucket's own color — the same ones the configured 50/30/20
+   hero uses — so the draft reads like the result it will produce. */
+
+/* ── Amount row — envelope name + its own amount (AmountReview) ───────────────────────────
+   Two controls per row, so unlike .bgl-pickrow the whole row cannot BE the toggle: the pick
+   button owns the label half, the amount field the other. */
+.bgl-amountrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 108px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface2);
+}
+/* Selected = a NEUTRAL lift plus a firmer edge. The old treatment was an accent-tinted fill
+   and a 2px inset accent bar down the left; that thick-bar idiom is not this app's vocabulary
+   (owner, 2026-08-24) and the tint made a mostly-picked list read as a wall of blue. --selected
+   out-reads --hover on its own, so state is legible without borrowing the accent. */
+.bgl-amountrow--on {
+  background: var(--selected);
+  border-color: var(--line-strong);
+}
+.bgl-amountrow__pick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2) 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--faint);
+  text-align: left;
+  cursor: pointer;
+}
+.bgl-amountrow--on .bgl-amountrow__pick {
+  color: var(--ink);
+}
+.bgl-amountrow__pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.bgl-amountrow__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bgl-amountrow__amount {
+  width: 100%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+  border-color: transparent;
+  border-bottom-color: var(--line-strong);
+  border-radius: 0;
+}
+.bgl-amountrow__amount:focus {
+  border-color: var(--accent);
+  border-radius: var(--radius-sm);
+}
+/* An included row with no amount saves as no target at all. */
+.bgl-review__warn {
+  color: var(--warn);
+}
+
+/* ── Setup prompt — the compact card left in the pane while setup runs in a modal ─────────
+   An unconfigured engine has nothing to render behind a form, which is why the inline setup
+   screen never had a frame to sit in. This says what is missing and opens the modal; the
+   modal supplies the frame. */
+.bgl-setupprompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  margin-top: var(--space-5);
+  padding: var(--space-6) var(--space-7);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+}
+.bgl-setupprompt__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.bgl-setupprompt__title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+.bgl-setupprompt__sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  max-width: 62ch;
+}
+
+/* ── Setup chooser — first step inside the modal ──────────────────────────────────────── */
+.bgl-chooser {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.bgl-chooser .bgl-setup__stack {
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+/* Inside a modal the surface is already provided, so the review must not paint a second one. */
+.bgl-review--modal {
+  margin-top: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+.bgl-review--modal .bgl-review__footer {
+  background: var(--surface);
+}
+.bgl-review--modal .bgl-review-list {
+  overflow-y: auto;
+  /* Bounded so the footer stays put on a book with 30+ envelopes; the modal itself never
+     grows past the viewport. */
+  max-height: min(52vh, 560px);
+  padding-right: var(--space-2);
+}

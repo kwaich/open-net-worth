@@ -1,0 +1,117 @@
+# Spec: INV-ERR-01 — Investments tab error states across all sub-tabs
+# Covers: error-state acceptance criteria across all Investments sub-tabs and
+#         benchmark null-value graceful handling on Performance
+id: INV-ERR-01
+acceptance_ids:
+  - INV-H-LOAD-ERROR
+  - INV-PERF-LOAD-ERROR
+  - INV-PERF-BENCHMARK-NULL-VALUES-GRACEFUL
+  - INV-ACT-LOAD-ERROR
+  - INV-OPT-LOAD-ERROR
+title: "Investments error states — load failures and graceful degradation across all sub-tabs"
+description: >
+  Verifies that every Investments sub-tab renders an error state (not a blank
+  page or JS exception) when the underlying data API fails. Also verifies that
+  the Performance chart handles null benchmark values without throwing an error.
+
+  This spec is UI-only and uses the existing demo dataset. It cannot easily
+  simulate a real API error in the browser-use harness without intercepting
+  network requests. Consequently, it verifies the graceful degradation ONLY for
+  conditions that can be observed in the demo dataset (e.g. no options positions
+  → empty-state path, not a 5xx) and then does a basic load check to confirm
+  no unexpected JS error exists on any tab.
+
+  For sub-tabs that require network-error injection to test the error path
+  (Holdings, Performance, Activity, Options load-error), those checks are marked
+  SKIP unless the harness provides a way to simulate a failing API (e.g. via a
+  service worker or a flag in the QA environment).
+
+acceptance_criteria:
+  - "AC1: Holdings sub-tab does not show a blank white area on load (error path not simulated)"
+  - "AC2: Performance sub-tab does not show a blank white area on load"
+  - "AC3: Benchmark null values do not throw a JS error on the Performance chart"
+  - "AC4: Activity sub-tab does not show a blank white area on load (if present)"
+  - "AC5: Options sub-tab shows empty-state or loads without JS error (if present)"
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load.
+
+  This spec performs a baseline no-JS-error check across the Investments sub-tabs,
+  and specifically checks that selecting a benchmark with partial null data does
+  not throw a JS error on the Performance chart.
+
+  Step 1 — Open Investments tab.
+  Click "Investments" in the left sidebar. Wait 3 seconds.
+  Is there a visible JS error overlay on the tab? If yes: return "FAIL: JS error on initial Investments load"
+
+  Step 2 — Holdings sub-tab no-blank check (AC1).
+  Click "Holdings" sub-tab. Wait 2 seconds.
+  Is there a visible JS error overlay?
+  Record: HOLDINGS_JS_ERROR = "yes" or "no".
+  Is the content area completely blank (no table, no empty state, no spinner)?
+  Record: HOLDINGS_BLANK = "yes" or "no".
+
+  Step 3 — Performance sub-tab no-blank check (AC2, AC3).
+  Click "Performance" sub-tab. Wait 3 seconds.
+  Is there a visible JS error overlay?
+  Record: PERF_JS_ERROR = "yes" or "no".
+  Is the content area completely blank?
+  Record: PERF_BLANK = "yes" or "no".
+
+  If the Performance sub-tab loaded without error:
+    Look for a benchmark picker. If present, select any benchmark option.
+    Wait 3 seconds.
+    After selecting the benchmark: is there a JS error overlay?
+    Record: BENCHMARK_NULL_ERROR = "yes (JS error after benchmark select)" or "no (no error)".
+    Clear/deselect the benchmark again.
+
+  Step 4 — Activity sub-tab (AC4).
+  Look for an "Activity" sub-tab. If absent: record ACTIVITY_CHECK = "skip (sub-tab absent)".
+  If present:
+    Click "Activity". Wait 2 seconds.
+    Is there a visible JS error overlay?
+    Record: ACTIVITY_JS_ERROR = "yes" or "no".
+    Is the content area completely blank with no table, no empty-state, no spinner?
+    Record: ACTIVITY_BLANK = "yes" or "no".
+    Record: ACTIVITY_CHECK = "ok" if no error and not blank, "fail" if error or blank.
+
+  Step 5 — Options sub-tab (AC5).
+  Look for an "Options" sub-tab. If absent: record OPTIONS_CHECK = "skip (sub-tab absent)".
+  If present:
+    Click "Options". Wait 2 seconds.
+    Is there a visible JS error overlay?
+    Record: OPTIONS_JS_ERROR = "yes" or "no".
+    Is there either contract rows OR an empty-state message (not a blank void)?
+    Record: OPTIONS_CHECK = "ok (contracts or empty-state shown)" or "fail (blank/error)".
+
+  Decision:
+  - Collect all hard failures:
+    FAILS = []
+    if HOLDINGS_JS_ERROR = "yes": FAILS.append("Holdings JS error")
+    if HOLDINGS_BLANK = "yes": FAILS.append("Holdings content blank")
+    if PERF_JS_ERROR = "yes": FAILS.append("Performance JS error")
+    if PERF_BLANK = "yes": FAILS.append("Performance content blank")
+    if BENCHMARK_NULL_ERROR = "yes (JS error after benchmark select)": FAILS.append("Benchmark null values caused JS error")
+    if ACTIVITY_CHECK = "fail": FAILS.append("Activity sub-tab blank/error")
+    if OPTIONS_CHECK = "fail": FAILS.append("Options sub-tab blank/error")
+
+  - If FAILS is non-empty:
+    return "FAIL: INV-ERR-01 — " + join(FAILS, "; ")
+
+  - Otherwise:
+    return "PASS: INV-ERR-01 — no blank pages or JS errors on any loaded sub-tab; ACTIVITY=<ACTIVITY_CHECK>; OPTIONS=<OPTIONS_CHECK>; BENCHMARK_NULL=<BENCHMARK_NULL_ERROR>"
+
+max_steps: 30
+timeout_seconds: 240
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "INV-ERR-01-error-states.png"
+  note: >
+    This spec covers the error-state acceptance criteria that cannot be fully
+    exercised without network-error simulation. It verifies the no-crash baseline
+    (no JS error overlays, no blank content areas) and the benchmark null-value
+    handling. The API error injection paths (INV-H-LOAD-ERROR, INV-PERF-LOAD-ERROR,
+    INV-ACT-LOAD-ERROR, INV-OPT-LOAD-ERROR) require a 5xx-injecting harness mode
+    to fully exercise; they are covered here only at the no-crash level.
+    No ANTHROPIC_API_KEY required.

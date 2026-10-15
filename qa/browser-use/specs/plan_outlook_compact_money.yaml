@@ -1,0 +1,42 @@
+id: PLAN-OUT-COMPACT-01
+acceptance_ids:
+  - PLAN-OUT-COMPACT-MONEY
+setup_script: "seed_plan_currency_outlook.py"
+title: "Plan and Accounts share compact VND money formatting"
+description: >
+  Seeds an exact VND 2,008,437,944 cash balance and verifies the visible canonical Intl
+  compact output in Accounts and the Outlook fan tooltip.
+viewport:
+  width: 1440
+  height: 1000
+acceptance_criteria:
+  - AC1: Accounts sidebar visibly formats the seeded balance as ₫2.01B
+  - AC2: Changing Monthly saving in its visible input creates a non-baseline what-if projection
+  - AC3: Hovering the updated Outlook fan shows visible VND billion compact values
+  - AC4: Typical, Range, and Your plan tooltip values expose exact full-value title metadata
+browser_use_task: |
+  Navigate to {app_url}, open Accounts, and wait for the account list. Find
+  "QA Billion Dong Cash" and confirm its visible sidebar balance is exactly "₫2.01B".
+  A localized non-B suffix is a failure because this fixture selects comma/en-US formatting.
+  Take a screenshot of the Accounts sidebar as intermediate evidence.
+
+  Open Plan, then Outlook, and wait for the projection fan to render. Open the "What if"
+  assumptions rail if it is collapsed. Focus the "Monthly saving per month" input, replace its
+  contents with 82000000, and submit. Confirm its value changes from ₫80,000,000 to ₫82,000,000 and wait
+  for the what-if simulation to finish rendering. This non-baseline value is required: the
+  chart intentionally has no "Your plan" overlay while all levers still match the baseline.
+
+  Move the pointer over a populated part of the updated fan until its tooltip is visible.
+  Confirm the tooltip's visible
+  Typical, Range, and Your plan amounts use the dong symbol and billion-scale compact output
+  with a B suffix. Inspect each of those three value elements and confirm it has non-empty title
+  metadata containing its exact full VND amount, rather than only the compact text. Leave the
+  fan tooltip open and take the final criterion screenshot.
+
+  Return "PASS: PLAN-OUT-COMPACT-01 accounts=₫2.01B fan=B titles=3" only if all checks pass.
+  Otherwise return "FAIL: PLAN-OUT-COMPACT-01 — <reason>".
+max_steps: 35
+timeout_seconds: 300
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "PLAN-OUT-COMPACT-01-vnd-fan-tooltip.png"

@@ -1,0 +1,26 @@
+id: CCP-02
+title: "Credit Card Payments - Lark funded state after assignment"
+description: >
+  Assign $200 to Lark's payment envelope and capture a screenshot showing
+  the funded (green) state.
+
+acceptance_criteria:
+  - CCP-ASSIGN: Assignment dialog opens and accepts input
+  - CCP-Lark-FUNDED: Lark row shows green "Funded" or filled progress
+
+browser_use_task: |
+  Navigate to {app_url}.
+  Click on the "Plan" tab in the sidebar.
+  Scroll down to find the "Credit Card Payments" group.
+  Find the "Lark Revolution" or "Lark" row - it should currently show "N more needed for this bill" in amber.
+  Click on the Lark row to open the assignment interface (may be a button, input field, or dropdown).
+  If an input field appears, type "200" to assign 200 SGD.
+  If a dropdown or dialog appears, select or enter 200.
+  Press Enter or click a "Confirm" / "Assign" button to commit the assignment.
+  The Lark row should now display green text or a filled progress indicator showing "Funded".
+  Take a screenshot showing the Lark row in the green/funded state.
+  Return "PASS: Lark payment envelope assigned 200 and now shows green Funded state" when done.
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "ccp-funded.png"

@@ -1,0 +1,42 @@
+{
+  "agents": [
+    "Explore",
+    "Plan",
+    "claude",
+    "claude-code-guide",
+    "general-purpose",
+    "statusline-setup"
+  ],
+  "cli_version": "2.1.287",
+  "mcp_servers": [],
+  "plugins": [
+    "cc-plugin-agents-md",
+    "cc-plugin-plugin-authoring",
+    "cc-plugin-telemetry"
+  ],
+  "skills": [
+    "artifact-capabilities",
+    "artifact-diagramming",
+    "batch",
+    "claude-api",
+    "code-review",
+    "dataviz",
+    "debug",
+    "deep-research",
+    "design",
+    "design-sync",
+    "doctor",
+    "fewer-permission-prompts",
+    "loop",
+    "plugin-authoring",
+    "run",
+    "run-skill-generator",
+    "schedule",
+    "simplify",
+    "slides",
+    "update-config",
+    "verify",
+    "workflow-authoring"
+  ],
+  "tools": []
+}

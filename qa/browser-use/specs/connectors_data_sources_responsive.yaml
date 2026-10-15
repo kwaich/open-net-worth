@@ -1,0 +1,63 @@
+# Spec: CDS-RESPONSIVE-01 — reflow of the new connectors-as-data-sources surfaces at
+# phone/tablet/desktop widths.
+# Covers: ConnectorAccountsList.tsx rows, the "Sync a connector" grid, the drawer's Source
+# section scroll behavior.
+id: CDS-RESPONSIVE-01
+acceptance_ids:
+  - CDS-UI-20
+title: "Connectors Accounts list, Sync-a-connector grid, and drawer Source reflow cleanly at 375/1024/1440"
+description: >
+  The Accounts list rows wrap label-above-control on phone with no horizontal overflow; the
+  Sync-a-connector grid reflows like the existing template grid; the drawer's Source section
+  scrolls with the drawer body, not independently or off-screen.
+
+acceptance_criteria:
+  - "AC1: At 375px, no horizontal scrollbar/overflow appears on the Connectors tab, the Automations tab, or an open transaction drawer"
+  - "AC2: At 375px, an Accounts-list row's label and its Select/Unlink control stack vertically rather than clipping or overlapping"
+  - "AC3: At 1024/1440px, the Sync a connector cards wrap into a grid matching the existing Start from a template grid's column behavior"
+  - "AC4: The transaction drawer's Source section scrolls together with the rest of the drawer body at every width"
+
+browser_use_task: |
+  This spec is a resize-and-look pass — no interaction other than resizing and scrolling.
+
+  Step 1 — Resize to 375px width.
+  Set the browser viewport to 375 wide (mobile). Navigate to {app_url}/connectors and open
+  any bank/broker provider's config form so its Accounts section is visible.
+  Check: is there a horizontal scrollbar, or does any element extend past the right edge of
+  the viewport? Record OVERFLOW_375_CONNECTORS = "yes" or "no".
+  If the Accounts section has any rows, check: does each row's label text sit ABOVE its
+  Select/Unlink control (stacked), rather than being squeezed onto one cramped line?
+  Record ROW_STACKED_375 = "yes", "no", or "n/a" (no rows to check).
+
+  Step 2 — Automations gallery at 375px.
+  Navigate to {app_url}/automations. Check for horizontal overflow.
+  Record OVERFLOW_375_AUTOMATIONS = "yes" or "no".
+
+  Step 3 — Resize to 1024px, then 1440px.
+  For each width, revisit {app_url}/automations and scroll to "Sync a connector". Compare
+  its card grid's column count/wrapping to the "Start from a template" grid just above it —
+  do they follow the same responsive pattern (same approximate column count at each width)?
+  Record GRID_MATCHES_1024 = "yes" or "no".
+  Record GRID_MATCHES_1440 = "yes" or "no".
+
+  Step 4 — Drawer scroll at 1440px.
+  Open any transaction's drawer. Scroll down through it, including past the "Source"
+  section if present. Does the whole drawer scroll as ONE unit (Source moves with
+  everything else, not trapped in its own separately-scrolling box, and not clipped)?
+  Record DRAWER_SCROLLS_TOGETHER = "yes" or "no".
+
+  Decision:
+  - If OVERFLOW_375_CONNECTORS = "yes" or OVERFLOW_375_AUTOMATIONS = "yes":
+    return "FAIL: horizontal overflow at 375px"
+  - If ROW_STACKED_375 = "no":
+    return "FAIL: Accounts-list row does not stack label above control at 375px"
+  - If GRID_MATCHES_1024 = "no" or GRID_MATCHES_1440 = "no":
+    return "FAIL: Sync-a-connector grid does not reflow like the existing template grid"
+  - If DRAWER_SCROLLS_TOGETHER = "no":
+    return "FAIL: the drawer's Source section does not scroll with the rest of the drawer body"
+  - Otherwise:
+    return "PASS: all three surfaces reflow correctly at 375/1024/1440"
+
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "CDS-RESPONSIVE-01-reflow.png"

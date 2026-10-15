@@ -1,0 +1,115 @@
+# Spec: BUD-FRESH-01 — "Start fresh from <this month>…" (Plan → Budget)
+# Verifies ADR 2026-09-08-budget-fresh-start-moves-the-floor-not-the-data (mechanics — floor
+# move, one-transaction clear, server-held Undo snapshot — unchanged) as amended by ADR
+# `2026-09-09-ready-to-assign-follows-ynab-envelopes-are-the-category` (the LEDGER's terms are
+# restored to the signed `held_in_envelopes`/`card_spend_not_covered` identity, not 2026-09-08's
+# always-nonnegative "Set aside"/"Card debt not yet funded" terms): the kebab item names the
+# CURRENT month, the confirm dialog's promised Ready to Assign is the REAL post-confirm figure
+# (the preview runs the same fold with the carry floor overridden AND the month's assignments
+# zeroed — it writes nothing), confirming CLEARS that month's assignments as well as moving the
+# floor, the state line under the hero reports the stored floor, and Undo puts BOTH halves back.
+# The ledger's row labels are the shipped strings, verbatim from
+# `frontend/src/components/tabs/plan/rtaLines.ts` — the SAME builder the RTA popover uses. Both
+# subtracted terms are SIGNED: an unresolved in-month overspend can leave "Held in envelopes"
+# negative even right after the clear (clearing zeroes `assigned`, not this month's `activity`),
+# and that row then renders with a "+" glyph, which is correct.
+id: BUD-FRESH-01
+# 6 steps, three of which wait on a write + refetch, plus a 7s undo window — more than 120s.
+timeout_seconds: 420
+acceptance_ids:
+  - BUD-FRESH-1
+  - BUD-FRESH-2
+  - BUD-FRESH-3
+acceptance_criteria:
+  - AC1: The Plan → Budget "…" menu (on the Budget tab row, beside the lens switcher) offers "Start fresh from <Month YYYY>" naming the CURRENT calendar month, formatted like the month nav
+  - AC2: The confirm dialog states the resulting Ready to Assign TO THE CENT and shows that figure's own arithmetic as a ledger that ADDS UP to it, using the SAME rows as the RTA breakdown popover — "Cash on hand" and "Held in envelopes" (SIGNED — can read negative, in which case its glyph flips to "+") ALWAYS, then "Card spending not covered this month", "Baseline" and "Assigned in future months" only when nonzero, each carrying a "+"/"−" glyph in its own column and an UNSIGNED amount — with NO "Already assigned" row, and discloses that this month's assignments are cleared and earlier months hide until history resumes; that promised amount equals the Ready-to-Assign hero after confirming
+  - AC3: After confirming, a muted "Fresh start · since <Mon YYYY>" line shows under the hero, EVERY Assigned cell in the month reads 0, the Previous-month arrow is disabled, and the menu item reads "Started fresh from <Month YYYY>"
+  - AC4: The undo pill restores the previous state completely — the state line disappears, the Previous-month arrow works again, the Assigned cells come BACK to their pre-confirm amounts, and Ready to Assign returns to its pre-confirm value (the client posts only a one-shot token; the amounts it restores are held server-side)
+
+browser_use_task: |
+  Navigate to {app_url} and wait for the page to load fully.
+
+  Step 1: Open the Plan tab, Budget sub-tab.
+  Click "Plan" in the left sidebar and wait for the Budget view to load. You should see a
+  "Ready to Assign" card at the top with a large currency figure and a month name beside it
+  (e.g. "September 2026").
+  WRITE DOWN the exact Ready-to-Assign amount and the month shown in the month navigator.
+  Confirm there is NO "Fresh start · since …" line under the amount yet.
+  Scroll to the budget table and WRITE DOWN the Assigned amount of the first two envelopes that
+  have a NON-ZERO Assigned figure (name and amount) — you will check these again in Steps 4
+  and 6.
+  Take a screenshot of the Ready to Assign card.
+
+  Step 2: Open the overflow menu (AC1).
+  On the row that carries the Budget / Cash Flow / Outlook tabs, at its far right, click the "…"
+  button (its accessible name is "Budget options"). On a narrow window that row has no "…" — the
+  page header instead shows a single "…" whose name is "Plan settings"; either is fine.
+  Confirm the menu contains an item reading "Start fresh from <Month> <Year>" where the month
+  and year are TODAY's month and year, written out in full (e.g. "Start fresh from September
+  2026"), NOT an abbreviation and NOT a different month.
+  Take a screenshot with the menu open, then click that item.
+
+  Step 3: Read the confirm dialog (AC2).
+  A dialog titled "Start fresh from <Month Year>?" opens. Wait until an amount appears in the
+  sentence "Ready to Assign becomes <amount>:" (a grey placeholder bar may show for a moment
+  first).
+  WRITE DOWN that amount exactly, INCLUDING its cents.
+  Underneath is a small ledger — the SAME rows the Ready-to-Assign breakdown popover shows,
+  each one a "+" or "−" glyph in a narrow left column, a label, and an UNSIGNED amount on the
+  right (the glyph carries the sign, so no row prints two minuses). Its first two rows are
+  always "+ Cash on hand" and "Held in envelopes", the latter ALWAYS present even when it reads
+  0.00 — and it CAN be a real, nonzero value even right after the clear, if this month has an
+  unresolved overspend the clear didn't touch (clearing zeroes assignments, not this month's own
+  activity). Its glyph is "−" while the envelopes are net holding money and "+" when they are net
+  overspent; a "+ Held in envelopes" row is CORRECT, not a bug. Below those, only the terms that
+  are not zero appear: "− Card spending not covered this month", "− Baseline" and "− Assigned in
+  future months".
+  WRITE DOWN every row you see, glyph, label and amount.
+  CHECK THE ARITHMETIC YOURSELF: start from cash on hand, ADD every "+" row and SUBTRACT every
+  "−" row (so a "+ Held in envelopes" row is ADDED). The result must equal the "Ready to Assign
+  becomes" amount exactly, to the cent. If it does not, that is a FAIL — report the difference. A
+  row labelled "Unexplained — refresh" is also a FAIL: it only ever appears when a term went
+  stale.
+  Confirm there is NO row reading "Already assigned" in that ledger — a fresh start clears this
+  month's OWN assignments, so there is nothing assigned for the figure to be net of. ("Held in
+  envelopes" and "Assigned in future months" are DIFFERENT facts — money still held
+  by an envelope this month, whether from a same-month refund/covered card swipe OR an
+  unresolved overspend the clear didn't erase, and a later month's own assignments,
+  respectively — and are fine if they appear.)
+  Confirm the closing paragraph reads "Envelopes start over from <Month> — this month's
+  assignments are cleared. This month's spending still shows in its envelopes. Earlier months
+  hide until you resume history. No transactions change — undo any time."
+  Take a screenshot of the dialog.
+
+  Step 4: Confirm, then verify the promise held (AC2, AC3).
+  Click "Start fresh". Wait for the budget to reload.
+  Confirm the big Ready-to-Assign figure on the card now equals the amount you wrote down in
+  Step 3 EXACTLY, cents included (same number, same sign).
+  Confirm a small muted line "Fresh start · since <Mon Year>" (abbreviated month, e.g.
+  "Fresh start · since Sep 2026") now appears directly under that figure.
+  Confirm the left/back arrow beside the month name is now DISABLED (you cannot page to the
+  previous month) — this is the disclosed side effect, not a bug.
+  Scroll to the budget table and confirm the two envelopes you wrote down in Step 1 now show an
+  Assigned amount of 0 — the fresh start CLEARED this month's assignments. If either still shows
+  its old amount, that is a FAIL.
+  Take a screenshot of the Ready to Assign card and a screenshot of the budget table.
+
+  Step 5: Verify the menu flipped to past tense (AC3).
+  Open the same "…" menu again. Confirm the item now reads "Started fresh from <Month Year>"
+  (past tense, no trailing "…"). Take a screenshot, then press Escape to close the menu WITHOUT
+  selecting anything.
+
+  Step 6: Undo (AC4).
+  A pill near the bottom of the window reads "Budget starts fresh from <Month Year>" — the month
+  written out in full — with an "Undo" button beside it, wrapping to no more than two lines. If
+  it has already faded (it lasts about 7 seconds), redo Steps 2-4 quickly and then click "Undo"
+  immediately.
+  After clicking "Undo": confirm the "Fresh start · since …" line is GONE, the previous-month
+  arrow is enabled again, and the Ready-to-Assign figure is back to the amount you wrote down in
+  Step 1.
+  Scroll to the budget table and confirm the two envelopes from Step 1 have their ORIGINAL
+  Assigned amounts back, to the cent. Undo restores the assignments as well as the floor; if they
+  are still 0, that is a FAIL.
+  Take a final screenshot of the Ready to Assign card and of the budget table.
+
+  Report PASS/FAIL per AC with the exact amounts you observed at each step.

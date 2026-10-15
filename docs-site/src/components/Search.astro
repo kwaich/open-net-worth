@@ -1,0 +1,21 @@
+---
+// Starlight Search override, solely to survive view transitions.
+//
+// Pagefind's UI is initialised ONCE, inside the <site-search> custom element,
+// against a #starlight__search mount point. ClientRouter swaps the document on
+// navigation, so that mount point is replaced by a fresh, un-initialised one
+// and every query silently returns zero results (measured: 5 results on a cold
+// load, 0 after one in-site navigation).
+//
+// transition:persist keeps this subtree — and the live Pagefind instance
+// attached to it — across swaps instead of rebuilding it.
+import Default from '@astrojs/starlight/components/Search.astro';
+---
+
+<div transition:persist="starlight-search" class="onw-search-persist">
+  <Default><slot /></Default>
+</div>
+
+<style>
+  .onw-search-persist { display: contents; }
+</style>

@@ -1,0 +1,513 @@
+[
+  {
+    "id": "scenario-16-bnpl-installment",
+    "label": "scenario #16 — BNPL installment vs original receipt: keep both (amount mismatch)",
+    "must": "keep_both",
+    "decided_by": "L3",
+    "accounts": [
+      {
+        "id": "cc",
+        "name": "AMEX",
+        "kind": "liability",
+        "type": "credit",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "cc-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Phone purchase",
+        "from_account_id": "cc",
+        "from_amount": 300.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-phone-purchase"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-16",
+        "kind": "expense",
+        "date": "2026-03-05",
+        "description": "Phone purchase installment 1 of 3",
+        "from_account_id": "cc",
+        "from_amount": 100.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-cc-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-bnpl-install-1"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "none",
+      "engine_action": "create",
+      "engine_action_note": "amount 100.00 vs 300.00 — 200% difference, well outside 5% tolerance; deterministic engine correctly creates; L3 would confirm based on installment semantics",
+      "canonical": null,
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-17-multi-channel-manual-entries",
+    "label": "scenario #17 — multi-channel (Telegram + web) same manual charge: both manual → never auto-flagged",
+    "must": "keep_both",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Lunch",
+        "from_account_id": "dbs",
+        "from_amount": 15.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "manual",
+        "external_refs": []
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-17",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Lunch",
+        "from_account_id": "dbs",
+        "from_amount": 15.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "manual",
+        "external_refs": []
+      }
+    ],
+    "expect": {
+      "action_class": "none",
+      "engine_action": "create",
+      "engine_action_note": "invariant 4: both source=manual → never auto-flagged; deliberately never soft-dropped",
+      "canonical": null,
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-18-two-coffees-same-merchant-day",
+    "label": "scenario #18 — two real coffees, same merchant/day/amount in one import batch",
+    "must": "keep_both",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Coffee",
+        "from_account_id": "dbs",
+        "from_amount": 4.5,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-coffee-1"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-18",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Coffee",
+        "from_account_id": "dbs",
+        "from_amount": 4.5,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-coffee-2"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "none",
+      "engine_action": "create",
+      "engine_action_note": "invariant 3: same batch_id — bank already de-duplicated its own statement; two real charges",
+      "canonical": null,
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-19-multiple-anthropic-charges-separate-emails",
+    "label": "scenario #19 — multiple Anthropic charges same day, separate email messages",
+    "must": "keep_both",
+    "accounts": [
+      {
+        "id": "cc",
+        "name": "AMEX",
+        "kind": "liability",
+        "type": "credit",
+        "currency": "USD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "cc-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Anthropic",
+        "from_account_id": "cc",
+        "from_amount": 20.0,
+        "from_currency": "USD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-anthropic-jan"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-19",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Anthropic",
+        "from_account_id": "cc",
+        "from_amount": 20.0,
+        "from_currency": "USD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-anthropic-feb"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "none",
+      "engine_action": "create",
+      "engine_action_note": "invariant 1: distinct email IDs from same 'email' namespace — two real per-event receipts",
+      "canonical": null,
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-20-identical-csv-rows-occurrence-index",
+    "label": "scenario #20 — two identical CSV/QIF rows (two $5 coffees); occurrence-index prevents silent drop",
+    "must": "keep_both",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Coffee",
+        "from_account_id": "dbs",
+        "from_amount": 5.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hABC"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-20",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Coffee",
+        "from_account_id": "dbs",
+        "from_amount": 5.0,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-dbs-march",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hABC:1"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "none",
+      "engine_action": "create",
+      "engine_action_note": "invariant 3: same batch_id — two rows from same feed are two real charges; occurrence-index ensures second row gets distinct external_ref",
+      "canonical": null,
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-21-multi-charge-one-email",
+    "label": "scenario #21 — multiple charges in one email (same msgid, different line items)",
+    "must": "keep_both",
+    "accounts": [
+      {
+        "id": "cc",
+        "name": "AMEX",
+        "kind": "liability",
+        "type": "credit",
+        "currency": "USD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "cc-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Anthropic",
+        "from_account_id": "cc",
+        "from_amount": 20.0,
+        "from_currency": "USD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-receipt:0"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-21",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Anthropic",
+        "from_account_id": "cc",
+        "from_amount": 20.0,
+        "from_currency": "USD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-receipt:1"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "none",
+      "engine_action": "create",
+      "engine_action_note": "invariant 1: distinct email IDs (email:msgid-receipt:0 vs :1) — two per-event line items from same email, must keep both",
+      "canonical": null,
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-22-exact-reimport-same-file",
+    "label": "scenario #22 — exact re-import of same CSV file: 0 new rows (idempotency)",
+    "must": "noop",
+    "accounts": [
+      {
+        "id": "dbs",
+        "name": "DBS",
+        "kind": "asset",
+        "type": "cash",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "dbs-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Spotify",
+        "from_account_id": "dbs",
+        "from_amount": 10.99,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-orig",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-spotify-march"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-22",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Spotify",
+        "from_account_id": "dbs",
+        "from_amount": 10.99,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": "batch-reimport",
+        "source": "csv_import",
+        "external_refs": [
+          {
+            "source": "csv",
+            "ref": "hash-spotify-march"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "exact",
+      "engine_action": "noop",
+      "engine_action_note": "L0: exact (external_source, external_ref) hit — the same source event re-presented",
+      "canonical": "dbs-1",
+      "become_transfer": false
+    }
+  },
+  {
+    "id": "scenario-23-rescan-same-email-window",
+    "label": "scenario #23 — re-scan of same email window: 0 new rows (email idempotency)",
+    "must": "noop",
+    "accounts": [
+      {
+        "id": "cc",
+        "name": "AMEX",
+        "kind": "liability",
+        "type": "credit",
+        "currency": "SGD"
+      }
+    ],
+    "existing_ledger": [
+      {
+        "id": "cc-1",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Netflix",
+        "from_account_id": "cc",
+        "from_amount": 19.99,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-netflix-march"
+          }
+        ]
+      }
+    ],
+    "incoming": [
+      {
+        "id": "in-23",
+        "kind": "expense",
+        "date": "2026-03-01",
+        "description": "Netflix",
+        "from_account_id": "cc",
+        "from_amount": 19.99,
+        "from_currency": "SGD",
+        "to_account_id": null,
+        "to_amount": null,
+        "to_currency": null,
+        "batch_id": null,
+        "source": "email",
+        "external_refs": [
+          {
+            "source": "email",
+            "ref": "msgid-netflix-march"
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "action_class": "exact",
+      "engine_action": "noop",
+      "engine_action_note": "L0: exact email (external_source, external_ref) hit — re-scanning the same email window is a no-op",
+      "canonical": "cc-1",
+      "become_transfer": false
+    }
+  }
+]

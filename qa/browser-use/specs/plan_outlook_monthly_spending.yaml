@@ -1,0 +1,38 @@
+id: PLAN-OUT-MONTHLY-SPEND-01
+acceptance_ids:
+  - PLAN-OUT-MONTHLY-SPENDING
+  - PLAN-OUT-LEVERS
+setup_script: "seed_plan_currency_outlook.py"
+title: "Outlook money assumptions are unbounded monthly inputs"
+description: >
+  Seeds a VND FIRE plan, then verifies monthly saving and monthly retirement spending
+  are obvious inputs without sliders or maximums and persist exact large values.
+viewport:
+  width: 390
+  height: 844
+acceptance_criteria:
+  - AC1: Monthly saving is a visible input with /month and no slider or maximum
+  - AC2: Retirement spending is a visible monthly input with no slider or maximum
+  - AC3: ₫25,000,000 monthly retirement spending shows ₫300,000,000/year and a ₫7.5B FIRE number at 4%
+  - AC4: Values above the former ranges survive Update my FIRE plan and reload
+browser_use_task: |
+  Navigate to {app_url}, open Plan, then Outlook, and wait for the projection fan to render.
+  Open the "What if" assumptions sheet. Find the text inputs named "Monthly saving per month"
+  and "Monthly retirement spending". Confirm neither has a max attribute and neither has a
+  corresponding range slider. Confirm both visibly read "/month".
+
+  Replace Monthly saving with 500000000 and Monthly retirement spending with 25000000. Submit
+  each edit. Confirm the helper under retirement spending shows exactly ₫300,000,000/year and
+  a FIRE number of ₫7.5B at the seeded 4% withdrawal rate. In Scenarios, choose "Save" (the
+  button titled "Update your FIRE plan"), wait for the "FIRE plan updated" confirmation, reload
+  the page, reopen Plan → Outlook → What if, and confirm both
+  exact monthly values remain unchanged. Take the final criterion screenshot with both inputs and
+  the retirement-spending helper visible; there must be no horizontal overflow.
+
+  Return "PASS: PLAN-OUT-MONTHLY-SPEND-01 saving=500000000 retirement=25000000 annual=300000000 fire=7500000000"
+  only if every check passes. Otherwise return "FAIL: PLAN-OUT-MONTHLY-SPEND-01 — <reason>".
+max_steps: 45
+timeout_seconds: 360
+expected:
+  pass_condition: "result contains 'PASS'"
+  screenshot_name: "PLAN-OUT-MONTHLY-SPEND-01-mobile-monthly-inputs.png"

@@ -1,0 +1,303 @@
+"""Hand-rolled JSON-RPC 2.0 over HTTP MCP endpoint (RFC P3-MCP §2.1, S1).
+
+A thin ``POST /mcp`` route — NO ``mcp`` SDK, zero new dependency (the repo leans
+stdlib/zero-dep). It implements the minimal MCP method set:
+
+  * ``initialize``      — handshake + server capabilities (tools + resources).
+  * ``tools/list``      — the registry's tool descriptors + presentation annotations.
+  * ``tools/call``      — dispatch via ``adapter.call_tool`` → MCP text content.
+  * ``resources/list``  — the curated read-only resource catalog.
+  * ``resources/read``  — fetch one catalog resource via the same read path → JSON contents.
+
+Authorization: there is none beyond the Bearer gate below — a caller holding the instance
+API token IS the operator, and a ``tools/call`` dispatches its tool. The former tiering
+(allowlist / grant envelope / propose-instead-of-write fallback) has been removed;
+``adapter.call_tool`` still checkpoints + audits a mutating call so it stays undoable and
+visible.
+
+JSON-RPC errors are surfaced with the standard codes (parse error -32700,
+invalid request -32600, method not found -32601, invalid params -32602, internal
+-32603). Notifications (a request with no ``id``) get an empty 202-style body.
+
+Auth (RFC P3-MCP §5): ``/mcp`` is mounted as an ``APIRouter`` on the main app, so
+the app-wide ``require_auth`` dependency DOES run for it (unlike ``app.mount``
+sub-apps). But MCP must be gated by the **Bearer token specifically** —
+cookies / loopback-trust must NOT grant MCP access. So this endpoint enforces the
+Bearer explicitly via ``_require_mcp_bearer`` regardless of the app gate: a valid
+``Authorization: Bearer <token>`` (verified against ``AuthStore().api_token()``)
+is required, with the ``AUTH_DISABLED=true`` dev hatch honored for parity. The
+two checks compose: the app gate is the outer ring (any valid credential), the
+Bearer check is the inner ring MCP-specific requirement.
+"""
+
+from __future__ import annotations
+
+import json
+from typing import Any, Optional
+
+from fastapi import APIRouter, Request, Response
+from fastapi.responses import JSONResponse
+
+from backend.core.config import get_settings
+from backend.core.security import verify_api_token
+from backend.db.auth_store import AuthStore
+from backend.mcp.adapter import (
+    McpResourceNotFound,
+    call_tool,
+    mcp_resource_descriptors,
+    mcp_tool_descriptors,
+    read_resource,
+)
+
+# The inbound MCP caller identity stamped on checkpoints / audit rows / transaction
+# provenance: the operator's own API-token client. Every /mcp call is this surface.
+MCP_SURFACE = "api_token"
+
+# MCP protocol revisions this server speaks. Tool ANNOTATIONS
+# (readOnlyHint/destructiveHint/idempotentHint — what lets a client group our tools
+# Read-only vs Write/delete) were introduced in 2025-03-26, so advertising the old
+# 2024-11-05 made clients (Claude Desktop) ignore them and lump everything under
+# "other tools". We now negotiate: echo the client's requested version when it is one
+# we recognize, else fall back to our latest. All our methods (initialize/tools/{list,
+# call}/resources/{list,read}) are stable across these revisions; annotations are
+# additive/optional, so echoing a newer version is safe.
+SUPPORTED_PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
+PROTOCOL_VERSION = SUPPORTED_PROTOCOL_VERSIONS[0]  # our latest / default
+SERVER_INFO = {"name": "open-net-worth", "version": "1"}
+
+
+def _negotiate_protocol_version(requested: Any) -> str:
+    """Per the MCP spec: respond with the client's requested version if we support it,
+    else our latest. Keeps annotation-aware clients on a revision that renders them."""
+    if isinstance(requested, str) and requested in SUPPORTED_PROTOCOL_VERSIONS:
+        return requested
+    return PROTOCOL_VERSION
+
+
+# JSON-RPC 2.0 standard error codes.
+PARSE_ERROR = -32700
+INVALID_REQUEST = -32600
+METHOD_NOT_FOUND = -32601
+INVALID_PARAMS = -32602
+INTERNAL_ERROR = -32603
+
+router = APIRouter(tags=["mcp"])
+
+
+def _bearer_token(request: Request) -> Optional[str]:
+    header = request.headers.get("authorization") or ""
+    if header.lower().startswith("bearer "):
+        return header[7:].strip() or None
+    return None
+
+
+def _require_mcp_bearer(request: Request) -> Optional[JSONResponse]:
+    """Enforce a valid Bearer token for MCP. Returns a 401 response, or ``None`` to allow.
+
+    MCP-specific gate: cookies / loopback-trust never grant MCP — only the API
+    token does (RFC §5). The ``AUTH_DISABLED`` dev hatch is honored for parity.
+    """
+    settings = get_settings()
+    if not settings.auth_enabled:  # AUTH_DISABLED=true → dev escape hatch (parity)
+        return None
+    presented = _bearer_token(request)
+    if presented is not None and verify_api_token(presented, AuthStore().api_token()):
+        return None
+    return JSONResponse(
+        status_code=401,
+        content={"detail": "authentication required"},
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def _rpc_error(req_id: Any, code: int, message: str) -> dict:
+    return {"jsonrpc": "2.0", "id": req_id, "error": {"code": code, "message": message}}
+
+
+def _rpc_result(req_id: Any, result: dict) -> dict:
+    return {"jsonrpc": "2.0", "id": req_id, "result": result}
+
+
+def _is_error_result(text: str) -> bool:
+    """Whether a tool's result string reports its own failure (``ok:false`` / an ``error``
+    key) — including the registry's ``{"error": "unknown tool: …"}`` sentinel."""
+    try:
+        parsed = json.loads(text)
+    except (ValueError, TypeError):
+        return False
+    return isinstance(parsed, dict) and (parsed.get("ok") is False or bool(parsed.get("error")))
+
+
+def _call_result(text: str, proposed: Optional[dict]) -> dict:
+    """Shape a ``tools/call`` result.
+
+    Most tools (``proposed is None``) → ``{content:[text], isError}``, where ``isError``
+    reflects the tool's OWN outcome (a tool that failed, or an unknown name, is a completed
+    call surfaced honestly — not a transport error).
+
+    A ``propose_*`` tool returns a non-None proposed-change dict having WRITTEN NOTHING. We
+    surface the diff two ways so any MCP client sees it:
+      * ``content`` gets an extra ``text`` block (the JSON diff), so a plain text-only client
+        renders it; and
+      * a top-level ``proposedChange`` field carries the structured dict for a client that
+        wants to act on it — by calling the matching ``apply_*`` tool.
+    """
+    is_error = _is_error_result(text)
+    if proposed is None:
+        return {"content": [{"type": "text", "text": text}], "isError": is_error}
+    diff_text = json.dumps(proposed, ensure_ascii=False)
+    return {
+        "content": [
+            {"type": "text", "text": text},
+            {
+                "type": "text",
+                "text": (
+                    "PROPOSED change — nothing was written. Call the matching apply_* "
+                    f"tool to commit it:\n{diff_text}"
+                ),
+            },
+        ],
+        "proposedChange": proposed,
+        "isError": is_error,
+    }
+
+
+async def _handle_tools_call(name: str, arguments: dict, req_id: Any) -> dict:
+    """Dispatch a ``tools/call`` to its tool.
+
+    A Bearer-authenticated caller is the operator, so there is no second permission layer
+    behind the auth gate — the tool runs. ``call_tool`` wraps a mutating call in a checkpoint
+    (undoable) and audits it; a ``propose_*`` tool's diff is surfaced to the client.
+    """
+    text, proposed = await call_tool(name, arguments, surface=MCP_SURFACE)
+    return _rpc_result(req_id, _call_result(text, proposed))
+
+
+async def _handle_method(method: str, params: dict, req_id: Any) -> dict:
+    """Route one well-formed JSON-RPC request to its MCP handler → an RPC envelope."""
+    if method == "initialize":
+        return _rpc_result(
+            req_id,
+            {
+                "protocolVersion": _negotiate_protocol_version(params.get("protocolVersion")),
+                "capabilities": {
+                    "tools": {"listChanged": False},
+                    "resources": {"subscribe": False, "listChanged": False},
+                },
+                "serverInfo": SERVER_INFO,
+            },
+        )
+
+    if method == "ping":
+        # Standard MCP utility method — MUST return an empty result, not an error.
+        # Clients ping periodically to keep the connection healthy.
+        return _rpc_result(req_id, {})
+
+    if method == "tools/list":
+        return _rpc_result(req_id, {"tools": mcp_tool_descriptors()})
+
+    if method == "tools/call":
+        name = params.get("name")
+        if not isinstance(name, str) or not name:
+            return _rpc_error(req_id, INVALID_PARAMS, "missing tool name")
+        arguments = params.get("arguments") or {}
+        if not isinstance(arguments, dict):
+            return _rpc_error(req_id, INVALID_PARAMS, "arguments must be an object")
+        return await _handle_tools_call(name, arguments, req_id)
+
+    if method == "resources/list":
+        return _rpc_result(req_id, {"resources": mcp_resource_descriptors()})
+
+    if method == "resources/read":
+        uri = params.get("uri")
+        if not isinstance(uri, str) or not uri:
+            return _rpc_error(req_id, INVALID_PARAMS, "missing resource uri")
+        try:
+            contents = await read_resource(uri)
+        except McpResourceNotFound as exc:
+            # An unlisted uri — refuse as a proper JSON-RPC error (never a 500 / leak).
+            return _rpc_error(req_id, INVALID_PARAMS, str(exc))
+        return _rpc_result(req_id, {"contents": contents})
+
+    return _rpc_error(req_id, METHOD_NOT_FOUND, f"method not found: {method}")
+
+
+def _transport_error(code: int, message: str) -> JSONResponse:
+    """A malformed/no-id error returned as HTTP 400 — NOT a 200 JSON-RPC body.
+
+    A JSON-RPC parse/invalid-request error legitimately has ``id: null``, but the MCP
+    SDK's message schema requires ``id`` to be a string|number and REJECTS ``id: null``
+    when it tries to parse a 2xx body as a message (the "invalid_union" zod error clients
+    reported). Returning these at HTTP 400 makes the transport treat it as a transport-level
+    error (logged) instead of feeding the body to the message parser — no client crash. The
+    body is kept JSON-RPC-shaped for human/debug readability; the status is what matters."""
+    return JSONResponse(content=_rpc_error(None, code, message), status_code=400)
+
+
+@router.post("/mcp")
+async def mcp_endpoint(request: Request):
+    """The single MCP JSON-RPC entrypoint (Streamable HTTP, request/response JSON)."""
+    denied = _require_mcp_bearer(request)
+    if denied is not None:
+        return denied
+
+    try:
+        payload = await request.json()
+    except Exception:
+        return _transport_error(PARSE_ERROR, "parse error")
+
+    # JSON-RPC batching (a JSON array) was REMOVED in MCP 2025-06-18; we only accept a
+    # single request object. A non-object body is a transport-level bad request (400, not a
+    # 200 id:null body the client would choke on).
+    if not isinstance(payload, dict):
+        return _transport_error(INVALID_REQUEST, "batch/array requests are not supported")
+
+    req_id = payload.get("id")
+    method = payload.get("method")
+    # A JSON-RPC notification has no ``id`` and MUST receive no response body — just an
+    # HTTP 202 Accepted (the Streamable HTTP contract). A 204 + ``null`` body is malformed
+    # (204 = No Content) and some clients parse the ``null`` as a bad message.
+    is_notification = "id" not in payload
+
+    if payload.get("jsonrpc") != "2.0" or not isinstance(method, str):
+        if is_notification:
+            return Response(status_code=202)
+        # A request with an id but a bad envelope: a 200 JSON-RPC error is fine (id is valid).
+        if req_id is not None:
+            return JSONResponse(content=_rpc_error(req_id, INVALID_REQUEST, "invalid request"))
+        return _transport_error(INVALID_REQUEST, "invalid request")
+
+    params = payload.get("params") or {}
+    if not isinstance(params, dict):
+        if is_notification:
+            return Response(status_code=202)
+        return JSONResponse(content=_rpc_error(req_id, INVALID_PARAMS, "params must be an object"))
+
+    if is_notification:
+        # Dispatch best-effort (e.g. notifications/initialized is a no-op for us), reply 202.
+        try:
+            await _handle_method(method, params, req_id)
+        except Exception:  # noqa: BLE001 — a notification never gets an error body
+            pass
+        return Response(status_code=202)
+
+    try:
+        envelope = await _handle_method(method, params, req_id)
+    except Exception as exc:  # noqa: BLE001 — never leak a 500 to an MCP client
+        return JSONResponse(content=_rpc_error(req_id, INTERNAL_ERROR, str(exc)))
+    return JSONResponse(content=envelope)
+
+
+@router.get("/mcp")
+async def mcp_get_stream() -> Response:
+    """The optional server→client SSE stream (Streamable HTTP). We don't offer one, so per
+    spec return 405 Method Not Allowed (clients fall back to request/response cleanly). An
+    explicit handler is needed so GET /mcp doesn't fall through to the SPA static mount (404)."""
+    return Response(status_code=405, headers={"Allow": "POST"})
+
+
+@router.delete("/mcp")
+async def mcp_delete_session() -> Response:
+    """Session termination (Streamable HTTP). We hold no per-session state, so accept it as a
+    no-op (200) rather than 404 via the static mount."""
+    return Response(status_code=200)

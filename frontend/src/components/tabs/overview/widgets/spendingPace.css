@@ -1,0 +1,131 @@
+.spending-pace-widget {
+  color: var(--ink);
+  font: 13px/1.45 var(--font);
+}
+
+.spending-pace-widget .time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px;
+  padding: 10px 0 14px;
+  color: var(--faint);
+  font: 11px var(--font);
+}
+
+.spending-pace-widget .time i {
+  width: 2px;
+  height: 11px;
+  background: var(--muted);
+}
+
+.spending-pace-widget .row {
+  position: relative;
+  padding: 14px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.spending-pace-widget .top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.spending-pace-widget .category {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.spending-pace-widget .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--category);
+  flex: none;
+}
+
+.spending-pace-widget .amount {
+  color: var(--muted);
+  font: 13px var(--mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.spending-pace-widget .amount b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.spending-pace-widget .bar {
+  height: 7px;
+  margin: 12px 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 80%, transparent);
+  position: relative;
+}
+
+.spending-pace-widget .fill {
+  height: 100%;
+  width: var(--spent);
+  border-radius: inherit;
+  background: var(--health);
+  display: block;
+}
+
+.spending-pace-widget .tick {
+  position: absolute;
+  top: -4px;
+  width: 1px;
+  height: 15px;
+  background: var(--muted);
+}
+
+.spending-pace-widget .stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.spending-pace-widget .stats b {
+  color: var(--ink);
+  font: 500 12px var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.spending-pace-widget .remaining {
+  color: var(--health);
+  font: 12px var(--mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .spending-pace-widget .time {
+    margin: 0 0;
+    font-size: 11px;
+  }
+  .spending-pace-widget .row {
+    padding: 12px 0;
+  }
+  .spending-pace-widget .category,
+  .spending-pace-widget .amount {
+    font-size: 13px;
+  }
+  .spending-pace-widget .stats {
+    grid-template-columns: 1fr 1fr;
+    font-size: 11px;
+  }
+  .spending-pace-widget .remaining {
+    grid-column: 1 / -1;
+    text-align: left;
+    font-size: 12px;
+  }
+}
