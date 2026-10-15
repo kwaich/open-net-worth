@@ -54,7 +54,7 @@ you press Send.
 | **Budget** | Zero-based envelopes (Ready to Assign, targets, credit card payments) or a simple 50/30/20 split, plus a cash flow projection. |
 | **Investments** | Holdings, buys, sales, dividends, lots and realized gains, options, RSU and other equity grants, watchlists and price alerts. |
 | **Planning** | Big dated commitments and how each is funded, and a retirement outlook: the odds your money lasts and the age you could retire. |
-| **Lucius** | The assistant on every screen. He reads and changes your book through real tools, and shows a confirm card before a change lands. |
+| **Lucius** | The AI agent on every screen. He works your real book through real tools: logs and sorts transactions, reconciles accounts, builds reports. Connect an MCP server and he acts in other apps too, like placing a trade with your broker. You choose what he does on his own and what he asks you first. |
 | **Automations** | Jobs Lucius runs on a schedule or when something happens: a daily briefing, a weekly report, a bank sync, logging purchases from email. |
 | **Skills and memory** | Saved playbooks he follows for a job (built in, or your own), and facts he remembers about you between conversations. |
 | **Connectors** | Bank and broker sync (SimpleFIN, Plaid, Enable Banking, Lunch Flow, Alpaca, Interactive Brokers), YNAB, Lunch Money, your mailbox, Telegram, web search, and any MCP server. |
@@ -63,9 +63,9 @@ you press Send.
 ## Is this for you?
 
 **Yes, if** you want to self-host your own finances, you're comfortable running a small app on
-your own machine or a server you control, and you'd rather have an AI assistant *do* bookkeeping
-for you (categorize a transaction, reconcile an account, explain a swing in net worth) than just
-chat about screenshots of it.
+your own machine or a server you control, and you'd rather have an AI agent *do* the work
+(categorize a transaction, reconcile an account, explain a swing in net worth, act in the apps you
+connect) than just chat about screenshots of it.
 
 **Not yet, if** you need a polished, install-and-forget consumer product, multi-user or family
 accounts, or mobile apps.
