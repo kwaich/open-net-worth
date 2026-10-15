@@ -1,4 +1,24 @@
-# Open Net Worth
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs-site/src/assets/logo.svg">
+    <img src="docs-site/src/assets/logo-light.svg" alt="Open Net Worth" width="96">
+  </picture>
+</p>
+
+<h1 align="center">Open Net Worth</h1>
+
+<p align="center">
+  <a href="https://opennetworth.ai">Website</a> ·
+  <a href="https://opennetworth.ai/download">Download</a> ·
+  <a href="https://docs.opennetworth.ai">Docs</a> ·
+  <a href="https://demo.opennetworth.ai">Live demo</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/open-net-worth-ai/open-net-worth-releases/releases/latest"><img src="https://img.shields.io/github/v/release/open-net-worth-ai/open-net-worth-releases?label=release" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License: AGPL-3.0"></a>
+  <a href="https://docs.opennetworth.ai"><img src="https://img.shields.io/badge/docs-docs.opennetworth.ai-informational" alt="Documentation"></a>
+</p>
 
 **An open-source agent harness for personal finance.** A real multi-currency ledger, budgets, and
 investments — plus an AI that can actually read and change them, not just talk about them.
@@ -23,6 +43,20 @@ Nothing leaves your machine except the calls you explicitly configure (an AI pro
 feed, an optional connector). There is no Open Net Worth cloud service, no account, no telemetry.
 The one exception is a problem report you choose to send: you read it first, and it goes only when
 you press Send.
+
+## What's inside
+
+| | |
+|---|---|
+| **Ledger** | Every account you own or owe, in any currency: banks, cards, loans, investments, retirement. Transfers, splits, reconcile, and statement import with a review step before anything books. |
+| **Budget** | Zero-based envelopes (Ready to Assign, targets, credit card payments) or a simple 50/30/20 split, plus a cash flow projection. |
+| **Investments** | Holdings, buys, sales, dividends, lots and realized gains, options, RSU and other equity grants, watchlists and price alerts. |
+| **Planning** | Big dated commitments and how each is funded, and a retirement outlook: the odds your money lasts and the age you could retire. |
+| **Lucius** | The assistant on every screen. He reads and changes your book through real tools, and shows a confirm card before a change lands. |
+| **Automations** | Jobs Lucius runs on a schedule or when something happens: a daily briefing, a weekly report, a bank sync, logging purchases from email. |
+| **Skills and memory** | Saved playbooks he follows for a job (built in, or your own), and facts he remembers about you between conversations. |
+| **Connectors** | Bank and broker sync (SimpleFIN, Plaid, Enable Banking, Lunch Flow, Alpaca, Interactive Brokers), YNAB, Lunch Money, your mailbox, Telegram, web search, and any MCP server. |
+| **Your AI** | An API key (Anthropic, OpenAI or any OpenAI-compatible endpoint, including a local model), or the Claude Code, Codex or Antigravity sign-in you already have. Other AI apps can use your book too, through `onw mcp`. |
 
 ## Is this for you?
 
@@ -106,6 +140,14 @@ without a password nothing can operate the instance — details in the
 [first-run guide](docs/product/getting-started/first-run.md#docker). Compose refuses to start
 without it. Migrations run at boot; data lives in a named volume that survives
 `docker compose down`.
+
+## Coming from YNAB or Lunch Money?
+
+Add the **YNAB** or **Lunch Money** connector with a personal access token and your transactions
+flow in, refreshed every 6 hours. Categories and budgets are not copied: set them up here, or let
+Lucius or an Automation categorize as transactions arrive. The budget works the way YNAB's does
+(every dollar assigned, Ready to Assign, envelopes that hold their overspend until month end).
+Steps: [Bank and brokerage connectors](https://docs.opennetworth.ai/connectors/bank-brokerage/).
 
 ## Keeping it running
 
@@ -225,8 +267,8 @@ Found a vulnerability? See [`SECURITY.md`](SECURITY.md) — please do not open a
 
 ## Documentation
 
-- **In-app help** — once running, the `/help` tab has the full docs, searchable, without leaving
-  the app.
+- **[docs.opennetworth.ai](https://docs.opennetworth.ai)** — the full user guide. The same docs
+  are built into the app, searchable, under `/help`.
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) — stores, fields, and how the money math works.
 - [`CLAUDE.md`](CLAUDE.md) — the codebase map, if you are reading code rather than using the app.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — dev setup, the dependency rule, test policy.
