@@ -107,15 +107,6 @@ without a password nothing can operate the instance — details in the
 without it. Migrations run at boot; data lives in a named volume that survives
 `docker compose down`.
 
-### Try it with demo data first
-
-```bash
-make seed
-```
-
-Generates a fabricated book — two and a half years of accounts, transactions, holdings and a
-budget. It refuses to run against a book that already has data, so it cannot overwrite anything.
-
 ## Keeping it running
 
 The desktop app does this itself: **Settings → Desktop** has *Keep running in the background* and
