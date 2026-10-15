@@ -44,11 +44,11 @@ Out of scope (please don't spend your time on these — we know, and they're by 
 
 **Please do not open a public GitHub issue for a security vulnerability.**
 
-<!-- TODO(owner): pick a real, monitored disclosure channel and replace this placeholder before
-     publishing the repo. Common options: a dedicated security@ mailbox, GitHub's private
-     "Report a vulnerability" flow (Security tab → Advisories), or a PGP-key contact. Do not
-     leave this TODO in the published repo. -->
-**Report privately to: `TODO-security-contact@REPLACE-BEFORE-PUBLISHING`**
+Report it privately, in either of these ways:
+
+- **On GitHub:** the **Report a vulnerability** button on this repository's
+  [Security tab](https://github.com/open-net-worth-ai/open-net-worth/security/advisories/new).
+- **By email:** `security@opennetworth.ai`.
 
 Please include:
 
