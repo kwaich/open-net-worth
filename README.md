@@ -42,7 +42,7 @@ Every tool carries a permission level — `always_allow`, `needs_approval` (the 
 `blocked` — enforced at dispatch for every tool in the app.
 
 Nothing leaves your machine except the calls you explicitly configure (an AI provider, a price
-feed, an optional connector). There is no Open Net Worth cloud service, no account, no telemetry.
+feed, an optional connector), and there is no telemetry.
 The one exception is a problem report you choose to send: you read it first, and it goes only when
 you press Send.
 
