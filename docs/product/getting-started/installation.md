@@ -116,9 +116,6 @@ port 8080. You open it in a browser, or connect the desktop app to it from anoth
 Add `--autostart` to the end of the installer command (`… | sh -s -- --autostart`) to also start
 it at login and restart it if it crashes.
 
-> If the installer says `open-net-worth is not published on PyPI yet`, that release hasn't been
-> published there. Use the desktop app or Docker, which work for every release.
-
 ### Windows
 
 The `install-server.sh` script is for macOS and Linux. On Windows, in PowerShell:

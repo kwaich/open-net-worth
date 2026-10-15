@@ -7,12 +7,13 @@ gates and the verify job pass. Decision record:
 
 ## How releases happen
 
-The releases repo's `release.yml` (the live pipeline, free on a public repo) builds the private
-source and publishes there. **What it runs today is a reduced form of the pipeline below:** it
+The releases repo's `release.yml` (the live pipeline, free on a public repo) builds the source
+and publishes there. **What it runs today is a reduced form of the pipeline below:** it
 builds, tests and publishes the three desktop apps, then (since 2026-10-08) the `wheel` and
 `image` jobs ported from its `candidate.yml` add the agent image
 (`ghcr.io/open-net-worth-ai/open-net-worth:<version>`), the wheel, the server files and a signed
-`manifest.json` to the published release. It has no gate, draft, verify or approve stages yet, and
+`manifest.json` to the published release, and (since 2026-10-15) its `pypi` job uploads the same
+wheel and sdist to PyPI. It has no gate, draft, verify or approve stages yet, and
 promotes on its own. The portal's hourly release watch (`onw-portal release-watch`,
 `onw-release-watch.timer` in onw-cloud) rolls each new signed release to Stable; with no staging
 agent it does so straight away. Two ways to start it:
@@ -116,14 +117,14 @@ These are the things only the owner can do; the pipeline fails loudly and names 
    never uses it.)
 4. **Image on ghcr.** The first successful push creates the package
    `ghcr.io/open-net-worth-ai/open-net-worth`, linked to the releases repo (the image label points
-   there, not at the private source). Then, once: org → Packages → `open-net-worth` → Package
+   there, not at the source repo). Then, once: org → Packages → `open-net-worth` → Package
    settings → **Change visibility → Public**, and confirm *Manage Actions access* lists the
    releases repo with **Write**. Hosted agents pull anonymously; the `verify` job prints a warning
    (not a failure) while an anonymous pull is still refused — fix it before promoting.
-5. **PyPI** (optional, can follow): create the `open-net-worth` project and add a trusted publisher
-   for the releases repo, workflow `release.yml`, environment `pypi`; then set the repository variable
-   `PYPI_PUBLISH=true` and create the `pypi` environment. Until then `promote` prints a notice and
-   `install-server.sh` tells users PyPI is not live and points them to the desktop app and Docker.
+5. **PyPI** (live since 0.1.19, 2026-10-15): the `open-net-worth` project's trusted publisher is the
+   releases repo, workflow `release.yml`, environment `pypi`, and the releases repo has the `pypi`
+   environment and the variable `PYPI_PUBLISH=true`. Its `pypi` job runs after `publish` succeeds;
+   `skip-existing` makes a re-run harmless. PyPI requires 2FA on the account that manages it.
 6. **Windows signing** (later): the Windows installer ships unsigned today (SmartScreen warns;
    `install.ps1 -RequireSigned` refuses it). In this repo `ALLOW_UNSIGNED_WINDOWS_RELEASE=true`
    stages it; the releases repo's Windows job always does. A certificate (e.g. Azure Trusted
