@@ -42,7 +42,7 @@ remembers about you — the name you go by, preferences you've told it — the s
 Its figures come from the same places as the screens beside it: what's due or overdue is the
 **Next 30 days** feed, each holding's value is what **Investments** shows, and the month's
 spending is your **Plan → Budget** view in the method you use. The strongest and weakest
-holdings it names come from every holding you own, not only the largest. It also names money about to arrive, such as a salary due on the 28th, from the same recurring income your **Next 30 days** card counts, and rewrites itself shortly after you declare, change or remove one, so a deleted salary stops being quoted. Whether cash can take on
+holdings it names come from every holding you own, not only the largest. It also names money about to arrive, such as a salary due on the 28th, from the same recurring income your **Next 30 days** card counts, and rewrites itself shortly after you confirm or dismiss one, so a dismissed salary stops being quoted. Whether cash can take on
 a card balance follows **Ready to Assign** (cash not yet given a job), never the account
 balances (and on a 50/30/20 budget, which has no Ready to Assign, the briefing doesn't mention it), and a card whose payment envelope in **Plan → Budget** already holds what it owes is
 described as covered. It also carries the same flags as **Needs attention**, so it never calls everything
@@ -180,7 +180,7 @@ yet, it shows the latest month that does and says so (*"September. Nothing yet i
 - **Next 30 days** lists everything going out from today through day 30 — commitments
   (instalments, auto-debits and goal set-asides alike), recurring bills such as rent or a
   subscription, and each credit card's unpaid statement on its due date — and the recurring
-  income landing in the same window, such as a salary you declared. Money going out has a red
+  income landing in the same window, such as a salary Open Net Worth has seen arrive on a steady rhythm. Money going out has a red
   dot, money coming in a green one. **Going out** adds all three; a recurring bill that a
   commitment already lists (the same amount within a few days) is counted once. A card bill
   marked **(estimated)** comes from the card's statement cycle until you upload its statement.

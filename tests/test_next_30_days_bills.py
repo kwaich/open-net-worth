@@ -12,27 +12,34 @@ from __future__ import annotations
 from datetime import timedelta
 from types import SimpleNamespace
 
+import pytest
+
 from backend.core.user_time import user_today
 from backend.db.commitments_store import CommitmentsStore
-from backend.db.recurring_stream_store import RecurringStreamStore
-from backend.services import commitments_summary, upcoming_bills
+from backend.services import commitments_summary, recurring_baseline, upcoming_bills
 
 
 def _day(offset: int) -> str:
     return (user_today() + timedelta(days=offset)).isoformat()
 
 
-def _declare(direction: str, label: str, amount: float, anchor: str) -> None:
-    RecurringStreamStore().create_declared(
-        {
-            "direction": direction,
-            "label": label,
-            "amount": amount,
-            "currency": "SGD",
-            "cadence": "monthly",
-            "anchor_date": anchor,
-        }
-    )
+def _stream(direction: str, label: str, amount: float, anchor: str) -> dict:
+    return {
+        "direction": direction,
+        "label": label,
+        "cadence": "monthly",
+        "amount_base": amount,
+        "anchor_date": anchor,
+    }
+
+
+@pytest.fixture
+def streams(monkeypatch):
+    """The detected streams the baseline reports. Detection itself is covered by
+    test_recurring_detection; this feed only walks what it is handed."""
+    found: list[dict] = []
+    monkeypatch.setattr(recurring_baseline, "resolve_baseline", lambda *a, **k: {"streams": found})
+    return found
 
 
 def _commitment(offset: int, amount: float) -> None:
@@ -58,9 +65,11 @@ def _no_cards(monkeypatch) -> None:
     monkeypatch.setattr(upcoming_bills, "card_bills", lambda *a, **k: [])
 
 
-def test_a_recurring_bill_is_listed_and_counted_as_going_out(db_isolated, fx_rates, monkeypatch):
+def test_a_recurring_bill_is_listed_and_counted_as_going_out(
+    db_isolated, fx_rates, monkeypatch, streams
+):
     _no_cards(monkeypatch)
-    _declare("out", "Rent", 2_400.0, _day(6))
+    streams.append(_stream("out", "Rent", 2_400.0, _day(6)))
     _commitment(12, 900.0)
 
     overview = commitments_summary.commitments_overview()
@@ -73,11 +82,11 @@ def test_a_recurring_bill_is_listed_and_counted_as_going_out(db_isolated, fx_rat
 
 
 def test_a_bill_a_commitment_already_tracks_is_not_counted_twice(
-    db_isolated, fx_rates, monkeypatch
+    db_isolated, fx_rates, monkeypatch, streams
 ):
     _no_cards(monkeypatch)
     _commitment(10, 1_250.0)
-    _declare("out", "Car loan", 1_250.0, _day(11))
+    streams.append(_stream("out", "Car loan", 1_250.0, _day(11)))
 
     overview = commitments_summary.commitments_overview()
 

@@ -324,114 +324,82 @@ def test_confirming_a_tentative_stream_promotes_it_into_the_projection(book):
     assert tentative["key"] in {s["key"] for s in after["streams"]}
 
 
-def test_a_declared_future_raise_is_projected_from_its_start_date(book):
+# ── declared streams are retired (ADR 2026-10-16) ────────────────────────────────
+
+
+def _tenant_months(today: date, n=4):
+    return [
+        _txn(
+            f"ten{i}",
+            "income",
+            5300.0,
+            f"{y:04d}-{m:02d}-05",
+            "pay_tenant",
+            "Rent in",
+            "cat_rental",
+        )
+        for i, (y, m) in enumerate(_occurrences(today, n, 5))
+    ]
+
+
+def _other_salary_months(today: date, n=4):
+    return [
+        _txn(f"oth{i}", "income", 5400.0, f"{y:04d}-{m:02d}-26", "pay_acme", "Salary", "cat_salary")
+        for i, (y, m) in enumerate(_occurrences(today, n, 26))
+    ]
+
+
+def test_independent_income_streams_of_close_amounts_both_project(book):
+    """The launch blocker: a declaration used to absorb history on amount alone, so a S$5,400
+    salary swallowed a tenant's S$5,300 rent. Detection keys on payee, so both stay."""
     today = date.today()
-    store = book(_salary_months(today) + _noise(today))
-    y, m = cashflow._add_months(today.year, today.month, 2)
-    store.create_declared(
-        {
-            "label": "Raise",
-            "direction": "in",
-            "amount": 2000,
-            "cadence": "monthly",
-            "anchor_date": f"{y:04d}-{m:02d}-26",
-            "start_date": f"{y:04d}-{m:02d}-01",
-        }
-    )
+    book(_tenant_months(today) + _other_salary_months(today) + _noise(today))
     result = _baseline(today)
-    assert any(s["source"] == "declared" and s["amount_base"] == 2000 for s in result["streams"])
-
-
-# ── a declared stream REPLACES the history it restates ────────────────────────────
-
-
-def _declare_salary(store, today, amount=5400, **extra):
-    y, m = cashflow._add_months(today.year, today.month, 1)
-    return store.create_declared(
-        {
-            "label": "Salary",
-            "direction": "in",
-            "amount": amount,
-            "cadence": "monthly",
-            "anchor_date": f"{y:04d}-{m:02d}-01",
-            **extra,
-        }
-    )
-
-
-def _one_salary(today, amount=5404.0):
-    y, m = cashflow._sub_months(today.year, today.month, 1)
-    return _txn("sep", "income", amount, f"{y:04d}-{m:02d}-01", "pay_acme", "Salary", "cat_salary")
-
-
-def test_a_declared_salary_is_not_stacked_on_the_one_off_salary_it_restates(book):
-    """Persona QA round 9: one imported month of salary (S$5,404) plus a declared S$5,400 salary
-    projected +S$10.8K a month — the txn fed the variable average AND the stream landed on top."""
-    today = date.today()
-    store = book([_one_salary(today)] + _noise(today))
-    before = _baseline(today)
-    assert before["variable_in"] == pytest.approx(5404.0), "control: undeclared, history carries it"
-
-    _declare_salary(store, today)
-    after = _baseline(today)
-    assert after["variable_in"] == 0.0
-    [salary] = [s for s in after["streams"] if s["source"] == "declared"]
-    assert salary["txn_ids"] == ["sep"]
-    assert after["one_offs"] == []
+    income = {s["amount_base"]: s for s in result["streams"] if s["direction"] == "in"}
+    assert set(income) == {5300.0, 5400.0}
+    assert all(s["source"] != "declared" for s in result["streams"])
+    assert result["variable_in"] == 0.0
+    assert result["one_offs"] == []
 
     proj = cashflow.build_projection(months=4, history_months=0)
     future = [mo for mo in proj["months"] if not mo["is_current"]]
-    assert future and all(mo["total_in"] == pytest.approx(5400.0) for mo in future)
-    assert proj["monthly_income_avg"] < 5500
+    assert future and all(mo["total_in"] == pytest.approx(10700.0) for mo in future)
 
 
-def test_a_declared_salary_supersedes_the_detected_stream_of_the_same_pay(book):
-    """The same defect one payday later: once three months exist the history MATURES into a
-    detected stream, and the declaration stacked on that instead."""
+def test_a_dormant_declared_row_feeds_nothing(book):
+    """Rows written before the concept was retired stay in the table but nothing reads them."""
     today = date.today()
-    store = book(_salary_months(today, n=4) + _noise(today))
-    assert any(s["amount_base"] == 7000.0 for s in _baseline(today)["streams"])
+    store = book(_tenant_months(today) + _noise(today))
+    before = _baseline(today)
 
-    _declare_salary(store, today, amount=7000)
-    after = _baseline(today)
-    income = [s for s in after["streams"] if s["direction"] == "in"]
-    assert [s["source"] for s in income] == ["declared"]
-    assert len(income[0]["txn_ids"]) == 4
-    assert after["variable_in"] == 0.0
-
-
-def test_a_declared_raise_starting_later_leaves_the_history_alone(book):
-    """A raise is a CHANGE to what history shows, not a restatement of it."""
-    today = date.today()
-    store = book([_one_salary(today)] + _noise(today))
-    y, m = cashflow._add_months(today.year, today.month, 2)
-    _declare_salary(store, today, amount=6000, start_date=f"{y:04d}-{m:02d}-01")
-    after = _baseline(today)
-    assert after["variable_in"] == pytest.approx(5404.0)
-    [raise_] = [s for s in after["streams"] if s["source"] == "declared"]
-    assert raise_["txn_ids"] == []
-
-
-def test_a_declared_expense_claims_one_matching_row_per_month_not_every_equal_purchase(book):
-    """Equal-amount everyday purchases (_noise is four S$30 meals a month) are not all a gym
-    membership: the declaration takes one per month and the rest stay in the variable average."""
-    today = date.today()
-    store = book(_salary_months(today) + _noise(today))
-    before = _baseline(today)["variable_out"]
-
-    store.create_declared(
+    y, m = cashflow._add_months(today.year, today.month, 1)
+    store.insert(
         {
-            "label": "Gym",
-            "direction": "out",
-            "amount": 30,
+            "type": "declared",
+            "id": "rst_old",
+            "direction": "in",
+            "label": "Salary",
+            "amount": 5400.0,
             "cadence": "monthly",
-            "anchor_date": today.isoformat(),
+            "anchor_date": f"{y:04d}-{m:02d}-01",
         }
     )
     after = _baseline(today)
-    [gym] = [s for s in after["streams"] if s["source"] == "declared"]
-    assert len(gym["txn_ids"]) == 3
-    assert after["variable_out"] == pytest.approx(before - 30.0)
+    assert after == before
+    assert not recurring_baseline.upcoming_income(60, "SGD", {"SGD": 1.0}, today) == []
+    assert all(
+        e["label"] != "Salary"
+        for e in recurring_baseline.upcoming_income(60, "SGD", {"SGD": 1.0}, today)
+    )
+
+
+def test_there_is_no_tool_to_declare_a_stream():
+    from backend.ai.tools.registry import registered_tool_names
+
+    names = set(registered_tool_names())
+    assert "declare_recurring_stream" not in names
+    assert "remove_recurring_streams" not in names
+    assert {"get_recurring_streams", "set_recurring_status"} <= names
 
 
 def test_a_forecast_row_is_named_by_its_payee_and_shows_a_rename(monkeypatch):

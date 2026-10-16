@@ -7,16 +7,18 @@ one-off items (excluded). These tools expose the two things a model can usefully
 that: read the classification, and correct it.
 
 Corrections are deliberately Lucius-reachable rather than UI-only (the AI-native design test):
-"my salary goes up to 19k from next month" or "that wasn't recurring, ignore it" should be
-sayable in chat. Detection itself is never stored — only these corrections are — so a dismissal
-survives new transactions arriving while the detection under it stays live.
+"that wasn't recurring, ignore it" or "yes, that is my salary" should be sayable in chat.
+Detection itself is never stored — only these confirm/dismiss corrections are — so a dismissal
+survives new transactions arriving while the detection under it stays live. There is no tool
+to declare a stream history cannot show: a future change is a Commitment or a simulate_cashflow
+what-if (ADR 2026-10-16-declared-recurring-streams-are-retired).
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import Field
 
@@ -103,7 +105,7 @@ async def get_recurring_streams(input_data: dict):
         out["note"] = (
             "No recurring streams detected yet — a stream needs 3 occurrences at a regular "
             "interval. The projection is using the variable averages above. This is normal for "
-            "a new book; declare_recurring_stream can state a known one explicitly."
+            "a new book."
         )
     if input_data.get("include_candidates"):
         out["candidates"] = [_public(s) for s in result["candidates"][:limit]]
@@ -155,83 +157,3 @@ async def set_recurring_status(input_data: dict):
     except (KeyError, ValueError) as exc:
         return _err(str(exc) or f"status must be confirm, dismiss or reset (got {action})")
     return _ok({"key": key, "status": row["status"]})
-
-
-class DeclareRecurringStreamInput(ToolInput):
-    label: str = Field(description="Human name, e.g. 'Salary — new rate' or 'Gym membership'.")
-    direction: Literal["in", "out"] = Field(description="'in' = money in, 'out' = money out.")
-    amount: float = Field(description="Amount per occurrence, in `currency`.")
-    cadence: Literal["weekly", "biweekly", "monthly", "quarterly", "annual"] = Field(
-        description="How often it repeats."
-    )
-    anchor_date: str = Field(
-        description=(
-            "YYYY-MM-DD of ONE real occurrence — the cadence steps from here, so for a "
-            "monthly stream this fixes the day of month."
-        )
-    )
-    currency: Optional[str] = Field(
-        default=None, description="3-letter code. Omit for the base currency."
-    )
-    start_date: Optional[str] = Field(
-        default=None, description="YYYY-MM-DD — ignore before this (a raise starting later)."
-    )
-    end_date: Optional[str] = Field(
-        default=None, description="YYYY-MM-DD — ignore after this (a cancelled subscription)."
-    )
-    note: Optional[str] = Field(default=None, description="Optional context.")
-
-
-@tool(
-    "declare_recurring_stream",
-    description=(
-        "Declare a recurring income or expense the transaction history cannot show yet, and "
-        "have the cash-flow projection use it: a raise starting next month, a new rent amount, "
-        "a subscription just signed up for. Use `end_date` to stop an existing one (a "
-        "cancellation). This is the right tool when the user states a FUTURE change — "
-        "detection can only ever see the past. Never use it to restate something already "
-        "detected (check get_recurring_streams first) or the projection double-counts it."
-    ),
-    input_schema=schema_of(DeclareRecurringStreamInput, tool_name="declare_recurring_stream"),
-    mutates=("plan",),
-)
-async def declare_recurring_stream(input_data: dict):
-    try:
-        row = RecurringStreamStore().create_declared(input_data)
-    except ValueError as exc:
-        return _err(str(exc))
-    return _ok({"stream": row})
-
-
-class RemoveRecurringStreamInput(ToolInput):
-    stream_ids: List[str] = Field(
-        min_length=1,
-        description="Declared-stream ids (rst_…) to remove. Only DECLARED streams — to stop a "
-        "detected one use set_recurring_status(status='dismiss').",
-    )
-
-
-@tool(
-    "remove_recurring_streams",
-    description=(
-        "Delete one or more DECLARED recurring streams (created by declare_recurring_stream). "
-        "Does not touch detected streams — dismiss those with set_recurring_status instead."
-    ),
-    input_schema=schema_of(RemoveRecurringStreamInput, tool_name="remove_recurring_streams"),
-    mutates=("plan",),
-)
-async def remove_recurring_streams(input_data: dict):
-    ids = input_data.get("stream_ids") or []
-    if isinstance(ids, str):
-        ids = [ids]
-    if not ids:
-        return _err("stream_ids is required.")
-    store = RecurringStreamStore()
-    results = [
-        {"stream_id": sid, "ok": bool(store.delete_declared(sid))} for sid in (str(i) for i in ids)
-    ]
-    missing = [r["stream_id"] for r in results if not r["ok"]]
-    out = {"ok": not missing, "results": results, "deleted": len(results) - len(missing)}
-    if missing:
-        out["error"] = f"No declared stream: {', '.join(missing)}"
-    return json.dumps(out, ensure_ascii=False), None

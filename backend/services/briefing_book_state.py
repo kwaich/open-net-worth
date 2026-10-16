@@ -214,22 +214,10 @@ def uncategorized_lines(base: str) -> list[str]:
 
 
 def _stream_state() -> list[tuple]:
-    """Declared recurring streams and the user's confirm/dismiss corrections, by what changes the
-    projection (never the row's timestamps)."""
+    """The user's confirm/dismiss corrections to detected recurring streams — a confirmed
+    stream joins the projection and a dismissed one leaves it (never the row's timestamps)."""
     return sorted(
-        (
-            r.get("type"),
-            r["id"],
-            r.get("status"),
-            r.get("direction"),
-            r.get("amount"),
-            r.get("currency"),
-            r.get("cadence"),
-            r.get("anchor_date"),
-            r.get("start_date"),
-            r.get("end_date"),
-        )
-        for r in RecurringStreamStore().all()
+        (key, row.get("status")) for key, row in RecurringStreamStore().overlays().items()
     )
 
 
@@ -237,10 +225,11 @@ def activity_fingerprint(base: str) -> str:
     """A digest of what a note must stay in step with that is not the book's structure: whether
     a statement has been imported, how many of a new book's first transactions exist, how many
     transactions are still uncategorised (labelling one changes what the note may ask), which
-    Needs-attention flags are up, and which recurring streams the user declared or corrected (the
-    note quotes "your salary arrives on the 1st" — a deleted stream must not keep saying so). Deliberately coarse — every transaction of an established book
-    would regenerate the note — and DEBOUNCED by the caller, since an import lands hundreds of
-    rows and a flag can flap with the day's balances."""
+    Needs-attention flags are up, and which recurring streams the user confirmed or dismissed (the
+    note quotes "your salary arrives on the 1st" — a dismissed stream must not keep saying so).
+    Deliberately coarse — every transaction of an established book would regenerate the note —
+    and DEBOUNCED by the caller, since an import lands hundreds of rows and a flag can flap with
+    the day's balances."""
     txns = _live_entries(ledger_service.transactions.all())
     activity = {
         "imports": sorted(str(b.get("id")) for b in _active_batches()),

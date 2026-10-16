@@ -350,7 +350,7 @@ RULES_JSON = (
 )  # spend categorization rules (match → set category/tags) (P2-SP1)
 RECURRING_STREAMS_JSON = (
     DATA_DIR / "recurring_streams.json"
-)  # cash-flow recurring-stream USER STATE only — never the detection itself (recomputed every read): (a) overlay rows {type:"overlay", id:<signature>, status:confirmed|dismissed} correcting a detected stream, and (b) declared rows {type:"declared", direction, amount, currency, cadence, start_date, end_date} for a KNOWN future stream history can't show yet (a raise, a cancelled subscription). Drives services/cashflow's forward baseline (.claude/rfcs/2026-07-27-cashflow-stream-model.md); user-authored → checkpoint-INCLUDED, portable
+)  # cash-flow recurring-stream USER STATE only — never the detection itself (recomputed every read): overlay rows {type:"overlay", id:<signature>, status:confirmed|dismissed} correcting a detected stream (retired `declared` rows may linger, unread; ADR 2026-10-16-declared-recurring-streams-are-retired). Drives services/cashflow's forward baseline (.claude/rfcs/2026-07-27-cashflow-stream-model.md); user-authored → checkpoint-INCLUDED, portable
 STATEMENT_FORMATS_JSON = (
     DATA_DIR / "statement_formats.json"
 )  # learned STATEMENT-IMPORT format memory ONLY (a source file's header fingerprint → its column schema/conventions) — a repeat import of a known source parses with ZERO LLM calls; user knowledge → checkpoint-INCLUDED, portable (RFC statement-import-unified D3)

@@ -53,44 +53,28 @@ def test_get_recurring_returns_the_classification_shape(client):
         assert key in body, key
 
 
-def test_declare_then_delete_a_stream(client):
+def test_declared_stream_endpoints_are_gone(client):
     c, _ = client
-    r = c.post(
-        "/api/recurring/declared",
-        json={
-            "label": "Raise",
+    body = {"label": "Raise", "direction": "in", "amount": 19000, "cadence": "monthly"}
+    assert c.post("/api/recurring/declared", json=body).status_code in (404, 405)
+    assert c.patch("/api/recurring/declared/rst_x", json=body).status_code in (404, 405)
+    assert c.delete("/api/recurring/declared/rst_x").status_code in (404, 405)
+
+
+def test_a_dormant_declared_row_is_not_returned(client):
+    c, store = client
+    store.insert(
+        {
+            "type": "declared",
+            "id": "rst_old",
             "direction": "in",
-            "amount": 19000,
+            "label": "Salary",
+            "amount": 5400,
             "cadence": "monthly",
-            "anchor_date": "2026-09-26",
-        },
+            "anchor_date": "2026-09-01",
+        }
     )
-    assert r.status_code == 200, r.text
-    sid = r.json()["stream"]["id"]
-    assert sid.startswith("rst_")
-
-    # A declared stream joins the projection under `key` (the same field a DETECTED
-    # stream uses) so every consumer stays single-path.
-    assert any(s["key"] == sid for s in c.get("/api/recurring").json()["streams"])
-
-    assert c.delete(f"/api/recurring/declared/{sid}").status_code == 200
-    assert c.delete(f"/api/recurring/declared/{sid}").status_code == 404
-
-
-def test_declare_rejects_a_bad_field_with_a_plain_prefixed_message(client):
-    c, _ = client
-    r = c.post(
-        "/api/recurring/declared",
-        json={
-            "label": "x",
-            "direction": "in",
-            "amount": 10,
-            "cadence": "hourly",
-            "anchor_date": "2026-09-26",
-        },
-    )
-    assert r.status_code == 422
-    assert r.json()["detail"].startswith("cadence:")
+    assert c.get("/api/recurring").json()["streams"] == []
 
 
 def test_status_confirm_dismiss_reset_roundtrip(client):
@@ -130,73 +114,14 @@ async def test_ai_tools_read_and_write(tmp_path, monkeypatch, db_isolated):
     read = _payload(await execute_tool("get_recurring_streams", {}))
     assert "streams" in read and "showing" in read and "total" in read
 
-    made = _payload(
-        await execute_tool(
-            "declare_recurring_stream",
-            {
-                "label": "Gym",
-                "direction": "out",
-                "amount": 60,
-                "cadence": "monthly",
-                "anchor_date": "2026-08-01",
-            },
-        )
+    dismissed = _payload(
+        await execute_tool("set_recurring_status", {"key": "sig_x", "status": "dismiss"})
     )
-    assert made["ok"] is True
-    sid = made["stream"]["id"]
+    assert dismissed["ok"] is True and dismissed["status"] == "dismissed"
+    assert store.overlays()["sig_x"]["status"] == "dismissed"
 
-    gone = _payload(await execute_tool("remove_recurring_streams", {"stream_ids": [sid]}))
-    assert gone["ok"] is True and gone["deleted"] == 1
-
-    missing = _payload(await execute_tool("remove_recurring_streams", {"stream_ids": [sid]}))
-    assert missing["ok"] is False and "error" in missing
-
-
-@pytest.mark.asyncio
-async def test_ai_declare_surfaces_validation_as_an_error_not_an_exception(
-    tmp_path, monkeypatch, db_isolated
-):
-    import backend.ai.tools.recurring as tools_recurring
-    from backend.ai.tools import execute_tool
-
-    store = RecurringStreamStore()
-    monkeypatch.setattr(tools_recurring, "RecurringStreamStore", lambda: store)
-    out = _payload(
-        await execute_tool(
-            "declare_recurring_stream",
-            {
-                "label": "x",
-                "direction": "in",
-                "amount": 0,
-                "cadence": "monthly",
-                "anchor_date": "2026-08-01",
-            },
-        )
+    reset = _payload(
+        await execute_tool("set_recurring_status", {"key": "sig_x", "status": "reset"})
     )
-    assert "error" in out and out["error"].startswith("amount:")
-
-
-@pytest.mark.asyncio
-async def test_a_negative_amount_is_coerced_not_rejected(tmp_path, monkeypatch, db_isolated):
-    """`direction` already carries the sign, so a negative amount is an obvious restatement
-    of the same intent, not an error — abs() it (the codebase's standing coercion rule for
-    money inputs) rather than bouncing the model over a sign convention."""
-    import backend.ai.tools.recurring as tools_recurring
-    from backend.ai.tools import execute_tool
-
-    store = RecurringStreamStore()
-    monkeypatch.setattr(tools_recurring, "RecurringStreamStore", lambda: store)
-    out = _payload(
-        await execute_tool(
-            "declare_recurring_stream",
-            {
-                "label": "Rent",
-                "direction": "out",
-                "amount": -2150,
-                "cadence": "monthly",
-                "anchor_date": "2026-08-01",
-            },
-        )
-    )
-    assert out["ok"] is True
-    assert out["stream"]["amount"] == 2150.0
+    assert reset["ok"] is True and reset["reset"] is True
+    assert store.overlays() == {}

@@ -38,38 +38,10 @@ def test_overlay_set_status_and_reset_round_trip(db_engine):
     assert s.reset("sig-1") is False  # already gone
 
 
-def test_declared_create_update_delete_round_trip(db_engine):
+def test_a_retired_declared_row_is_not_an_overlay(db_engine):
+    """Declared rows (retired 2026-10-16) stay in the table untouched; overlays() skips them."""
     s = RecurringStreamStore(engine=db_engine)
-    row = s.create_declared(
-        {
-            "label": "Raise",
-            "direction": "in",
-            "amount": 19000,
-            "cadence": "monthly",
-            "anchor_date": "2026-09-01",
-        }
-    )
-    assert row["id"].startswith("rst_")
-    assert s.declared()[0]["id"] == row["id"]
-
-    updated = s.update_declared(row["id"], {"amount": 20000})
-    assert updated["amount"] == 20000.0
-
-    assert s.delete_declared(row["id"]) is True
-    assert s.declared() == []
-
-
-def test_money_exactness_declared_amount(db_engine):
-    """The declared amount lives inside the verbatim payload JSON — the round-trip
-    through JSON's shortest-repr float encoding is exact."""
-    s = RecurringStreamStore(engine=db_engine)
-    row = s.create_declared(
-        {
-            "label": "Side income",
-            "direction": "in",
-            "amount": 19432.71,
-            "cadence": "monthly",
-            "anchor_date": "2026-09-01",
-        }
-    )
-    assert s.find_by_id(row["id"])["amount"] == 19432.71
+    s.insert({"type": "declared", "id": "rst_old", "amount": 5400.0, "label": "Salary"})
+    s.set_status("sig-1", "confirmed")
+    assert list(s.overlays()) == ["sig-1"]
+    assert s.find_by_id("rst_old")["amount"] == 5400.0

@@ -124,9 +124,4 @@ def breakdown_notes(
             "No recurring bills are detected yet (a stream needs 3 occurrences at a regular "
             "interval), so everything is counted as day-to-day."
         )
-    if any(s.get("source") == "declared" for s in streams):
-        notes.append(
-            "Declared recurring streams claim no transactions, so they neither separate bills "
-            "from day-to-day spending nor appear in bills_due_not_seen."
-        )
     return notes

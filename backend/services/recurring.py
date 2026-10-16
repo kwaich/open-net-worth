@@ -409,15 +409,12 @@ def occurrences_between(stream: dict, after: date, through: date) -> list[date]:
     cadence = stream.get("cadence")
     if not anchor or cadence not in CADENCES:
         return []
-    active_from = _parse(stream.get("start_date")) or date.min
-    active_to = _parse(stream.get("end_date")) or date.max
     out: list[date] = []
     cursor, guard = anchor, 0
     while cursor <= after and guard < 5000:
         cursor, guard = _step(cursor, cadence), guard + 1
     while cursor <= through and guard < 5000:
-        if active_from <= cursor <= active_to:
-            out.append(cursor)
+        out.append(cursor)
         cursor, guard = _step(cursor, cadence), guard + 1
     return out
 
@@ -444,15 +441,13 @@ def stream_month_amounts(
     end_y, end_m = _add_months(start_y, start_m, months)
     horizon_end = _clamp_day(end_y, end_m, 1)
     window_start = _clamp_day(start_y, start_m, 1)
-    active_from = _parse(stream.get("start_date")) or date.min
-    active_to = _parse(stream.get("end_date")) or date.max
 
     out: dict[str, float] = {}
     cursor, guard = anchor, 0
     while cursor < window_start and guard < 5000:  # fast-forward to the window
         cursor, guard = _step(cursor, cadence), guard + 1
     while cursor < horizon_end and guard < 5000:
-        if active_from <= cursor <= active_to and not (today and cursor <= today):
+        if not (today and cursor <= today):
             ym = f"{cursor.year:04d}-{cursor.month:02d}"
             out[ym] = round(out.get(ym, 0.0) + float(stream.get("amount_base") or 0), 2)
         cursor, guard = _step(cursor, cadence), guard + 1

@@ -1,39 +1,45 @@
 """The Next-30-days feed carries the recurring income landing in the window.
 
-Persona QA round 5 (2026-10-14, synthetic reproduction): a salary declared as a monthly stream
-landing on the 25th, eleven days away, never appeared; the card said "Nothing due". Recurring
-income is now listed beside what goes out, from the same streams the cash-flow projection walks.
+Persona QA round 5 (2026-10-14, synthetic reproduction): a salary landing on the 25th, eleven
+days away, never appeared; the card said "Nothing due". Recurring income is now listed beside
+what goes out, from the same detected streams the cash-flow projection walks.
 """
 
 from __future__ import annotations
 
 from datetime import timedelta
 
+import pytest
+
 from backend.core.user_time import user_today
-from backend.db.recurring_stream_store import RecurringStreamStore
-from backend.services import commitments_summary
+from backend.services import commitments_summary, recurring_baseline
 
 
 def _day(offset: int) -> str:
     return (user_today() + timedelta(days=offset)).isoformat()
 
 
-def _declare(direction: str, label: str, amount: float, anchor: str, cadence: str = "monthly"):
-    RecurringStreamStore().create_declared(
-        {
-            "direction": direction,
-            "label": label,
-            "amount": amount,
-            "currency": "SGD",
-            "cadence": cadence,
-            "anchor_date": anchor,
-        }
-    )
+def _stream(direction: str, label: str, amount: float, anchor: str, cadence: str = "monthly"):
+    return {
+        "direction": direction,
+        "label": label,
+        "cadence": cadence,
+        "amount_base": amount,
+        "anchor_date": anchor,
+    }
 
 
-def test_a_declared_salary_lands_in_the_window(db_isolated, fx_rates):
-    _declare("in", "Salary", 6_000.0, _day(11))
-    _declare("out", "Gym", 80.0, _day(5))
+@pytest.fixture
+def streams(monkeypatch):
+    """The detected streams the baseline reports. Detection itself is covered by
+    test_recurring_detection; this feed only walks what it is handed."""
+    found: list[dict] = []
+    monkeypatch.setattr(recurring_baseline, "resolve_baseline", lambda *a, **k: {"streams": found})
+    return found
+
+
+def test_a_salary_stream_lands_in_the_window(db_isolated, fx_rates, streams):
+    streams += [_stream("in", "Salary", 6_000.0, _day(11)), _stream("out", "Gym", 80.0, _day(5))]
 
     overview = commitments_summary.commitments_overview()
 
@@ -43,8 +49,8 @@ def test_a_declared_salary_lands_in_the_window(db_isolated, fx_rates):
     assert overview["expected_income_total_base"] == 6_000.0
 
 
-def test_a_stream_anchored_in_the_past_lands_on_its_next_occurrence(db_isolated, fx_rates):
-    _declare("in", "Rent received", 1_500.0, _day(-20), cadence="weekly")
+def test_a_stream_anchored_in_the_past_lands_on_its_next_occurrence(db_isolated, fx_rates, streams):
+    streams.append(_stream("in", "Rent received", 1_500.0, _day(-20), cadence="weekly"))
 
     income = commitments_summary.commitments_overview()["expected_income"]
 
@@ -53,7 +59,7 @@ def test_a_stream_anchored_in_the_past_lands_on_its_next_occurrence(db_isolated,
     assert all(e["amount_base"] == 1_500.0 for e in income)
 
 
-def test_a_stream_beyond_the_window_is_not_listed(db_isolated, fx_rates):
-    _declare("in", "Annual bonus", 20_000.0, _day(45), cadence="annual")
+def test_a_stream_beyond_the_window_is_not_listed(db_isolated, fx_rates, streams):
+    streams.append(_stream("in", "Annual bonus", 20_000.0, _day(45), cadence="annual"))
 
     assert commitments_summary.commitments_overview()["expected_income"] == []

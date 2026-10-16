@@ -72,7 +72,7 @@ export interface MappedEvent {
   amt: number
   label: string
   note?: string
-  /** A detected/declared recurring stream (salary, rent, a subscription) rather than a dated
+  /** A detected recurring stream (salary, rent, a subscription) rather than a dated
    *  one-off. In the CURRENT month its amount is prorated to the days still remaining. */
   recurring?: boolean
   /** The averaged VARIABLE bucket (irregular income / everyday spending) — not one payment

@@ -1,8 +1,8 @@
 """Daily briefing fixes from persona QA round 9 (2026-10-14), synthetic data.
 
 * It stayed stale after a recurring stream was REMOVED: "your salary of S$5,400 arrives on
-  1 November" outlived the stream's deletion. The activity fingerprint now carries the declared
-  streams and the user's confirm/dismiss corrections.
+  1 November" outlived the stream's deletion. The activity fingerprint now carries the user's
+  confirm/dismiss corrections (declared streams were retired on 2026-10-16).
 * On a 50/30/20 book it wrote that the "Ready to Assign figure isn't available to me". Ready to
   Assign belongs to the zero-based method only; the context offers none there and the prompt
   must tell the model to say nothing about a figure it was not given.
@@ -27,51 +27,28 @@ def book(db_isolated):
     )
 
 
-def _declare(**extra) -> dict:
-    return RecurringStreamStore().create_declared(
-        {
-            "label": "Salary",
-            "direction": "in",
-            "amount": 5400,
-            "cadence": "monthly",
-            "anchor_date": "2026-11-01",
-            **extra,
-        }
-    )
-
-
-def test_declaring_a_stream_changes_the_activity_fingerprint(book):
-    before = book_state.activity_fingerprint("SGD")
-    _declare()
-    assert book_state.activity_fingerprint("SGD") != before
-
-
-def test_removing_a_declared_stream_changes_it_back(book):
-    row = _declare()
-    declared = book_state.activity_fingerprint("SGD")
-
-    RecurringStreamStore().delete_declared(row["id"])
-
-    assert book_state.activity_fingerprint("SGD") != declared
-
-
-def test_editing_a_declared_streams_amount_changes_the_fingerprint(book):
-    row = _declare()
-    before = book_state.activity_fingerprint("SGD")
-
-    RecurringStreamStore().update_declared(row["id"], {"amount": 6000})
-
-    assert book_state.activity_fingerprint("SGD") != before
-
-
 def test_dismissing_a_detected_stream_changes_the_fingerprint(book):
     before = book_state.activity_fingerprint("SGD")
     RecurringStreamStore().set_status("sig_abc", "dismissed")
     assert book_state.activity_fingerprint("SGD") != before
 
 
+def test_resetting_a_dismissal_changes_it_back(book):
+    before = book_state.activity_fingerprint("SGD")
+    store = RecurringStreamStore()
+    store.set_status("sig_abc", "dismissed")
+    store.reset("sig_abc")
+    assert book_state.activity_fingerprint("SGD") == before
+
+
+def test_a_dormant_declared_row_does_not_move_the_fingerprint(book):
+    before = book_state.activity_fingerprint("SGD")
+    RecurringStreamStore().insert({"type": "declared", "id": "rst_old", "amount": 5400})
+    assert book_state.activity_fingerprint("SGD") == before
+
+
 def test_an_unchanged_stream_set_leaves_the_fingerprint_alone(book):
-    _declare()
+    RecurringStreamStore().set_status("sig_abc", "confirmed")
     assert book_state.activity_fingerprint("SGD") == book_state.activity_fingerprint("SGD")
 
 

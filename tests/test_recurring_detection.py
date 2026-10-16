@@ -260,30 +260,6 @@ def test_weekly_stream_lands_four_or_five_times_a_month():
     assert all(v in (40, 50) for v in got.values()), got
 
 
-def test_end_date_stops_a_stream_a_cancelled_subscription():
-    stream = {
-        "anchor_date": "2026-01-15",
-        "cadence": "monthly",
-        "amount_base": 15,
-        "direction": "out",
-        "end_date": "2026-08-31",
-    }
-    got = recurring.stream_month_amounts(stream, "2026-07", 6)
-    assert sorted(got) == ["2026-07", "2026-08"]
-
-
-def test_start_date_delays_a_stream_a_raise_starting_later():
-    stream = {
-        "anchor_date": "2026-01-15",
-        "cadence": "monthly",
-        "amount_base": 19000,
-        "direction": "in",
-        "start_date": "2026-09-01",
-    }
-    got = recurring.stream_month_amounts(stream, "2026-07", 4)
-    assert sorted(got) == ["2026-09", "2026-10"]
-
-
 def test_today_cutoff_excludes_an_already_posted_occurrence_this_month():
     """An occurrence on/before `today` already posted — it's in the real transactions the
     caller folds into the same month as actuals, so it must not ALSO project here

@@ -5,9 +5,8 @@ The integration layer between pure detection (``services/recurring``), user stat
 (``db/recurring_stream_store``) and the projection (``services/cashflow``). Splits the ledger
 into the three buckets the RFC defines and hands ``cashflow`` a baseline it can walk forward:
 
-  * ``streams``    — matured detected streams (minus dismissed) ∪ declared streams. Projected
-                     on their OWN calendar months by ``recurring.stream_month_amounts``. A
-                     declared stream REPLACES the history it restates (``_fold_history_into_declared``).
+  * ``streams``    — matured detected streams (minus dismissed) plus confirmed tentative ones.
+                     Projected on their OWN calendar months by ``recurring.stream_month_amounts``.
   * ``variable_*`` — the flat monthly average of what is left after streams and one-offs are
                      removed: genuinely irregular everyday spend, which a forecast must still
                      count or it understates the month badly.
@@ -209,13 +208,9 @@ def resolve_baseline(
         else:
             candidates.append(stream)
 
-    declared = [_declared_to_stream(row, base, rates) for row in store.declared()]
-
-    # Residual = the RESIDUAL window minus anything already claimed by an ACTIVE stream —
-    # detected or declared (a declaration adopts the history it restates).
+    # Residual = the RESIDUAL window minus anything already claimed by an ACTIVE stream.
     res_from, res_to = _window(today, RESIDUAL_MONTHS)
     window_rows = _load_rows(res_from, res_to, base, rates, all_txns)
-    active = _fold_history_into_declared(active, declared, window_rows, today) + declared
     claimed = {tid for s in active for tid in s.get("txn_ids") or []}
     residual = [r for r in window_rows if r["id"] not in claimed]
 
@@ -263,10 +258,9 @@ def upcoming_income(
     days: int, base: str, rates: dict, today: date | None = None, all_txns: list[dict] | None = None
 ) -> list[dict]:
     """Dated money-IN occurrences of the book's active recurring income streams over the next
-    ``days`` days, soonest first — the same streams the cash-flow projection walks (a declared
-    salary, a confirmed or matured detected one), so a salary shows on the day it lands. An
-    occurrence dated today or earlier has already posted and is in the ledger, so it is not
-    listed again."""
+    ``days`` days, soonest first — the same streams the cash-flow projection walks (matured, or
+    confirmed by the user), so a salary shows on the day it lands. An occurrence dated today or
+    earlier has already posted and is in the ledger, so it is not listed again."""
     return _upcoming("in", "Recurring income", days, base, rates, today, all_txns)
 
 
@@ -303,96 +297,3 @@ def _upcoming(
         for d in recurring.occurrences_between(stream, today, through)
     ]
     return sorted(events, key=lambda e: e["date"])
-
-
-def _is_live(stream: dict, today: date) -> bool:
-    """A declared stream that applies NOW. One starting later (a raise) is a CHANGE to what
-    history shows, not a restatement of it; one already ended no longer describes the book."""
-    start, end = stream.get("start_date") or "", stream.get("end_date") or ""
-    return (not start or start <= today.isoformat()) and (not end or end >= today.isoformat())
-
-
-def _near(amount: float, anchor: float) -> bool:
-    return recurring._matches_a_known_amount(amount, [anchor])
-
-
-def _fold_history_into_declared(
-    detected: list[dict], declared: list[dict], residual: list[dict], today: date
-) -> list[dict]:
-    """Let a declared stream REPLACE the history it restates, instead of stacking on it.
-
-    A declared stream is projected on its own calendar, so history that already shows the same
-    flow must not ALSO feed the projection — a S$5,400 salary declared beside a S$5,404 salary
-    txn projected S$10.8K a month (the txn sat in the variable average, the declaration on top).
-    History lives in two places, both folded into the declaration, which ADOPTS the txn ids so
-    the one stream owns them everywhere it is read:
-
-      * a DETECTED active stream of the same direction and cadence within the amount band —
-        dropped from the projection (the declaration is the user's word for it);
-      * RESIDUAL rows of the same direction within the band — at most one per cadence
-        occurrence per month (the closest amounts), so a coincidentally equal small purchase
-        cannot be swallowed in bulk.
-
-    Direction-blind, so a declared rent replaces rent history exactly as a salary does. A
-    declaration starting later (a raise) is a CHANGE to history and one already ended no longer
-    describes it — neither folds anything (``_is_live``). Fills the declared dicts' ``txn_ids``
-    in place; returns the detected streams that remain."""
-    live = [d for d in declared if _is_live(d, today)]
-    superseded: set[str] = set()
-    for d in live:
-        for s in detected:
-            if (
-                s["key"] not in superseded
-                and s.get("direction") == d["direction"]
-                and s.get("cadence") == d["cadence"]
-                and _near(s["amount_base"], d["amount_base"])
-            ):
-                superseded.add(s["key"])
-                d["txn_ids"].extend(s.get("txn_ids") or [])
-    kept = [s for s in detected if s["key"] not in superseded]
-
-    taken = {tid for s in kept + live for tid in s.get("txn_ids") or []}
-    for d in live:
-        per_month = ceil(recurring.CADENCES[d["cadence"]][4])
-        by_month: dict[tuple[int, int], list[dict]] = {}
-        for r in residual:
-            if r["id"] in taken or r["direction"] != d["direction"]:
-                continue
-            if _near(r["amount"], d["amount_base"]):
-                by_month.setdefault((r["date"].year, r["date"].month), []).append(r)
-        for rows in by_month.values():
-            rows.sort(key=lambda r: abs(r["amount"] - d["amount_base"]))
-            for r in rows[:per_month]:
-                d["txn_ids"].append(r["id"])
-                taken.add(r["id"])
-    return kept
-
-
-def _declared_to_stream(row: dict, base: str, rates: dict) -> dict:
-    """A declared row wears the same shape as a detected stream so the projection walk and
-    every consumer stay single-path."""
-    currency = (row.get("currency") or base).upper()
-    amount = float(row.get("amount") or 0)
-    amount_base = amount if currency == base.upper() else svc.to_base(amount, currency, base, rates)
-    cadence = row.get("cadence") or "monthly"
-    per_month = recurring.CADENCES.get(cadence, recurring.CADENCES["monthly"])[4]
-    return {
-        "key": row["id"],
-        "direction": row.get("direction") or "out",
-        "payee_id": "",
-        "label": row.get("label") or "Declared stream",
-        "cadence": cadence,
-        "amount_base": round(amount_base, 2),
-        "monthly_equivalent": round(amount_base * per_month, 2),
-        "anchor_date": row.get("anchor_date") or "",
-        "last_date": row.get("anchor_date") or "",
-        "next_expected_date": row.get("anchor_date") or "",
-        "start_date": row.get("start_date") or "",
-        "end_date": row.get("end_date") or "",
-        "occurrences": 0,
-        "confidence": "declared",
-        "source": "declared",
-        "status": "declared",
-        "note": row.get("note") or "",
-        "txn_ids": [],
-    }

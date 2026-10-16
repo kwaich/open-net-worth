@@ -103,7 +103,7 @@ export interface CommitmentsAccess {
   /** Past-due outgoing items and their total — server-summed, funding inflows excluded. */
   overdueCount: number
   overdueTotal: number
-  /** Recurring income expected inside the same 30 days (a declared salary, say). */
+  /** Recurring income expected inside the same 30 days (a detected salary, say). */
   expectedIncome: ExpectedIncome[]
   expectedIncomeTotal: number
   /** Recurring outflows and card statements due in the same 30 days. */

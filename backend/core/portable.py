@@ -183,7 +183,7 @@ PORTABLE_FILES: list[Path] = [
     NEWS_SOURCES_JSON,
     MEMORY_JSON,
     RULES_JSON,
-    # Recurring-stream user state (overlay corrections + declared future streams) — the
+    # Recurring-stream user state (overlay confirm/dismiss corrections) — the
     # forward cash-flow baseline reads it, so a restored instance must project the same way.
     RECURRING_STREAMS_JSON,
     PAYEES_JSON,

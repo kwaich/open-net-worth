@@ -390,7 +390,7 @@ export interface CommitmentsSummary {
   overdue: UpcomingEvent[]
   overdue_count: number
   overdue_total_base: number
-  /** Recurring income (a declared or confirmed stream, e.g. a salary) landing inside the same
+  /** Recurring income (a detected or confirmed stream, e.g. a salary) landing inside the same
    *  window, soonest first. */
   expected_income: ExpectedIncome[]
   expected_income_total_base: number

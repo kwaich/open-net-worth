@@ -200,9 +200,6 @@ REVIEWED_SAFE = frozenset(
     PUT /api/profile/timezone
     POST /api/profile/timezone/detect
     POST /api/rebalance
-    POST /api/recurring/declared
-    DELETE /api/recurring/declared/{stream_id}
-    PATCH /api/recurring/declared/{stream_id}
     POST /api/recurring/{key}/status
     POST /api/sessions/read
     PATCH /api/sessions/{session_id}

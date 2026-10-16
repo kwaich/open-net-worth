@@ -120,3 +120,12 @@ Two more were tried during implementation and reverted (both recorded in code co
   13-week direct-method practice.
 - **Supersedes:** the "expense-only" and "does NOT feed cashflow" scoping decisions in
   `.claude/rfcs/phase2/sp3-subscription-detection.md` (never implemented).
+
+## Amendment 2026-10-16 — declared streams are retired
+
+`declare_recurring_stream` and the whole declared-stream layer described above were removed
+(ADR [2026-10-16-declared-recurring-streams-are-retired](2026-10-16-declared-recurring-streams-are-retired.md)).
+They were used to restate income already in the history, which double-counted, and the fix that
+absorbed matching history on amount alone swallowed other payers' income. Only detected streams
+(matured, or confirmed by the user) feed the projection now. Commitments, the profile's
+empty-book fallback and `simulate_cashflow` cover what declarations were meant for.

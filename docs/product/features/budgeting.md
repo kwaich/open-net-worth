@@ -208,11 +208,10 @@ built from your regular income and bills.
 A bill counts as recurring once it has arrived on a steady rhythm a few times, even if the
 amount changes each month. One-off expenses you haven't entered won't be in the projection.
 
-You can also tell Lucius about a regular payment history can't show yet ("my pay of S$5,400
-lands on the 1st"), and it appears in the projection on its own day. It replaces the matching
-payments already in your history, never adds to them: a salary you imported once and then
-declared counts once, not twice. A change that starts later, such as a raise, is added from its
-start date.
+Lucius cannot add a recurring payment by hand, so a new salary or a raise shows up once it has
+arrived on a steady rhythm a few times. If one has only arrived twice, you can ask Lucius to
+confirm it so the projection counts it now, or to dismiss a payment that only looked regular. To
+see a change before it happens, such as a raise, ask Lucius to simulate it.
 
 **In** and **Out** are gross: a refund or reimbursement counts as money in, and the purchase it
 undoes still counts as money out. [Reports](dashboard.md) nets refunds against their categories

@@ -108,7 +108,7 @@ def test_empty_pool_averages_to_zero():
     assert rb._monthly_average([], 3) == 0.0
 
 
-# ── declared streams ──────────────────────────────────────────────────────────────
+# ── overlays (confirm / dismiss) ─────────────────────────────────────────────────
 
 
 @pytest.fixture()
@@ -118,124 +118,6 @@ def store(tmp_path, monkeypatch, db_isolated):
     s = RecurringStreamStore()
     monkeypatch.setattr(rb, "RecurringStreamStore", lambda: s)
     return s
-
-
-def test_declared_stream_becomes_a_projectable_stream(store):
-    row = store.create_declared(
-        {
-            "label": "Salary — new rate",
-            "direction": "in",
-            "amount": 19000,
-            "cadence": "monthly",
-            "anchor_date": "2026-09-01",
-            "start_date": "2026-09-01",
-        }
-    )
-    stream = rb._declared_to_stream(row, "SGD", {"SGD": 1})
-    assert stream["amount_base"] == 19000
-    assert stream["monthly_equivalent"] == 19000
-    assert stream["source"] == "declared"
-    assert stream["txn_ids"] == []  # claims no transactions → can't hide real ones
-
-
-def test_declared_stream_converts_a_foreign_amount_to_base(store):
-    row = store.create_declared(
-        {
-            "label": "EUR retainer",
-            "direction": "in",
-            "amount": 1000,
-            "currency": "EUR",
-            "cadence": "monthly",
-            "anchor_date": "2026-08-01",
-        }
-    )
-    stream = rb._declared_to_stream(row, "SGD", {"SGD": 1.0, "EUR": 1.5})
-    assert stream["amount_base"] == 1500.0
-
-
-# ── store validation ──────────────────────────────────────────────────────────────
-
-
-@pytest.mark.parametrize(
-    "payload,expect",
-    [
-        (
-            {
-                "label": "",
-                "direction": "in",
-                "amount": 1,
-                "cadence": "monthly",
-                "anchor_date": "2026-01-01",
-            },
-            "label",
-        ),
-        (
-            {
-                "label": "x",
-                "direction": "sideways",
-                "amount": 1,
-                "cadence": "monthly",
-                "anchor_date": "2026-01-01",
-            },
-            "direction",
-        ),
-        (
-            {
-                "label": "x",
-                "direction": "in",
-                "amount": 1,
-                "cadence": "hourly",
-                "anchor_date": "2026-01-01",
-            },
-            "cadence",
-        ),
-        (
-            {
-                "label": "x",
-                "direction": "in",
-                "amount": "abc",
-                "cadence": "monthly",
-                "anchor_date": "2026-01-01",
-            },
-            "amount",
-        ),
-        (
-            {
-                "label": "x",
-                "direction": "in",
-                "amount": 0,
-                "cadence": "monthly",
-                "anchor_date": "2026-01-01",
-            },
-            "amount",
-        ),
-        (
-            {
-                "label": "x",
-                "direction": "in",
-                "amount": 1,
-                "cadence": "monthly",
-                "anchor_date": "nope",
-            },
-            "anchor_date",
-        ),
-        (
-            {
-                "label": "x",
-                "direction": "in",
-                "amount": 1,
-                "cadence": "monthly",
-                "anchor_date": "2026-01-01",
-                "start_date": "2026-06-01",
-                "end_date": "2026-01-01",
-            },
-            "end_date",
-        ),
-    ],
-)
-def test_declared_validation_is_field_prefixed(store, payload, expect):
-    with pytest.raises(ValueError, match=rf"^{expect}:"):
-        store.create_declared(payload)
 
 
 def test_overlay_status_roundtrip_and_reset(store):
@@ -252,9 +134,3 @@ def test_overlay_status_roundtrip_and_reset(store):
 def test_overlay_rejects_an_unknown_status(store):
     with pytest.raises(ValueError, match="^status:"):
         store.set_status("rs_abc", "maybe")
-
-
-def test_declared_delete_only_touches_declared_rows(store):
-    store.set_status("rs_overlay", "dismissed")
-    assert store.delete_declared("rs_overlay") is False
-    assert store.overlays()["rs_overlay"]["status"] == "dismissed"
