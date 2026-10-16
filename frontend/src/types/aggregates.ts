@@ -401,6 +401,8 @@ export interface CommitmentsSummary {
   /** Each card's unpaid statement due in the window. */
   card_bills: CardBill[]
   card_bills_total_base: number
+  /** Unpaid card statements due within a week or overdue: Needs attention's card flag. */
+  cards_due_soon?: CardBill[]
   /** Commitments due + recurring bills + card bills: everything going out in the window. */
   going_out_total_base: number
 }
@@ -412,6 +414,8 @@ export interface CardBill {
   amount_base: number
   /** The due date and amount are estimated from the card's cycle, not a printed statement. */
   estimated: boolean
+  /** Days from today to the due date; negative when it is past due. */
+  days_until_due?: number
 }
 
 export interface ExpectedIncome {

@@ -13,6 +13,10 @@ already knows it:
     inside the window, at ``card_statements.statement_summary``'s ``remaining_amount``, the one
     "still owed" figure. A charge made from today on lands on a LATER statement, so a
     subscription billed to a card and that card's statement never overlap here.
+
+The Dashboard's "Needs attention" reads the same card statements through ``cards_due_soon``:
+only a statement still owing money that is due within ``CARD_DUE_SOON_DAYS`` or already past
+its printed due date. Owing money on a card is not a problem; a bill about to fall due is.
 """
 
 from __future__ import annotations
@@ -28,6 +32,9 @@ from backend.services.card_statements import statement_summary
 # A commitment and a stream are the same payment when their amounts agree and their dates are
 # this close — a bank shifts an auto-debit off a weekend.
 SAME_PAYMENT_DAYS = 3
+
+# A card statement earns a Needs attention flag this many days before it is due.
+CARD_DUE_SOON_DAYS = 7
 
 
 def recurring_bills(
@@ -56,8 +63,31 @@ def _tracked(bill: dict, tracked: list[tuple[date, float]]) -> bool:
     )
 
 
-def card_bills(days: int, base: str, rates: dict, today: date) -> list[dict]:
+def card_bills(
+    days: int, base: str, rates: dict, today: date, statements: list[dict] | None = None
+) -> list[dict]:
     """Each live card's unpaid statement due today through ``today + days``, soonest first."""
+    if statements is None:
+        statements = unpaid_statements(base, rates, today)
+    return [b for b in statements if 0 <= b["days_until_due"] <= days]
+
+
+def cards_due_soon(
+    base: str,
+    rates: dict,
+    today: date,
+    statements: list[dict] | None = None,
+    within_days: int = CARD_DUE_SOON_DAYS,
+) -> list[dict]:
+    """Each live card's unpaid statement due within ``within_days`` or already overdue,
+    soonest (most overdue) first."""
+    if statements is None:
+        statements = unpaid_statements(base, rates, today)
+    return [b for b in statements if b["days_until_due"] <= within_days]
+
+
+def unpaid_statements(base: str, rates: dict, today: date) -> list[dict]:
+    """Every live card whose last statement still owes money and has a known due date."""
     out: list[dict] = []
     cards = AccountStore().query_accounts(type="credit")
     # One read of the ledger for every card — `statement_summary` re-reads it per call.
@@ -66,7 +96,7 @@ def card_bills(days: int, base: str, rates: dict, today: date) -> list[dict]:
         summary = statement_summary(account["id"], today=today, transactions_store=txns)
         if summary is None or summary.next_due_date is None or summary.days_until_due is None:
             continue
-        if not 0 <= summary.days_until_due <= days or summary.remaining_amount <= 0:
+        if summary.remaining_amount <= 0:
             continue
         out.append(
             {
@@ -77,6 +107,7 @@ def card_bills(days: int, base: str, rates: dict, today: date) -> list[dict]:
                     svc.to_base(summary.remaining_amount, summary.currency, base, rates), 2
                 ),
                 "estimated": summary.due_source != "statement",
+                "days_until_due": summary.days_until_due,
             }
         )
     return sorted(out, key=lambda e: e["date"])

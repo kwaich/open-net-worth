@@ -97,26 +97,41 @@ describe('Needs attention and the Portfolio Brief', () => {
   })
 })
 
-describe('Needs attention card balances', () => {
+describe('Needs attention card bills', () => {
   const brief = { signals: [TODAY], decisions_count: 0, base_currency: 'USD' }
-
-  it('says a card balance is covered by its payment envelope instead of "monitor repayment"', async () => {
-    respond(brief, { debt_total: -392, debt_covered: true })
-    renderAttention()
-    await waitFor(() =>
-      expect(
-        screen.getByText(/392\.00 outstanding, covered by the card payment envelope\./),
-      ).toBeTruthy(),
-    )
-    expect(screen.queryByText(/monitor repayment/)).toBeNull()
+  const card = (label: string, days: number, amount: number, estimated = false) => ({
+    date: '2026-10-20',
+    label,
+    account_id: 'acc-' + label,
+    amount_base: amount,
+    estimated,
+    days_until_due: days,
   })
 
-  it('still asks to monitor an uncovered balance', async () => {
+  // Owner decision (2026-10-16): a card balance alone asks nothing of you; a statement about
+  // to fall due does. The server lists unpaid statements due within a week or overdue.
+  it('flags each card statement due soon or overdue, with its amount and when', async () => {
+    respond(
+      brief,
+      { debt_total: -392 },
+      {
+        '/api/commitments/summary': {
+          events: [],
+          cards_due_soon: [card('Master', -2, 300), card('Visa', 3, 6276.57, true)],
+        },
+      },
+    )
+    renderAttention()
+    await waitFor(() => expect(screen.getByText(/Visa: S?\$6,276\.57 due in 3 days/)).toBeTruthy())
+    expect(screen.getByText(/Master: S?\$300\.00 overdue by 2 days/)).toBeTruthy()
+    expect(screen.getByText(/Estimated from the card's statement cycle\./)).toBeTruthy()
+  })
+
+  it('says nothing about a card balance when no statement is due soon', async () => {
     respond(brief, { debt_total: -392 })
     renderAttention()
-    await waitFor(() =>
-      expect(screen.getByText(/392\.00 outstanding, monitor repayment\./)).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByText(/All clear/)).toBeTruthy())
+    expect(screen.queryByText(/outstanding/)).toBeNull()
   })
 })
 

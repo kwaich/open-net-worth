@@ -15,10 +15,13 @@ import hashlib
 import json
 from datetime import date
 
+from backend.core.user_time import user_today
 from backend.db.recurring_stream_store import RecurringStreamStore
 from backend.services import commitments as commitments_service
 from backend.services import ledger as ledger_service
+from backend.services import upcoming_bills
 from backend.services.briefing_context import money
+from backend.services.fx_cache import load_fx_cache
 
 RECENT_DAYS = 3
 # A new book's first transactions each change what the note should say, and so does each of the
@@ -115,8 +118,8 @@ def _shortfall_text(cov: dict, base: str) -> str:
 def attention_flags(base: str) -> list[dict]:
     """The flags the Dashboard's Needs-attention card shows, in its order, as ``{id, text}``.
 
-    The card is composed from two reads — the funding coverage and the portfolio analytics'
-    ``attention`` block — and so is this: same sources, same thresholds (the backend owns them),
+    The card is composed from the funding coverage, the portfolio analytics' ``attention``
+    block and the card statements due soon — and so is this: same sources, same thresholds,
     only the wording is the briefing's own."""
     from backend.services.portfolio_analytics import portfolio_analytics
     from backend.services.portfolio_brief import compute_brief
@@ -144,15 +147,17 @@ def attention_flags(base: str) -> list[dict]:
         flags.append(
             {"id": "concentration", "text": f"Position concentration: {concentration['narrative']}"}
         )
-    if a.get("debt_total", 0) < 0:
-        owed = money(-a["debt_total"], base)
-        text = (
-            f"Outstanding liabilities: {owed} owed, covered: the cards' payment envelopes already "
-            "hold it, so there is nothing to chase."
-            if a.get("debt_covered")
-            else f"Outstanding liabilities: {owed} owed."
+    # A card balance alone is not a flag; a statement due within a week or overdue is — the same
+    # `cards_due_soon` list the card reads (owner decision, 2026-10-16).
+    for card in upcoming_bills.cards_due_soon(base, load_fx_cache(), user_today()):
+        estimated = " (estimated from the card's statement cycle)" if card["estimated"] else ""
+        flags.append(
+            {
+                "id": "card-bill-" + card["account_id"],
+                "text": f"Card bill: {card['label']}, {money(card['amount_base'], base)} still "
+                f"owed on the last statement, {_due_in(card['days_until_due'])}{estimated}.",
+            }
         )
-        flags.append({"id": "liabilities", "text": text})
     if a.get("contingent_flagged"):
         flags.append(
             {
@@ -170,6 +175,16 @@ def attention_flags(base: str) -> list[dict]:
         )
         flags.append({"id": "thin-cash", "text": f"Thin cash buffer: {cash} in cash {covers}."})
     return flags
+
+
+def _due_in(days: int) -> str:
+    if days < 0:
+        return f"overdue by {-days} day{'' if days == -1 else 's'}"
+    if days == 0:
+        return "due today"
+    if days == 1:
+        return "due tomorrow"
+    return f"due in {days} days"
 
 
 def attention_lines(base: str) -> list[str]:

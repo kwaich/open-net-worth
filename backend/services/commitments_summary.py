@@ -4,7 +4,8 @@
 due-soon figures (read from `commitments.due_summary()` — the ONE definition the Commitments
 masthead, its attention lane and the daily briefing read too), the recurring income expected
 inside the same window, and the other bills due in it — recurring outflows and card statements
-(`upcoming_bills`). "Going out" is the commitments due plus those bills: the commitments-only
+(`upcoming_bills`), plus the card statements due within a week or overdue that the Dashboard's
+Needs attention flags. "Going out" is the commitments due plus those bills: the commitments-only
 figure stays `strip_total_base`, the one the Commitments masthead quotes. The coverage verdict is NOT served here: `GET /api/commitments/coverage`
 is read by the Dashboard's flags and the Commitments masthead from one shared cache entry, so the
 funding shortfall is one fetched object on both screens. Totals are money math, so they are
@@ -35,7 +36,9 @@ def commitments_overview(days: int = FEED_DAYS, strip_days: int = STRIP_DAYS) ->
     today = user_today()
     income = recurring_baseline.upcoming_income(strip_days, base, rates, today=today)
     bills = upcoming_bills.recurring_bills(strip_days, base, rates, today, due["due"])
-    cards = upcoming_bills.card_bills(strip_days, base, rates, today)
+    statements = upcoming_bills.unpaid_statements(base, rates, today)
+    cards = upcoming_bills.card_bills(strip_days, base, rates, today, statements)
+    cards_due_soon = upcoming_bills.cards_due_soon(base, rates, today, statements)
     bills_total = _total(bills)
     cards_total = _total(cards)
     return {
@@ -52,6 +55,8 @@ def commitments_overview(days: int = FEED_DAYS, strip_days: int = STRIP_DAYS) ->
         "bills_total_base": bills_total,
         "card_bills": cards,
         "card_bills_total_base": cards_total,
+        # Needs attention's card flag: unpaid statements due within a week, or overdue.
+        "cards_due_soon": cards_due_soon,
         "going_out_total_base": round(due["due_total_base"] + bills_total + cards_total, 2),
     }
 

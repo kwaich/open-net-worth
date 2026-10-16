@@ -25,7 +25,7 @@ import { usePlanningSummary } from '../../../../hooks/serverState'
 // documented acceptable simplification.
 const DebtPayoff: ComponentType<WidgetContentProps> = ({ instance, def, onNavigate }) => {
   // Liability rows and their total come from the server aggregate — the same `debts` figure
-  // the Needs-attention flag and the "Liabilities" KPI read, so the three can't disagree.
+  // the "Liabilities" KPI reads, so the two can't disagree.
   const { analytics: portfolio, loading } = useAnalytics()
   const debts = portfolio?.debts.rows ?? []
   const total = portfolio?.debts.total ?? 0

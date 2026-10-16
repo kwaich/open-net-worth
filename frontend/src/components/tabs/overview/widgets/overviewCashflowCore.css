@@ -111,6 +111,10 @@
    reads exactly like the plain <b> title it replaces (same weight/color),
    only picking up an underline on hover as its one affordance hint. */
 .ov-risk-title-link {
+  /* Inline like the plain-text titles, so a long one wraps into the sentence instead of a
+     centered block (a button is inline-block and centered by default). */
+  display: inline;
+  text-align: inherit;
   background: none;
   border: none;
   padding: 0;

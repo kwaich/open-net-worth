@@ -45,7 +45,7 @@ spending is your **Plan → Budget** view in the method you use. The strongest a
 holdings it names come from every holding you own, not only the largest. It also names money about to arrive, such as a salary due on the 28th, from the same recurring income your **Next 30 days** card counts, and rewrites itself shortly after you declare, change or remove one, so a deleted salary stops being quoted. Whether cash can take on
 a card balance follows **Ready to Assign** (cash not yet given a job), never the account
 balances (and on a 50/30/20 budget, which has no Ready to Assign, the briefing doesn't mention it), and a card whose payment envelope in **Plan → Budget** already holds what it owes is
-described as covered (the **Outstanding liabilities** flag says so too). It also carries the same flags as **Needs attention**, so it never calls everything
+described as covered. It also carries the same flags as **Needs attention**, so it never calls everything
 in order beside a warning on screen, and it describes only as much history as your book holds
 (a book that began yesterday is never summed up "over the last three days"), mentions a card's
 due date only if you've recorded one, and doesn't ask you to import or log what is already in
@@ -156,7 +156,7 @@ yet, it shows the latest month that does and says so (*"September. Nothing yet i
   inside a brokerage or retirement account belongs to those, not to cash on hand, and hovering the
   figure says so ("Cash in investment accounts is under Investments.")
 - **Needs attention** lists the open portfolio decisions Investments shows as **N to decide** (a
-  concentration call, a rebalance, an upcoming vest), next to the thin-cash, liability and
+  concentration call, a rebalance, an upcoming vest), next to the thin-cash, card-bill and
   funding flags, any **overdue payments** from Commitments and the **transactions to review**
   (imported, or added by Lucius, waiting for your approval).
   It no longer works out a concentration flag of its own, so the two screens can't disagree.
@@ -164,6 +164,11 @@ yet, it shows the latest month that does and says so (*"September. Nothing yet i
   when it was entered on another day (an import of last month's purchases) the row also says
   "added Oct 14". Each account's Starting Balance row is left out: it is a balance, not
   something you spent.
+- **Needs attention → card bills.** A card shows up only when its last statement still owes
+  money and is due within 7 days or already overdue, one line per card: for example "Visa:
+  $640.00 due in 3 days". Owing money on a card isn't a flag by itself. "Estimated" means the
+  due date and amount come from the card's statement cycle, not a statement you imported;
+  [import the statement](importing.md) for the printed figures.
 - **Needs attention → Thin cash buffer** appears when your cash covers less than three months of
   your spending. That is the **runway** on Plan › Cash Flow and the **Cash-flow
   runway** widget: your cash on hand divided by your monthly burn (your recurring bills plus

@@ -109,6 +109,8 @@ export interface CommitmentsAccess {
   /** Recurring outflows and card statements due in the same 30 days. */
   bills: ExpectedIncome[]
   cardBills: CardBill[]
+  /** Unpaid card statements due within a week or overdue (Needs attention). */
+  cardsDueSoon: CardBill[]
   /** Commitments due + bills + card bills — server-summed. */
   goingOutTotal: number
 }
@@ -126,6 +128,7 @@ export function useCommitments(): CommitmentsAccess {
     expectedIncomeTotal: query.data?.expected_income_total_base ?? 0,
     bills: query.data?.bills ?? [],
     cardBills: query.data?.card_bills ?? [],
+    cardsDueSoon: query.data?.cards_due_soon ?? [],
     goingOutTotal: query.data?.going_out_total_base ?? query.data?.strip_total_base ?? 0,
   }
 }

@@ -35,6 +35,14 @@ function plural(n: number, one: string, many: string): string {
   return n === 1 ? one : many
 }
 
+/** "due in 3 days", "due today", "overdue by 2 days". */
+function dueIn(days: number): string {
+  if (days < 0) return `overdue by ${-days} ${plural(-days, 'day', 'days')}`
+  if (days === 0) return 'due today'
+  if (days === 1) return 'due tomorrow'
+  return `due in ${days} days`
+}
+
 /** How many ledger transactions are waiting for review (added while the owner was away). */
 function useReviewCount(): { count: number; loading: boolean } {
   const version = useDataVersion('ledger')
@@ -50,7 +58,7 @@ export function useAttentionFlags(): { flags: AttentionFlag[]; loading: boolean 
   const { analytics: portfolio, loading } = useAnalytics()
   const { coverage, loading: coverageLoading } = useFundingCoverage()
   const { signals, loading: signalsLoading } = useInvestmentSignals()
-  const { overdueCount, overdueTotal, loading: commitmentsLoading } = useCommitments()
+  const { overdueCount, overdueTotal, cardsDueSoon, loading: commitmentsLoading } = useCommitments()
   const { count: reviewCount, loading: reviewLoading } = useReviewCount()
   const a = portfolio?.attention
 
@@ -94,6 +102,21 @@ export function useAttentionFlags(): { flags: AttentionFlag[]; loading: boolean 
       nav: { tab: 'commitments' },
     })
   }
+  // A card balance alone asks nothing of the owner; a statement about to fall due does. One
+  // flag per card whose unpaid statement is due within a week or overdue (server-decided).
+  for (const card of cardsDueSoon) {
+    const days = card.days_until_due ?? 0
+    flags.push({
+      id: 'card-bill-' + card.account_id,
+      sev: days < 0 ? 'hi' : 'md',
+      icon: 'card',
+      title: `${card.label}: ${fBase(card.amount_base)} ${dueIn(days)}`,
+      desc: card.estimated
+        ? "Estimated from the card's statement cycle."
+        : 'Still owed on the last statement.',
+      nav: { tab: 'accounts' },
+    })
+  }
   if (coverage?.over_committed) {
     flags.push({
       id: 'over-earmarked',
@@ -114,18 +137,6 @@ export function useAttentionFlags(): { flags: AttentionFlag[]; loading: boolean 
       title: DECISION_TITLE[sig.kind] ?? sig.tag,
       desc: sig.narrative,
       nav: { tab: 'investments' },
-    })
-  }
-  if (a && a.debt_total < 0) {
-    flags.push({
-      id: 'liabilities',
-      sev: 'md',
-      icon: 'card',
-      title: a.has_investments ? 'Outstanding liabilities' : 'Credit card balances',
-      desc: a.debt_covered
-        ? `${fBase(-a.debt_total)} outstanding, covered by the card payment envelope.`
-        : `${fBase(-a.debt_total)} outstanding, monitor repayment.`,
-      nav: { tab: 'accounts' },
     })
   }
   if (a?.contingent_flagged) {

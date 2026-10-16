@@ -128,24 +128,40 @@ def test_a_half_funded_card_states_the_part_still_uncovered(env, monkeypatch):
     assert "of which S$292 is not yet set aside in a payment envelope" in text
 
 
-def test_the_liabilities_flag_says_covered_when_the_envelopes_hold_the_debt(monkeypatch):
-    covered = {"debt_total": -392.0, "debt_covered": True, "debt_covered_total": 392.0}
-    open_debt = {"debt_total": -392.0, "debt_covered": False, "debt_covered_total": 100.0}
+def test_the_briefing_flags_a_card_bill_due_soon_not_a_card_balance(monkeypatch):
+    """Owner decision (2026-10-16): the briefing carries the Dashboard's flags, and a card
+    balance alone is no longer one — a statement due within a week or overdue is."""
+    monkeypatch.setattr(
+        "backend.services.portfolio_analytics.portfolio_analytics",
+        lambda base: {"attention": {"debt_total": -392.0, "debt_covered": False}},
+    )
+    monkeypatch.setattr(book_state.commitments_service, "coverage", lambda base: {"at_risk": False})
+    due = [
+        {
+            "account_id": "m",
+            "label": "Master",
+            "amount_base": 300.0,
+            "estimated": False,
+            "days_until_due": -2,
+        },
+        {
+            "account_id": "v",
+            "label": "Visa",
+            "amount_base": 640.0,
+            "estimated": True,
+            "days_until_due": 3,
+        },
+    ]
+    monkeypatch.setattr(book_state.upcoming_bills, "cards_due_soon", lambda *a, **k: due)
 
-    def flags(attention: dict) -> str:
-        monkeypatch.setattr(
-            "backend.services.portfolio_analytics.portfolio_analytics",
-            lambda base: {"attention": attention},
-        )
-        monkeypatch.setattr(
-            book_state.commitments_service, "coverage", lambda base: {"at_risk": False}
-        )
-        return next(
-            f["text"] for f in book_state.attention_flags("SGD") if f["id"] == "liabilities"
-        )
+    texts = [f["text"] for f in book_state.attention_flags("SGD")]
 
-    assert "covered" in flags(covered) and "nothing to chase" in flags(covered)
-    assert flags(open_debt) == "Outstanding liabilities: S$392 owed."
+    assert texts == [
+        "Card bill: Master, S$300 still owed on the last statement, overdue by 2 days.",
+        "Card bill: Visa, S$640 still owed on the last statement, due in 3 days (estimated "
+        "from the card's statement cycle).",
+    ]
+    assert not any("Outstanding liabilities" in t for t in texts)
 
 
 def test_dashboard_attention_marks_debt_covered_only_when_every_dollar_is(monkeypatch):

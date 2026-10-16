@@ -116,3 +116,49 @@ def test_a_card_statement_due_in_the_window_is_a_bill(db_isolated, fx_rates, mon
         ("Visa", _day(9), 640.0)
     ]
     assert overview["going_out_total_base"] == 640.0
+
+
+def test_needs_attention_flags_only_a_card_bill_due_within_a_week_or_overdue(
+    db_isolated, fx_rates, monkeypatch
+):
+    """Owner decision (2026-10-16): owing money on a card is not a problem, a bill about to fall
+    due is. The Dashboard's card flag reads `cards_due_soon`: unpaid, and due within 7 days or
+    past its due date — never a paid statement or one weeks away."""
+
+    class _Accounts:
+        def query_accounts(self, type=None):
+            return [
+                {"id": "soon", "name": "Visa", "type": "credit"},
+                {"id": "late", "name": "Master", "type": "credit"},
+                {"id": "week", "name": "Amex", "type": "credit"},
+                {"id": "paid", "name": "Diners", "type": "credit"},
+                {"id": "later", "name": "Discover", "type": "credit"},
+            ]
+
+    def _summary(account_id, today=None, transactions_store=None):
+        owed, days = {
+            "soon": (640.0, 3),
+            "late": (300.0, -2),
+            "week": (120.0, 7),
+            "paid": (0.0, 1),
+            "later": (80.0, 8),
+        }[account_id]
+        return SimpleNamespace(
+            next_due_date=_day(days),
+            days_until_due=days,
+            remaining_amount=owed,
+            currency="SGD",
+            due_source="statement" if account_id != "week" else "config",
+        )
+
+    monkeypatch.setattr(upcoming_bills, "AccountStore", _Accounts)
+    monkeypatch.setattr(upcoming_bills, "statement_summary", _summary)
+
+    overview = commitments_summary.commitments_overview()
+
+    assert [
+        (e["label"], e["days_until_due"], e["amount_base"], e["estimated"])
+        for e in overview["cards_due_soon"]
+    ] == [("Master", -2, 300.0, False), ("Visa", 3, 640.0, False), ("Amex", 7, 120.0, True)]
+    # The Next 30 days list is unchanged: an overdue statement is not "coming up".
+    assert [e["label"] for e in overview["card_bills"]] == ["Visa", "Amex", "Discover"]
