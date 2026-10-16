@@ -24,8 +24,10 @@ jobs:
   # plumbing commits, a cloud agent's fresh clone, a web edit). This job cannot: it scans
   # exactly the commits a PR or push adds. PRIVACY_DENYLIST (the owner's own identifiers) is
   # an encrypted secret, never a file in the repo; findings name its entries by number only,
-  # so this log stays safe on a public repo. A fork PR gets no secrets: the file, path and
-  # secret rules still run. See backend/scripts/privacy_guard.py.
+  # so this log stays safe on a public repo. Every commit in the range is scanned against its own
+  # parent (a file added then deleted is still published). A fork PR gets no secrets: the file,
+  # path and secret rules still run. A push to main always has the secret, so an empty denylist
+  # there is a failure (--require-denylist), not a silent pass. See backend/scripts/privacy_guard.py.
   privacy:
     name: privacy (secrets + personal data)
     runs-on: ubuntu-latest
@@ -57,7 +59,8 @@ jobs:
       - name: privacy guard (data files, screenshots, local paths, private denylist)
         env:
           PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
-        run: python -m backend.scripts.privacy_guard --range "${{ steps.range.outputs.range }}"
+          REQUIRE_DENYLIST: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '1' || '' }}
+        run: python -m backend.scripts.privacy_guard --range "${{ steps.range.outputs.range }}" ${REQUIRE_DENYLIST:+--require-denylist}
 
   # --- lint: ruff check + ruff format --check (must be green) ---
   lint:
