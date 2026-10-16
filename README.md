@@ -4,6 +4,8 @@
 
 <h1 align="center">Open Net Worth</h1>
 
+<p align="center"><b>Agent harness for personal finance</b></p>
+
 <p align="center">
   <a href="https://opennetworth.ai">Website</a> ·
   <a href="https://opennetworth.ai/download">Download</a> ·
