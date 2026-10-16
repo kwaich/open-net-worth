@@ -302,6 +302,37 @@ async def _headless_turn_runner(
     return "".join(parts).strip()
 
 
+def _log_auth_first_run_notice() -> None:
+    """First-run auth notice (RFC P3-AUTH §6). If the instance has no password and no
+    explicitly-configured API token, local access is open and remote is refused. The generated
+    API token is NEVER logged (app.log is readable through the LogViewer and the
+    get_recent_logs tool); the owner reads it from Settings. AUTH_PASSWORD only seeds the
+    stored hash, so say it is ignored from now on — never "remove it": the published
+    docker-compose.yml refuses to start without it.
+    """
+    try:
+        from backend.core.config import get_settings as _get_settings
+        from backend.db.auth_store import AuthStore
+
+        _auth_settings = _get_settings()
+        if _auth_settings.auth_enabled and os.environ.get("ONW_DESKTOP_MODE") != "1":
+            _auth_store = AuthStore()
+            if not _auth_store.is_configured():
+                _log.warning(
+                    "Auth not configured. Local (loopback) access is open; remote access is "
+                    "refused. Set a password to expose this instance. The API token is not "
+                    "logged: read it in Settings."
+                )
+            if _auth_settings.auth_password:
+                _log.warning(
+                    "AUTH_PASSWORD only sets the password while none is stored; once one is, "
+                    "it is ignored — change the password in Settings → Security. Docker "
+                    "Compose needs it kept set; elsewhere you can drop it from .env."
+                )
+    except Exception:
+        _log.exception("auth first-run notice failed (non-fatal)")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── One instance per working folder. BEFORE the migration below, because migrating a
@@ -623,32 +654,7 @@ async def lifespan(app: FastAPI):
 
     _log.info("backend started — logging active")
 
-    # First-run auth notice (RFC P3-AUTH §6). If the instance has no password and no
-    # explicitly-configured API token, local access is open and remote is refused. Log
-    # the one-time setup notice. The generated API token is NEVER logged (app.log is
-    # readable through the LogViewer and the get_recent_logs tool); the owner reads it from
-    # Settings. If AUTH_PASSWORD plaintext was used to seed, warn to remove
-    # it from .env (it has been hashed into auth.json).
-    try:
-        from backend.core.config import get_settings as _get_settings
-        from backend.db.auth_store import AuthStore
-
-        _auth_settings = _get_settings()
-        if _auth_settings.auth_enabled and os.environ.get("ONW_DESKTOP_MODE") != "1":
-            _auth_store = AuthStore()
-            if not _auth_store.is_configured():
-                _log.warning(
-                    "Auth not configured. Local (loopback) access is open; remote access is "
-                    "refused. Set a password to expose this instance. The API token is not "
-                    "logged: read it in Settings."
-                )
-            if _auth_settings.auth_password:
-                _log.warning(
-                    "AUTH_PASSWORD (plaintext) was used to seed the password hash into "
-                    "the auth store — remove AUTH_PASSWORD from .env now."
-                )
-    except Exception:
-        _log.exception("auth first-run notice failed (non-fatal)")
+    _log_auth_first_run_notice()
 
     # Scheduler in ONE worker only. Under uvicorn --workers every worker runs this lifespan, but
     # the periodic jobs (price checks, RSS polls, AI news screens, digests) must fire ONCE — not

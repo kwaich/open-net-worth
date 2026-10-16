@@ -38,12 +38,23 @@ done
 
 command -v curl >/dev/null 2>&1 || die "curl is required to download uv"
 
-export PATH="$HOME/.local/bin:$PATH"
-if ! command -v uv >/dev/null 2>&1; then
+# Read the caller's PATH BEFORE extending it: uv's installer and `uv tool update-shell` both skip
+# the shell profile when ~/.local/bin is already on PATH, so prepending it first left a clean Mac
+# with no `onw` in any terminal.
+LOCAL_BIN="$HOME/.local/bin"
+USER_PATH="$PATH"
+case ":$USER_PATH:" in
+  *":$LOCAL_BIN:"*) ON_USER_PATH=1 ;;
+  *) ON_USER_PATH=0 ;;
+esac
+
+if ! command -v uv >/dev/null 2>&1 && [ ! -x "$LOCAL_BIN/uv" ]; then
   say "Installing uv (the Python app installer) into ~/.local/bin ..."
   curl -LsSf https://astral.sh/uv/install.sh | sh -s -- --quiet
-  command -v uv >/dev/null 2>&1 || die "uv did not end up on PATH — install it by hand (https://docs.astral.sh/uv/) and re-run"
 fi
+export PATH="$LOCAL_BIN:$PATH"
+UV="$(command -v uv 2>/dev/null || true)"
+[ -n "$UV" ] || die "uv did not end up in ~/.local/bin — install it by hand (https://docs.astral.sh/uv/) and re-run"
 say "uv $(uv --version 2>/dev/null | awk '{print $2}')"
 
 # The package may not be on PyPI yet (publishing is switched on release by release): say so and
@@ -56,9 +67,15 @@ say "Installing open-net-worth (the first run downloads a few hundred MB of depe
 uv tool install --managed-python --python 3.12 --upgrade open-net-worth
 
 ONW="$(command -v onw 2>/dev/null || true)"
-[ -n "$ONW" ] || ONW="$HOME/.local/bin/onw"
+[ -n "$ONW" ] || ONW="$LOCAL_BIN/onw"
 [ -x "$ONW" ] || die "installed, but 'onw' was not found — run 'uv tool update-shell', open a new terminal and re-run"
 say "Installed $("$ONW" version)"
+
+if [ "$ON_USER_PATH" = 0 ]; then
+  # Under the caller's PATH, or update-shell sees ~/.local/bin already there and writes nothing.
+  PATH="$USER_PATH" "$UV" tool update-shell >/dev/null 2>&1 \
+    || say "Could not add ~/.local/bin to your shell profile — run: uv tool update-shell"
+fi
 
 if [ "$AUTOSTART" = 1 ]; then
   "$ONW" autostart install
@@ -66,6 +83,9 @@ fi
 
 echo ""
 echo "==> Done."
+if [ "$ON_USER_PATH" = 0 ]; then
+  echo "    Open a NEW terminal first — this one started before ~/.local/bin was on your PATH."
+fi
 echo "    Run it:           onw start --open"
 if [ "$AUTOSTART" = 1 ]; then
   echo "    It is running now and will start at login: open http://127.0.0.1:8080"
@@ -74,7 +94,3 @@ else
 fi
 echo "    Update later:     onw upgrade"
 echo "    Your data:        ~/.open-net-worth/  (outside the install; upgrades never touch it)"
-if ! command -v onw >/dev/null 2>&1; then
-  echo ""
-  echo "NOTE: ~/.local/bin is not on your PATH yet — open a new terminal, or run: uv tool update-shell"
-fi

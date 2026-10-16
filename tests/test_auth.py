@@ -1081,3 +1081,25 @@ def _session_key() -> bytes:
     from backend.db.auth_store import AuthStore
 
     return AuthStore().session_key_bytes()
+
+
+def test_auth_password_notice_never_says_to_remove_it(auth_env, monkeypatch):
+    """The published docker-compose.yml refuses to start without AUTH_PASSWORD, so the boot
+    notice must say it is ignored once a password is stored — never "remove it"."""
+    from unittest.mock import MagicMock
+
+    import backend.main as main
+
+    configure, _ = auth_env
+    configure(AUTH_PASSWORD="seed-pw")
+    monkeypatch.delenv("ONW_DESKTOP_MODE", raising=False)
+    log = MagicMock()
+    monkeypatch.setattr(main, "_log", log)
+
+    main._log_auth_first_run_notice()
+
+    warnings = [call.args[0] for call in log.warning.call_args_list]
+    notice = next(w for w in warnings if "AUTH_PASSWORD" in w)
+    assert "ignored" in notice
+    assert "remove" not in notice.lower()
+    log.exception.assert_not_called()
