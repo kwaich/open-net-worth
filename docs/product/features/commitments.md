@@ -67,6 +67,9 @@ With no floor set, the warning fires only when cash is projected to go below zer
   due soon. Its **overdue** count and total are the same ones the Dashboard and the daily
   briefing quote: unpaid or not-done items dated before today, funding that hasn't arrived
   excluded. **Mark paid** works straight from here.
+- Funding you have marked as arrived (or linked to the transaction that brought it in) counts as
+  received: it no longer shows as late or as coming in on **Next 30 days**, in the daily briefing,
+  or in the funding outlook, so the money is not counted twice.
 - The list shows each commitment's progress, what's left and whether it's on track. Switch
   between **Active**, **At risk**, **Completed** and **Goals**, and sort with
   **Sort: Most at risk**, **Sort: Next payment** or **Sort: Remaining**.

@@ -37,7 +37,8 @@ def _installment(i: str, label: str, offset: int, amount: float) -> dict:
 
 def _seed_book() -> None:
     """Overdue installments and actions, an auto-debit due tomorrow, a set-aside on day 25,
-    one thing beyond the window, a closed action and a late funding inflow."""
+    one thing beyond the window, a closed action, a late funding inflow and three that already
+    arrived (marked done, or proven by a linked transaction) and so are neither late nor due."""
     store = CommitmentsStore()
     store.create(
         {
@@ -69,7 +70,34 @@ def _seed_book() -> None:
                     "amount": 50_000.0,
                     "currency": "SGD",
                     "available_date": _day(-6),
-                }
+                },
+                {
+                    "id": "f2",
+                    "label": "Bank disbursement",
+                    "type": "loan",
+                    "amount": 30_000.0,
+                    "currency": "SGD",
+                    "available_date": _day(-5),
+                    "status": "done",
+                },
+                {
+                    "id": "f3",
+                    "label": "Bonus",
+                    "type": "windfall",
+                    "amount": 8_000.0,
+                    "currency": "SGD",
+                    "available_date": _day(10),
+                    "status": "done",
+                },
+                {
+                    "id": "f4",
+                    "label": "Car sale",
+                    "type": "asset_sale",
+                    "amount": 12_000.0,
+                    "currency": "SGD",
+                    "available_date": _day(-3),
+                    "realized_txn_id": "txn_car_sale",
+                },
             ],
         }
     )
@@ -103,6 +131,7 @@ def test_the_one_definition(book):
     assert {e["label"] for e in summary["due"]} == {"monthly debit", "set aside"}
     assert summary["due_total_base"] == 4_234.0
     assert [e["label"] for e in summary["funding_overdue"]] == ["Share sale"]
+    assert summary["funding_due"] == []
 
 
 def test_briefing_and_the_next_30_days_summary_agree(book):
@@ -129,3 +158,58 @@ def test_the_summary_endpoint_carries_the_overdue_list_the_lane_reads(book):
     assert {e["label"] for e in overview["overdue"]} == {"overdue 1", "overdue 2", "Sign the form"}
     assert all(e["kind"] != "funding" for e in overview["overdue"])
     assert overview["overdue_count"] == len(overview["overdue"])
+
+
+ARRIVED = ("Bank disbursement", "Bonus", "Car sale")
+
+
+def test_arrived_funding_is_neither_late_nor_coming(book):
+    """Funding marked done, or carrying the transaction that proves it, is not money to come:
+    it never shows as overdue, as due soon, in the Next-30-days feed or in the briefing."""
+    _seed_book()
+    summary = commitments_service.due_summary()
+    overview = commitments_summary.commitments_overview()
+    ctx = brf._build_context(0.0)
+
+    for label in ARRIVED:
+        assert label not in {e["label"] for e in summary["funding_overdue"]}
+        assert label not in {e["label"] for e in summary["funding_due"]}
+        assert label not in {e["label"] for e in overview["events"]}
+        assert label not in ctx
+    assert "Share sale" in {e["label"] for e in overview["events"]}
+
+
+def test_funding_arrival_is_one_predicate(book):
+    _seed_book()
+    plan = {f["id"]: f for f in CommitmentsStore().find_by_id("reno")["funding_plan"]}
+
+    assert [fid for fid, f in plan.items() if commitments_service.funding_arrived(f)] == [
+        "f2",
+        "f3",
+        "f4",
+    ]
+    # A linked transaction alone counts, like paid_txn_id on an installment.
+    assert commitments_service.funding_source_overdue(plan["f4"]) is False
+    assert commitments_service.funding_source_overdue(plan["f2"]) is False
+    assert commitments_service.funding_source_overdue(plan["f1"]) is True
+
+
+def test_arrived_funding_is_not_projected_a_second_time(book):
+    """The money is already in the ledger, so the household overlay (which starts from today's
+    cash) does not count it again. The per-commitment plan-fidelity trace starts from $0, so
+    it KEEPS arrived money: dropping a disbursed loan would read its own later installments as
+    unfunded."""
+    _seed_book()
+    rates = {"SGD": 1.0}
+    reno = CommitmentsStore().find_by_id("reno")
+
+    overlay = commitments_service.projected_events("SGD", rates)
+    funding_in = [e for events in overlay.values() for e in events if e["category"] == "Funding"]
+    assert [e["label"] for e in funding_in] == ["Renovation Loan — Share sale"]
+
+    inflows = [
+        delta
+        for _date, delta in commitments_service._plan_fidelity_events(reno, "SGD", rates)
+        if delta > 0
+    ]
+    assert sorted(inflows) == [8_000.0, 12_000.0, 30_000.0, 50_000.0]

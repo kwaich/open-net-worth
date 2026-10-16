@@ -17,6 +17,9 @@ correctness subtleties live here (and are unit-tested in tests/test_commitments_
     `status == "paid"` flag the UI's "Mark paid" action sets — so `upcoming_events()`,
     `projected_events()` and `_plan_fidelity_events()` can never disagree on which installments
     are still outflows.
+  - "Arrived" is decided by `funding_arrived()` EVERYWHERE — a `realized_txn_id` or the
+    `status == "done"` flag — so the readers of "money still to come" can never disagree on
+    which funding rows are still to come (ADR 2026-10-14-one-definition-per-fact-across-screens).
   - auto_pay / goal commitments are trackers — they emit no projection events.
   - `coverage()`'s PER-COMMITMENT verdict (`commitments[].at_risk/shortfall_base/
     earliest_shortfall_date`) is PLAN-FIDELITY ONLY (2026-07-31 redesign, owner decision after
@@ -75,6 +78,16 @@ def _is_paid(inst: dict) -> bool:
 is_paid = _is_paid
 
 
+def funding_arrived(source: dict) -> bool:
+    """Single "has this funding money arrived" test, the funding twin of `_is_paid`: a
+    ledger-anchored receipt (`realized_txn_id`) OR the bare `status == "done"` flag Lucius's
+    `update_funding_source` sets. Arrived money is already in the ledger, so every reader of
+    "money still to come" (`upcoming_events`, `projected_events`, `funding_source_overdue`)
+    skips it rather than count it a second time. `_plan_fidelity_events` keeps it: that trace
+    starts from $0, so the arrived money is the plan's own, not a second copy."""
+    return bool(source.get("realized_txn_id")) or source.get("status") == "done"
+
+
 def _today() -> str:
     return _TODAY or user_today().isoformat()
 
@@ -107,10 +120,11 @@ def funding_source_overdue(source: dict, today: str | None = None) -> bool:
     `Installment.status` goes stale. This is right the moment the clock passes the date.
 
     A disabled source ("not happening" pulled it from the plan) is never overdue: it has been
-    consciously removed, not silently missed. An undated source cannot be placed on a trace at
+    consciously removed, not silently missed. An arrived source (`funding_arrived`) is not
+    overdue either: the money is here. An undated source cannot be placed on a trace at
     all, which mirrors `projected_events()`'s existing "no ym → no event" handling.
     """
-    if source.get("disabled") or source.get("status") == "done":
+    if source.get("disabled") or funding_arrived(source):
         return False
     available = source.get("available_date")
     if not available:
@@ -162,6 +176,8 @@ def projected_events(base: str | None = None, rates: dict | None = None) -> dict
             )
         for src in c.get("funding_plan", []):
             if src.get("disabled"):  # "not happening" pulled this source — no longer counted
+                continue
+            if funding_arrived(src):  # already in the ledger — projecting it again counts it twice
                 continue
             if src.get("type") not in _NEW_MONEY_TYPES:
                 continue
@@ -414,7 +430,7 @@ def upcoming_events(
                 }
             )
         for src in c.get("funding_plan", []):
-            if src.get("disabled"):
+            if src.get("disabled") or funding_arrived(src):
                 continue
             if src.get("type") not in _NEW_MONEY_TYPES:
                 continue
@@ -431,7 +447,7 @@ def upcoming_events(
                     "category": src.get("type"),
                     "date": src.get("available_date")[:10],
                     "amount_base": live_source_value(src, base, rates),
-                    "status": "planned",
+                    "status": src.get("status") or "planned",
                 }
             )
 
@@ -502,8 +518,10 @@ def _plan_fidelity_events(commitment: dict, base: str, rates: dict) -> list[tupl
     """This ONE commitment's own dated cash events — (date, signed base delta) pairs.
 
     Outflows: every unpaid (`_is_paid()` false) installment, on its due_date.
-    Inflows: EVERY funding_plan entry (unlike `projected_events()`, type is NOT filtered —
-    an income/set-aside source is the user's real plan and must count), on its available_date.
+    Inflows: EVERY funding_plan entry, arrived or not (unlike `projected_events()`, type is NOT
+    filtered — an income/set-aside source is the user's real plan and must count), on its
+    available_date. Arrived money stays IN: this trace starts from $0, not from today's cash, so
+    dropping a loan that arrived would read its own later installments as unfunded.
     An entry with no date can't be placed on the trace and is skipped (matches
     `projected_events()`'s existing "no ym → no event" handling)."""
     ccy = commitment.get("currency") or base
