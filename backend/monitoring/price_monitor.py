@@ -108,29 +108,39 @@ def _build_position_context(
     ticker: str, item: dict, row: dict, fx: dict, all_rows: list[dict], current_price: float
 ) -> str:
     from backend.services import ledger as svc
+    from backend.services.asset_detail import _row_market_value
 
     base = svc.base_currency()
     currency = row.get("currency", "USD") if row else "USD"
-    qty = float(row.get("quantity") or 0) if row else 0
-    cost_basis = float(row.get("cost_basis") or 0) if row else 0
-
-    current_value_base = svc.to_base(qty * current_price, currency, base, rates=fx)
-    cost_value_base = svc.to_base(qty * cost_basis, currency, base, rates=fx) if cost_basis else 0
-    pnl_base = current_value_base - cost_value_base if cost_basis else 0
-    pnl_pct = (current_price - cost_basis) / cost_basis * 100 if cost_basis else 0
+    # The WHOLE holding, every account — one row is one position, and a holding split across
+    # accounts (an ESPP fraction beside a broker lot) read as its smallest piece, so every
+    # Analyst narrative called a quarter of the portfolio "a very small holding" (2026-10-16).
+    held = _holding_rows(row, all_rows)
+    qty = sum(float(r.get("quantity") or 0) for r in held)
+    current_value_base = sum(
+        _row_market_value({**r, "price": current_price}, fx, base)[1] for r in held
+    )
+    cost_known = bool(held) and all(r.get("cost_basis") for r in held)
+    cost_value_base = (
+        sum(
+            svc.to_base(
+                float(r["cost_basis"]) * float(r.get("quantity") or 0),
+                r.get("currency") or currency,
+                base,
+                rates=fx,
+            )
+            for r in held
+        )
+        if cost_known
+        else 0
+    )
 
     # Portfolio weight denominator: total liquid market value across all held positions —
     # NOT the user's actual net worth (which also includes cash, real estate, other owned
-    # assets — see asset_detail.py's identical weight_pct). Named/labelled "portfolio", not
-    # "net worth", so the LLM-composed text downstream doesn't misstate this as more than it is.
+    # assets). The SAME sum as asset_detail's weight_pct, so the narrative sizes the position
+    # exactly as the "Your position: N% of your portfolio" lead line beside it does.
     total_portfolio = sum(
-        svc.to_base(
-            float(r.get("quantity") or 0) * float(r.get("price") or 0),
-            r.get("currency") or base,
-            base,
-            rates=fx,
-        )
-        for r in all_rows
+        _row_market_value(r, fx, base)[1] for r in all_rows if r.get("vesting_state") != "unvested"
     )
     portfolio_pct = current_value_base / total_portfolio * 100 if total_portfolio else 0
 
@@ -140,12 +150,30 @@ def _build_position_context(
         f"Position: {qty:g} shares/units",
         f"Position value: {base} {current_value_base:,.0f} ({portfolio_pct:.1f}% of portfolio)",
     ]
-    if cost_basis:
+    if cost_known and cost_value_base:
+        pnl_base = current_value_base - cost_value_base
+        pnl_pct = pnl_base / cost_value_base * 100
         lines.append(
-            f"Cost basis: {currency} {cost_basis:.4g} → P&L: {base} {pnl_base:+,.0f} ({pnl_pct:+.1f}%)"
+            f"Cost basis: {base} {cost_value_base:,.0f} → P&L: {base} {pnl_base:+,.0f} ({pnl_pct:+.1f}%)"
         )
 
     return "\n".join(lines)
+
+
+def _holding_rows(row: dict, all_rows: list[dict]) -> list[dict]:
+    """Every vested position row of ``row``'s instrument (ticker when it has no instrument)."""
+    if not row:
+        return []
+    iid = row.get("instrument_id")
+    tk = (row.get("ticker") or "").upper()
+
+    def same(r: dict) -> bool:
+        if iid:
+            return r.get("instrument_id") == iid
+        return bool(tk) and (r.get("ticker") or "").upper() == tk
+
+    held = [r for r in all_rows if same(r) and r.get("vesting_state") != "unvested"]
+    return held or [row]
 
 
 def _move_direction_word(op: str) -> str:
