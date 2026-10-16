@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs-site/src/assets/logo.svg">
-    <img src="docs-site/src/assets/logo-light.svg" alt="Open Net Worth" width="96">
-  </picture>
+  <img src="docs-site/scripts/brand-source/logo.svg" alt="Open Net Worth" width="96">
 </p>
 
 <h1 align="center">Open Net Worth</h1>
