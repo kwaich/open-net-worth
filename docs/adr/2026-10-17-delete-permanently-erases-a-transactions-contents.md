@@ -63,7 +63,10 @@ account force-delete erasing the same way. Nothing disappears unless someone ask
 - **After commit:** receipts linked only to it are deleted through `apply_receipt_change`
   (whose file unlink must follow its own commit); shared ones are unlinked. Any that fail are
   returned as `receipts_not_cleaned`, never hidden. SQLite runs the purge with `secure_delete`
-  on and then `wal_checkpoint(TRUNCATE)`, so freed pages don't keep the bytes.
+  on and then VACUUMs (plus `wal_checkpoint(TRUNCATE)`), so freed pages don't keep the bytes. A
+  checkpoint alone is not enough: a page the app freed EARLIER, with `secure_delete` off — the
+  automation outbox copies every transaction payload, then frees it after delivery — still
+  carries the bytes into the main file; VACUUM rebuilds the file from live pages only.
 - **The account force-delete erases its cascade** with the same `erase_traces` on its own conn,
   holding the same locks, and runs `after_commit` too. It reads the rows to erase under the lock,
   and takes the merge tombstones folded into them (another account's copy of the same payment),

@@ -28,7 +28,9 @@ After commit: receipts linked only to it are deleted (their files too), receipts
 another transaction are unlinked — ``receipts`` owns that write and its file-after-commit
 order. Never touched: files the owner uploaded (a statement still shows the line), backups
 already made, Lucius conversations that mention it. On SQLite the purge runs with
-``secure_delete`` on and checkpoints the WAL, so freed pages do not keep the bytes.
+``secure_delete`` on and then VACUUMs, so freed pages do not keep the bytes — a WAL checkpoint
+alone does not (a page freed EARLIER, with ``secure_delete`` off, still carries them into the
+file).
 """
 
 from __future__ import annotations
@@ -435,6 +437,20 @@ def _clean_receipts(ids: list[str]) -> list[str]:
     return left
 
 
+def _vacuum(conn_engine) -> None:
+    """Rebuild the SQLite file from live pages only. A WAL checkpoint alone is NOT enough: a page
+    the app freed BEFORE this purge ran (with ``secure_delete`` off — the automation outbox copies
+    every transaction payload, then frees it after delivery) still carries the bytes into the main
+    file with the checkpoint. VACUUM drops those dead pages (mirrors ``backup._sanitise_db_bytes``).
+    Best effort, like the checkpoint: the rows are already gone."""
+    try:
+        with conn_engine.connect() as conn:
+            if conn.dialect.name == "sqlite":
+                conn.exec_driver_sql("VACUUM")
+    except Exception:  # noqa: BLE001
+        logger.warning("purge: VACUUM failed", exc_info=True)
+
+
 def _checkpoint_wal(conn_engine) -> None:
     try:
         with conn_engine.connect() as conn:
@@ -445,12 +461,14 @@ def _checkpoint_wal(conn_engine) -> None:
 
 
 def after_commit(txn_ids: list[str]) -> list[str]:
-    """The post-commit half: receipts (their own choke and file order) and the WAL. Returns
-    the receipt ids that could not be cleaned."""
+    """The post-commit half: receipts (their own choke and file order), then the file itself —
+    VACUUM (drop dead pages) and the WAL checkpoint. Returns the receipt ids not cleaned."""
     left = _clean_receipts(txn_ids)
     from backend.db.engine import get_engine
 
-    _checkpoint_wal(get_engine())
+    engine = get_engine()
+    _vacuum(engine)
+    _checkpoint_wal(engine)
     return left
 
 
