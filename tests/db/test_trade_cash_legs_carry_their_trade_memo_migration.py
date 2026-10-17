@@ -1,9 +1,6 @@
-"""Revision 202610171200 — a trade cash leg booked before the choke wrote a memo gets the same
-readable text ("Sold 60 KSTL @ 150.00 USD") from the lot/realized event that links back to it.
-
-Runs the revision for REAL on a tmp-path DB, synthetic rows only. Pins: a sale (with fees) and a
-two-fill buy get their memo in payload AND column; a memo someone wrote, a non-investment row, an
-unlinked leg and a mixed-instrument leg are untouched; a re-run is a no-op.
+"""Revision 202610171200 is RETIRED to a no-op: the trade text belongs in the description
+(202610171500), so this revision must never plant a memo on another book. Runs it for REAL on a
+tmp-path DB seeded with linked trade legs, synthetic rows only, and pins that nothing changes.
 """
 
 from __future__ import annotations
@@ -128,24 +125,9 @@ def _memos(engine) -> dict[str, tuple]:
         return {r[0]: (r[1], json.loads(r[2]).get("memo")) for r in rows}
 
 
-def test_trade_legs_get_their_trade_memo(db):
+def test_the_retired_revision_writes_nothing(db):
     url, engine = db
     _seed(engine)
+    before = _memos(engine)
     command.upgrade(make_config(url), _AFTER)
-    got = _memos(engine)
-    sale = "Sold 60 KSTL @ 150.00 USD · fees 1.25 USD"
-    assert got["t_sell"] == (sale, sale)
-    assert got["t_buy"] == ("Bought 4 VXO @ 515.00 USD",) * 2
-    assert got["t_noted"] == ("my own note",) * 2, "a memo someone wrote is kept"
-    for untouched in ("t_exp", "t_free", "t_mixed"):
-        assert got[untouched] == ("", ""), untouched
-
-
-def test_rerun_is_a_no_op(db):
-    url, engine = db
-    _seed(engine)
-    command.upgrade(make_config(url), _AFTER)
-    first = _memos(engine)
-    command.downgrade(make_config(url), _BEFORE)
-    command.upgrade(make_config(url), _AFTER)
-    assert _memos(engine) == first
+    assert _memos(engine) == before
