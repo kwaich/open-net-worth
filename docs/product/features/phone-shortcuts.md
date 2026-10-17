@@ -149,7 +149,7 @@ Shortcuts editor:
    default style, which has no time zone.
 4. **Get Contents of URL**: `[ONW Base URL]/api/capture`, Method **POST**, headers
    `Authorization: Bearer [ONW Token]` and `Content-Type: application/json`, Request Body **JSON**
-   with `text` = the Text from step 3, `source` = `ios-shortcut`, and `ref` = `wallet-tap:` followed by
+   with `text` = the Text from step 3, `source` = `ios-wallet`, and `ref` = `wallet-tap:` followed by
    **Current Date** set to Date Format **ISO 8601** with **ISO 8601 Time** on.
 5. **Get Dictionary Value** `reply` → **Show Notification**.
 
@@ -197,7 +197,7 @@ Authorization: Bearer <your API token>
 Content-Type: application/json
 
 {"text": "Spent $12.40 at Starbucks (Starbucks) with Apple Card on 28 Jul 2026 at 9:15 AM",
- "source": "ios-shortcut",
+ "source": "ios-wallet",
  "ref": "wallet-tap:2026-07-28T09:15:04+08:00"}
 ```
 
@@ -211,14 +211,29 @@ Content-Type: application/json
 **Make `ref` different for every payment**, e.g. the tap or notification time to the second.
 A `ref` built from the purchase itself (amount + merchant) makes the second of two identical
 coffees "Already logged", and it is never booked. Sending the *same* `ref` again is how a retry
-after a timeout avoids booking twice. Two identical purchases with different `ref`s both book:
-captured spends are never flagged as duplicates of each other.
+after a timeout avoids booking twice. Two identical purchases sent with the same `source` and
+different `ref`s both book: they are never flagged as duplicates of each other.
 
-The iPhone shortcuts use `ref` = `<trigger>:<time>`: `wallet-tap:` for an Apple Pay tap,
-`notif:` for a bank notification, then the time to the second with its time zone (e.g.
-`notif:2026-10-13T13:04:22+08:00`). Both send `source` = `ios-shortcut`. The prefix keeps a tap
-and a notification in the same second apart, and the notification's `ref` uses the notification's
-own time, so re-running for the same alert never books it twice.
+Different `source`s are different reporters, so their spends *are* checked against each other.
+If the purchase is already in the ledger, Lucius gets the existing transaction back instead of
+booking a second one.
+
+The iPhone shortcuts each have their own `source`: `ios-wallet` for an Apple Pay tap and
+`ios-notification` for an app's notification. A tap's `ref` is `wallet-tap:` and the tap time
+to the second with its time zone. A notification's is `notif:`, the notification's own time,
+`@` and the app that sent it (e.g. `notif:2026-10-13T13:04:22+08:00@DBS digibank`). So:
+
+- An Apple Pay tap and the bank's notification for the same purchase are booked once.
+- Two apps notifying the same purchase (the card's bank and the merchant's app) are booked once.
+- Re-running the shortcut for the same alert never books it twice.
+
+Shortcuts from before this change send `source` = `ios-shortcut` for both and don't get this
+check. Reinstall them from the setup page.
+
+Captures are handled one at a time, in the order they arrive. A tap and its notification
+usually land seconds apart, so the second waits for the first to be booked, then sees it.
+Lucius takes 20–50 seconds a capture, so in a burst the phone may get "Still logging this in
+the background" and the result as a notification.
 
 The reply carries Lucius's own summary in `reply`, which is what the iPhone shortcut shows.
 

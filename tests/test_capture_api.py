@@ -458,3 +458,74 @@ async def test_a_backgrounded_failure_is_notified(monkeypatch):
     assert notified == [
         "A capture wasn't booked: Lucius's AI provider failed 3 times. Try again later."
     ]
+
+
+@pytest.fixture
+def gated_turns(monkeypatch):
+    """Each ``run_capture`` call records that it started, then waits for its own release."""
+    import asyncio
+
+    from backend.ai import capture as capture_mod
+
+    state = {"started": [], "release": {}}
+
+    async def _gated(text, *, source="shortcut", ref=None, model=None):
+        state["started"].append(text)
+        gate = state["release"].setdefault(text, asyncio.Event())
+        await gate.wait()
+        return {
+            "ok": True,
+            "reply": f"Logged {text}.",
+            "tools_used": ["add_transactions"],
+            "domains_changed": ["ledger"],
+            "idempotent": bool(ref),
+            "error": None,
+        }
+
+    def _release(text):
+        state["release"].setdefault(text, asyncio.Event()).set()
+
+    monkeypatch.setattr(capture_mod, "run_capture", _gated)
+    state["release_turn"] = _release
+    return state
+
+
+@pytest.mark.asyncio
+async def test_captures_run_one_at_a_time(gated_turns):
+    """Live 2026-10-15: a wallet tap and its bank notification, 7s apart, ran as two parallel
+    turns — neither could see the other's row, and the purchase was booked twice."""
+    from backend.ai import capture as capture_mod
+
+    tap = capture_mod.start_capture("tap", source="ios-wallet", ref="wallet-tap:1")
+    notif = capture_mod.start_capture("notif", source="ios-notification", ref="notif:1@Bank")
+    await _settle()
+    assert gated_turns["started"] == ["tap"], "the second waits for the first to finish"
+
+    gated_turns["release_turn"]("tap")
+    assert (await tap)["reply"] == "Logged tap."
+    await _settle()
+    assert gated_turns["started"] == ["tap", "notif"]
+
+    gated_turns["release_turn"]("notif")
+    assert (await notif)["reply"] == "Logged notif."
+
+
+@pytest.mark.asyncio
+async def test_a_stuck_turn_lets_the_next_one_start_without_being_cancelled(
+    gated_turns, monkeypatch
+):
+    import asyncio
+
+    from backend.ai import capture as capture_mod
+
+    monkeypatch.setattr(capture_mod, "QUEUE_HOLD_SECONDS", 0.01)
+    stuck = capture_mod.start_capture("stuck", ref="a")
+    nxt = capture_mod.start_capture("next", ref="b")
+    await asyncio.sleep(0.05)
+
+    assert gated_turns["started"] == ["stuck", "next"]
+    assert not stuck.done(), "a turn past the limit keeps running — never cut off mid-write"
+
+    gated_turns["release_turn"]("next")
+    gated_turns["release_turn"]("stuck")
+    assert (await nxt)["ok"] and (await stuck)["ok"]

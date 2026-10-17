@@ -135,16 +135,27 @@ AUTHORITATIVE_ID_NAMESPACES = frozenset(
         "vest",  # equity vest event id
         "option-premium",
         "option-close",
-        # The iOS tap-to-log shortcuts' idempotency key (docs/shortcuts/ios-tap-to-log.md):
-        # "tap:<yyyy-MM-dd'T'HH:mm:ss>" captured client-side by the shortcut AT THE MOMENT OF
-        # THE TAP, before the network call — stable across a client-side retry of that same
-        # tap (the shortcut reuses its already-set variable), distinct across two real taps
-        # (each recomputes it fresh). Without this, two genuinely separate purchases with the
-        # same merchant/amount/day/card — e.g. two vending-machine buys — read as content-
-        # identical and get refused as a duplicate of each other at the ledger write choke.
+        # The iOS tap-to-log shortcuts' idempotency keys (docs/shortcuts/ios-tap-to-log.md),
+        # one namespace PER TRIGGER: "wallet-tap:<when>" under ``ios-wallet``,
+        # "notif:<when>@<app>" under ``ios-notification`` — captured client-side at the
+        # moment of the event, stable across a retry of it, distinct across two real ones.
+        # Authoritative so two genuinely separate purchases with the same merchant/amount/day/
+        # card — two vending-machine taps — are not refused as duplicates of each other. One
+        # namespace per trigger because a tap and the bank's notification of the SAME purchase
+        # are two reports of one event: under the shared ``ios-shortcut`` (still listed, for
+        # the rows it already stamped) their distinct refs vetoed the pair before it was ever
+        # compared, and both were booked (live 2026-10-15).
         "ios-shortcut",
+        "ios-wallet",
+        "ios-notification",
     }
 )
+
+# A notification ref names its sender: "notif:<when>@<app>". Two apps can announce one
+# purchase (the card's bank and the merchant's app), so the APP is the emitter — the same
+# role an email's sender address plays under ``email``.
+_NOTIFICATION_REF_NAMESPACE = "ios-notification"
+_NOTIFICATION_APP_SEPARATOR = "@"
 
 
 def is_authoritative_source(source: str | None) -> bool:
@@ -174,9 +185,23 @@ def ext_ref_emitters(row: dict) -> dict[str, set[str | None]]:
         src = entry.get("source")
         if not is_authoritative_source(src):
             continue
-        emitter = entry.get("emitter")
+        emitter = entry.get("emitter") or ref_emitter(src, str(entry["ref"]))
         by.setdefault(str(src), set()).add(str(emitter) if emitter else None)
     return by
+
+
+def ref_emitter(source: str | None, ref: str | None) -> str | None:
+    """The emitter a ref states about itself, or None when it states none.
+
+    Only ``ios-notification`` refs carry one: the app is everything after the FIRST "@" — the
+    timestamp before it never contains one, an app name might. Casefolded so one app is one
+    emitter however iOS capitalises it. An older ref without the app stays unresolved — the
+    veto's safe direction."""
+    if source != _NOTIFICATION_REF_NAMESPACE or not ref:
+        return None
+    _, sep, app = ref.partition(_NOTIFICATION_APP_SEPARATOR)
+    app = app.strip().casefold()
+    return app if sep and app else None
 
 
 def ext_ref_pairs(row: dict) -> set[tuple[str | None, str]]:

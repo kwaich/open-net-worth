@@ -38,6 +38,8 @@ from backend.core.txn_sources import AUTHORITATIVE_ID_NAMESPACES, is_authoritati
         "option-premium",
         "option-close",
         "ios-shortcut",
+        "ios-wallet",
+        "ios-notification",
     ],
 )
 def test_native_per_event_namespaces_are_authoritative(ns):

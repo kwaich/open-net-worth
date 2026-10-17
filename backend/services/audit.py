@@ -270,6 +270,8 @@ _CHANNEL_LABELS = {
 # source it named, so an unknown one is shown humanised rather than dropped.
 _CAPTURE_LABELS = {
     "ios-shortcut": "iOS Shortcut",
+    "ios-wallet": "iOS Apple Pay",
+    "ios-notification": "iOS Notification",
 }
 
 

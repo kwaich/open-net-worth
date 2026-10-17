@@ -166,16 +166,23 @@ def _tap_stamp() -> List[Dict[str, Any]]:
     ]
 
 
-# ``ref`` = "<trigger>:<when>" — the trigger that fired, then its time to the second with the UTC
-# offset. ``source`` stays ``ios-shortcut`` for both (the CLIENT), so the server namespaces both
-# under one emitter while the prefixes keep a tap and a notification in the same second apart.
+# Each trigger is its own ``source``: a tap and the bank's notification for the SAME purchase
+# are two reports of one event, and under one shared namespace the match engine read their two
+# refs as two events and never compared them (live 2026-10-15: two purchases booked twice).
+# Within a source, distinct refs are still distinct events — two real taps stay two rows.
+WALLET_SOURCE = "ios-wallet"
+NOTIFICATION_SOURCE = "ios-notification"
+# ``ref`` = "<trigger>:<when>", its time to the second with the UTC offset. A notification's
+# also names the app after "@" — the sender, so two apps reporting one purchase can be compared
+# (``core.txn_sources.ref_emitter``).
 WALLET_REF_PREFIX = "wallet-tap:"
 NOTIFICATION_REF_PREFIX = "notif:"
+NOTIFICATION_APP_SEPARATOR = "@"
 _NOTIFICATION = "WFNotificationTrigger"
 _WALLET = "WFWalletTransactionTrigger"
 
 
-def _post_and_report(ref: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _post_and_report(source: str, ref: Dict[str, Any]) -> List[Dict[str, Any]]:
     """POST the ``Spend`` sentence to /api/capture, then show Lucius's own reply."""
     request_uuid = new_uuid()
     reply_uuid = new_uuid()
@@ -191,7 +198,7 @@ def _post_and_report(ref: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "WFJSONValues": dict_field(
                     [
                         entry("text", tokens(Var("Spend"))),
-                        entry("source", "ios-shortcut"),
+                        entry("source", source),
                         entry("ref", ref),
                     ]
                 ),
@@ -283,7 +290,7 @@ def build_apple_pay_post() -> Dict[str, Any]:
     actions += _setup_code_config()
     actions += _tap_stamp()  # before the sentence, which reads Txn Stamp
     actions += _spend_sentence()
-    actions += _post_and_report(tokens(WALLET_REF_PREFIX, Var("Txn Stamp")))
+    actions += _post_and_report(WALLET_SOURCE, tokens(WALLET_REF_PREFIX, Var("Txn Stamp")))
     questions = [_question(question_index, SETUP_CODE_QUESTION)]
     return workflow(
         actions,
@@ -313,7 +320,7 @@ def build_apple_pay_legacy_post() -> Dict[str, Any]:
     actions += _setup_code_config()
     actions += _tap_stamp()
     actions += _legacy_spend_sentence()
-    actions += _post_and_report(tokens(WALLET_REF_PREFIX, Var("Txn Stamp")))
+    actions += _post_and_report(WALLET_SOURCE, tokens(WALLET_REF_PREFIX, Var("Txn Stamp")))
     questions = [_question(question_index, SETUP_CODE_QUESTION)]
     return workflow(actions, import_questions=questions, glyph=59511)
 
@@ -327,8 +334,9 @@ _NOTIFICATION_INTRO = (
     "Open Net Worth → Settings → Phone shortcuts.\n"
     "2. Add its trigger — installing doesn't keep one: Search (bottom) → Automation → "
     "Notification (“When I receive a notification from”) → tap App → pick your apps.\n\n"
-    "Don't pick a bank whose card already runs the Apple Pay shortcut — the same purchase "
-    "would be logged twice."
+    "A bank whose card also runs the Apple Pay shortcut reports each purchase twice. Lucius "
+    "checks the ledger before booking, but a purchase it can't match is logged twice — pick "
+    "only one of the two if you can."
 )
 
 
@@ -359,7 +367,8 @@ def build_notification_post() -> Dict[str, Any]:
     """A bank app's notification (iOS 27 trigger) → POST /api/capture → Lucius books it.
 
     The ref is the NOTIFICATION's own time, not the run's: it stays the same however late or
-    often the shortcut runs for that alert, so a retry is answered "Already logged".
+    often the shortcut runs for that alert, so a retry is answered "Already logged". The app
+    rides after it so the server can tell which app sent it.
     """
     reset_uuids("notification-post")
     trigger_uuid = new_uuid()
@@ -368,7 +377,13 @@ def build_notification_post() -> Dict[str, Any]:
     actions += _setup_code_config()
     actions += _notification_sentence()
     actions += _post_and_report(
-        tokens(NOTIFICATION_REF_PREFIX, TriggerOutput(_NOTIFICATION, "Date", iso=True))
+        NOTIFICATION_SOURCE,
+        tokens(
+            NOTIFICATION_REF_PREFIX,
+            TriggerOutput(_NOTIFICATION, "Date", iso=True),
+            NOTIFICATION_APP_SEPARATOR,
+            TriggerOutput(_NOTIFICATION, "App"),
+        ),
     )
     questions = [_question(question_index, SETUP_CODE_QUESTION)]
     return workflow(

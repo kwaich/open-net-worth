@@ -305,9 +305,52 @@ CAPTURE_ATTEMPTS = 3
 _RETRY_DELAYS = (2.0, 5.0)
 
 
+# Capture turns run ONE AT A TIME. A wallet tap and the bank's notification of the same purchase
+# land seconds apart and each turn takes 20-50s, so in parallel both read the ledger before
+# either wrote and neither could see the other's row (live 2026-10-15: one purchase booked
+# twice, 3s apart). Queued, every turn sees everything booked before it, and the duplicate check can
+# hand the match back to Lucius.
+#
+# A turn holding the queue past this lets the next one start, but is NOT cancelled: a turn cut
+# off mid-write is the worst outcome on a money path, and a stuck one must not stall every
+# capture behind it.
+QUEUE_HOLD_SECONDS = 180.0
+_QUEUES: dict[asyncio.AbstractEventLoop, asyncio.Lock] = {}
+
+
+def _queue() -> asyncio.Lock:
+    """The capture queue for the running loop — a lock is bound to the loop it first waits on."""
+    loop = asyncio.get_running_loop()
+    lock = _QUEUES.get(loop)
+    if lock is None:
+        for stale in [lp for lp in _QUEUES if lp.is_closed()]:
+            del _QUEUES[stale]
+        lock = _QUEUES[loop] = asyncio.Lock()
+    return lock
+
+
+async def _queued_capture(text: str, *, source: str, ref: Optional[str]) -> dict:
+    """One ``run_capture`` attempt, after every turn queued ahead of it has finished."""
+    queue = _queue()
+    async with queue:
+        turn = asyncio.ensure_future(run_capture(text, source=source, ref=ref))
+        try:
+            done, _ = await asyncio.wait({turn}, timeout=QUEUE_HOLD_SECONDS)
+        except asyncio.CancelledError:
+            turn.cancel()
+            raise
+        if not done:
+            _log.warning(
+                "capture turn still running after %.0fs (source=%s) — letting the next one start",
+                QUEUE_HOLD_SECONDS,
+                source,
+            )
+    return await turn
+
+
 async def _run_with_retries(text: str, *, source: str, ref: Optional[str]) -> dict:
     """``run_capture``, retried while it fails without having written anything."""
-    result = await run_capture(text, source=source, ref=ref)
+    result = await _queued_capture(text, source=source, ref=ref)
     attempts = 1
     for delay in _RETRY_DELAYS[: CAPTURE_ATTEMPTS - 1]:
         if result["ok"] or not _safe_to_retry(result, source, ref):
@@ -321,7 +364,7 @@ async def _run_with_retries(text: str, *, source: str, ref: Optional[str]) -> di
             delay,
         )
         await asyncio.sleep(delay)
-        result = await run_capture(text, source=source, ref=ref)
+        result = await _queued_capture(text, source=source, ref=ref)
         attempts += 1
     return {**result, "attempts": attempts}
 

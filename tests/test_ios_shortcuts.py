@@ -225,7 +225,7 @@ def test_capture_payload_matches_the_api_contract():
     assert set(payload) <= accepted, f"unknown fields: {set(payload) - accepted}"
 
     assert payload["text"] == SAMPLES["Spend"]
-    assert payload["source"] == "ios-shortcut"
+    assert payload["source"] == "ios-wallet"
     CaptureRequest(**payload)
 
 
@@ -406,10 +406,12 @@ def test_notification_payload_is_the_notification_text_and_its_own_time():
         "Notification from DBS digibank: Card transaction —  — You spent SGD 12.40 at "
         "STARBUCKS with card ending 1234 (received 2026-07-28T09:15:04+08:00)"
     ]
-    # Same client as the Wallet one; the ref prefix says which trigger fired.
-    assert payload["source"] == "ios-shortcut"
-    # The NOTIFICATION's time, not the run's — a late or repeated run keeps the same ref.
-    assert payload["ref"] == "notif:2026-07-28T09:15:04+08:00"
+    # Its own source, not the Wallet one's: a tap and a notification of one purchase are two
+    # reports of one event, and a shared namespace vetoed their comparison (live 2026-10-15).
+    assert payload["source"] == "ios-notification"
+    # The NOTIFICATION's time, not the run's — a late or repeated run keeps the same ref — then
+    # the app that sent it, which the server reads as the emitter.
+    assert payload["ref"] == "notif:2026-07-28T09:15:04+08:00@DBS digibank"
     from backend.api.capture import CaptureRequest
 
     CaptureRequest(**payload)
@@ -457,4 +459,6 @@ def test_both_apple_pay_versions_share_a_name_and_the_wallet_ref():
 
     assert BY_SLUG["log-apple-pay"].name == BY_SLUG["log-apple-pay-ios26"].name
     for slug in ("log-apple-pay", "log-apple-pay-ios26"):
-        assert _payload(SHORTCUTS[slug]())["ref"].startswith("wallet-tap:")
+        payload = _payload(SHORTCUTS[slug]())
+        assert payload["ref"].startswith("wallet-tap:")
+        assert payload["source"] == "ios-wallet"

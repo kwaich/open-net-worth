@@ -17,8 +17,11 @@ So:
 - Each shortcut is built **once**, with placeholders, by `backend/services/shortcuts/catalog.py`:
   **Log Apple Pay** (Wallet tap, run by an automation) and **Log Finance Notifications** (iOS 27: its
   `WFNotificationTrigger` is stored in the file's `WFWorkflowTriggers`, apps left for the owner to
-  pick, so there are no input types). Both send `source: ios-shortcut`. `ref` is `wallet-tap:<ISO>` or
-  `notif:<the notification's own ISO time>`.
+  pick, so there are no input types). Each trigger is its own `source` — `ios-wallet` and
+  `ios-notification` — so the match engine compares a tap with the bank's notification of the
+  same purchase instead of vetoing two refs under one namespace (live 2026-10-15). `ref` is
+  `wallet-tap:<ISO>` or `notif:<the notification's own ISO time>@<app>`; the app is the
+  emitter (`core.txn_sources.ref_emitter`). Older shortcuts still send `ios-shortcut`.
 - The instance-specific values travel as a **setup code** (`<address>|<API token>`,
   `services/shortcuts/setup_code.py`). The capture shortcut's single import question asks for it
   and a Split Text action separates the two.
