@@ -314,8 +314,6 @@ export interface AccountHeaderProps {
   onReconcile: (account: Account, realBalance: number) => void
   onReview: () => void
   onStartReview: () => void
-  /** Clears the Review flag on every row waiting for it (the tab confirms first). */
-  onMarkAllReviewed?: () => void
 }
 
 // ── AccountHeader ─────────────────────────────────────────────────────────────
@@ -341,7 +339,6 @@ export function AccountHeader({
   onReconcile,
   onReview,
   onStartReview,
-  onMarkAllReviewed,
 }: AccountHeaderProps) {
   const chatComposer = useChatComposerOptional()
   const [viewStatement, setViewStatement] = useState(false)
@@ -769,7 +766,6 @@ export function AccountHeader({
                   count={stats.review}
                   onReview={onReview}
                   onStartReview={onStartReview}
-                  onMarkAllReviewed={onMarkAllReviewed}
                 />
                 <span className="acct-recon-grow" />
                 <span className="acct-recon-stat muted">{stats.count} txns</span>

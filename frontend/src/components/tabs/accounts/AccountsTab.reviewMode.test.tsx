@@ -138,6 +138,12 @@ describe('AccountsTab — transaction review mode', () => {
     expect(await screen.findByRole('heading', { name: 'Kroger' })).toBeTruthy()
   })
 
+  it('offers Start review beside the count, and no bulk clear of every flag', async () => {
+    renderTab()
+    expect(await screen.findByRole('button', { name: 'Start review' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Mark all reviewed' })).toBeNull()
+  })
+
   it('counts and reviews everything flagged from the tab’s own row', async () => {
     renderTab()
     // The count beside "Needs review" is the count of what that filter shows: no scope.
@@ -153,64 +159,6 @@ describe('AccountsTab — transaction review mode', () => {
         '/api/transactions/recently-added?needs_review=true&limit=500',
       ),
     )
-  })
-
-  it('explains Review in a line and clears every flag at once after one confirmation', async () => {
-    let flagged = true
-    const base = mockAuthFetch.getMockImplementation()!
-    mockAuthFetch.mockImplementation((url: string, init?: RequestInit) => {
-      if (url === '/api/transactions/bulk-update' && init?.method === 'POST') {
-        flagged = false
-        const body = JSON.parse(String(init.body)) as { ids: string[]; needs_review?: boolean }
-        return Promise.resolve(
-          okJson({ updated: body.ids, not_found: [], skipped: [], count: body.ids.length }),
-        )
-      }
-      if (url.startsWith('/api/transactions/recently-added?needs_review=true'))
-        return Promise.resolve(
-          flagged
-            ? okJson({ transactions: [TXN], total: 1, has_more: false })
-            : okJson({ transactions: [], total: 0, has_more: false }),
-        )
-      return base(url, init)
-    })
-    renderTab()
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark all reviewed' }))
-    // A confirmation first: the flag is the user's own "I have looked at this".
-    expect(await screen.findByText('Mark 1 as reviewed?')).toBeTruthy()
-    expect(mockAuthFetch.mock.calls.some(([url]) => url === '/api/transactions/bulk-update')).toBe(
-      false,
-    )
-
-    const buttons = screen.getAllByRole('button', { name: 'Mark all reviewed' })
-    fireEvent.click(buttons[buttons.length - 1]!)
-    await waitFor(() => {
-      const call = mockAuthFetch.mock.calls.find(
-        ([url, init]) => url === '/api/transactions/bulk-update' && init?.method === 'POST',
-      )
-      expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({
-        ids: ['txn-review'],
-        needs_review: false,
-      })
-    })
-    await waitFor(() => expect(screen.queryByRole('button', { name: '1 to review' })).toBeNull())
-  })
-
-  it('offers Mark all reviewed only on All accounts, never on one account it would overreach', async () => {
-    renderTab()
-    expect(await screen.findByRole('button', { name: 'Mark all reviewed' })).toBeTruthy()
-    cleanup()
-
-    // One account's header counts that account, so a button clearing every account's flags
-    // beside it would act on rows the user cannot see (review 2026-10-14).
-    render(
-      <TransactionSurfacesProvider onManagePayees={() => {}}>
-        <AccountsTab selectedAccountId="acc-1" />
-      </TransactionSurfacesProvider>,
-    )
-    expect(await screen.findByRole('button', { name: 'Start review' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Mark all reviewed' })).toBeNull()
   })
 
   it('shows the overlay at once, in its loading state, while the book is still loading', async () => {

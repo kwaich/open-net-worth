@@ -100,8 +100,6 @@ export interface OverviewProps {
   onExport: () => void
   onReview: () => void
   onStartReview: () => void
-  /** Clears the Review flag on every row waiting for it (the tab confirms first). */
-  onMarkAllReviewed?: () => void
   onShowUncleared: () => void
   onArchivedAccounts?: () => void
   archivedCount?: number
@@ -124,7 +122,6 @@ export function Overview({
   onExport,
   onReview,
   onStartReview,
-  onMarkAllReviewed,
   onShowUncleared,
   onArchivedAccounts,
   archivedCount = 0,
@@ -322,12 +319,7 @@ export function Overview({
 
           {/* Always rendered, even at 0 txns, so the card's height doesn't shift. */}
           <div className="acct-recon-line">
-            <ReviewStrip
-              count={stats.review}
-              onReview={onReview}
-              onStartReview={onStartReview}
-              onMarkAllReviewed={onMarkAllReviewed}
-            />
+            <ReviewStrip count={stats.review} onReview={onReview} onStartReview={onStartReview} />
             <span className="acct-recon-grow" />
             <span className="acct-recon-stat muted">{stats.count} txns</span>
           </div>

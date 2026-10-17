@@ -1408,44 +1408,6 @@ export function AccountsTab({
   const bulkExport = () => {
     exportCsv(selList)
   }
-  // Everything flagged, the set the "N to review" count shows. Clearing the flag moves no money,
-  // so it is one confirmed action rather than a walk through each row; read in pages of 500 so a
-  // large import is cleared whole.
-  const markAllReviewed = () =>
-    setConfirm({
-      title: `Mark ${reviewTotal} as reviewed?`,
-      body: 'This clears the Review flag on everything waiting for it. Nothing is deleted and no balance changes. To look at them first, use Start review.',
-      confirmLabel: 'Mark all reviewed',
-      onConfirm: () => {
-        setConfirm(null)
-        void (async () => {
-          let cleared = 0
-          try {
-            for (;;) {
-              const res = await authFetch(
-                '/api/transactions/recently-added?needs_review=true&limit=500',
-              )
-              if (!res.ok) throw new Error(await res.text())
-              const page = ((await res.json()) as { transactions?: { id: string }[] }).transactions
-              if (!page?.length) break
-              const done = await L.bulkUpdate(
-                page.map((t) => t.id),
-                { needs_review: false },
-              )
-              // A row the server refuses stays flagged and would come back as the next page.
-              if (done.count === 0) break
-              cleared += done.count
-            }
-            showToast(cleared === 1 ? 'Marked 1 as reviewed' : `Marked ${cleared} as reviewed`)
-          } catch (e) {
-            showToast(e instanceof Error ? e.message : 'Could not mark them as reviewed')
-          } finally {
-            L.refreshTxns()
-            void loadReviewTotal()
-          }
-        })()
-      },
-    })
   const bulkDelete = () =>
     setConfirm({
       title: 'Delete transactions',
@@ -2048,7 +2010,6 @@ export function AccountsTab({
                   onExport={() => exportCsv(filtered)}
                   onReview={addReviewToken}
                   onStartReview={() => surfaces.openReview('all')}
-                  onMarkAllReviewed={markAllReviewed}
                   onShowUncleared={addUnclearedToken}
                   onArchivedAccounts={openArchivedAccounts}
                   archivedCount={archivedAccounts.length}
