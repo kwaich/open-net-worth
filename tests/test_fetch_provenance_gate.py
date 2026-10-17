@@ -189,7 +189,7 @@ def test_an_automation_in_skip_mode_or_with_the_tool_granted_runs():
             reset_automation_approval(token)
 
 
-def test_an_automation_trigger_payload_never_counts_as_typed():
+def test_only_a_person_typing_counts_never_an_automation_or_headless_prompt():
     from backend.ai.assistant import _note_typed_urls
 
     token = _automation()
@@ -198,6 +198,10 @@ def test_an_automation_trigger_payload_never_counts_as_typed():
     finally:
         reset_automation_approval(token)
     assert not _fetch_gate.is_supplied(SID, EXFIL)
+    set_cost_surface("scheduled")  # a headless turn's prompt is not typed either
+    _note_typed_urls(SID, [{"role": "user", "content": "open " + SEARCHED}])
+    assert not _fetch_gate.is_supplied(SID, SEARCHED)
+    set_cost_surface("web")
     _note_typed_urls(SID, [{"role": "user", "content": "open " + SEARCHED}])
     assert _fetch_gate.is_supplied(SID, SEARCHED)
 

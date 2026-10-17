@@ -96,8 +96,9 @@ def _typed_text(message: object) -> str:
 
 def note_user_messages(session_id: Optional[str], messages: Iterable[dict]) -> None:
     """Remember the URLs in the user's own turn. The caller decides the turn IS the user's:
-    ``assistant.run`` skips Automation runs and unattended turns, whose "user" message carries
-    a trigger payload (an email body) rather than anything a person typed."""
+    ``assistant._note_typed_urls`` records only web chat and chat-connector turns, never an
+    Automation run, a capture or a scheduled turn, whose "user" message carries a prompt or a
+    trigger payload (an email body) rather than anything a person typed."""
     urls: list[str] = []
     for message in messages or []:
         urls += urls_in_text(_typed_text(message))

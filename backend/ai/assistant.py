@@ -3605,12 +3605,17 @@ def _resolve_style(new_messages: list) -> str:
 
 
 def _note_typed_urls(session_id: str, messages: list[dict]) -> None:
-    """Links a person typed may be fetched without a card (``ai/tools/_fetch_gate``). Never an
-    Automation run's or an unattended turn's: their "user" message is a trigger payload."""
+    """Links a person typed may be fetched without a card (``ai/tools/_fetch_gate``). Only on a
+    surface where a person types — web chat, a chat connector — never an Automation run, a
+    capture or a scheduled headless turn, whose "user" message is a prompt or trigger payload.
+    The COST surface, not ``surface``: the headless runner leaves ``surface`` at its default."""
     from backend.core.automation_runner import get_automation_approval
-    from backend.core.unattended import is_unattended
+    from backend.core.cost_context import get_cost_surface
 
-    if messages and get_automation_approval() is None and not is_unattended():
+    typed_here = (get_cost_surface() or "") == "web" or (get_cost_surface() or "").startswith(
+        "connector"
+    )
+    if messages and typed_here and get_automation_approval() is None:
         from backend.ai.tools import _fetch_gate
 
         _fetch_gate.note_user_messages(session_id, messages)
