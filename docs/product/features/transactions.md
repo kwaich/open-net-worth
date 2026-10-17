@@ -103,8 +103,8 @@ can add, edit or re-flag a transaction, but can never clear the flag.
   click the sign beside the amount to switch. Its payee is the broker or platform (for example
   IBKR) — set automatically when the trade is recorded against an account with an institution,
   and editable in the drawer like any other payee. A buy or sale recorded against a holding
-  also stores what it traded, so the register reads, for example, **Sold 100 KSTL @ €37.45**
-  ahead of the description (the price comes from the sale or purchase itself).
+  writes what it traded into the memo — for example **Sold 60 KSTL @ 150.00 USD · fees 1.25
+  USD** — and keeps the description ("Sale proceeds" / "Share purchase") unchanged.
 - A **balance adjustment** (created when you reconcile) never has a category and is left out of
   spending reports.
 - The **Starting Balance** can't be deleted, uncleared, freely edited or merged — change the

@@ -187,12 +187,10 @@ export function TxnRow({
     payeeFromName,
     payeeToName,
     mentionSub,
-    trade,
   } = v
   // The bank/matching description, shown as-is — no payee de-dup (predictable; matches the drawer).
-  // A trade's cash leg leads with what it traded; the description follows it, untouched.
   const descText = t.description
-  const descTitle = [trade, t.description].filter(Boolean).join(' · ') || undefined
+  const descTitle = t.description || undefined
   // The personal memo (display-only; ADR 2026-07-17) — rendered in its own optional column.
   const memoText = t.memo
   const memoTitle = t.memo || undefined
@@ -403,11 +401,6 @@ export function TxnRow({
                     }
                   }}
                 />
-              </>
-            ) : trade ? (
-              <>
-                <span className="acct-trade">{trade}</span>
-                {descText && <span className="acct-trade-desc"> · {descText}</span>}
               </>
             ) : descText ? (
               descText

@@ -33,6 +33,7 @@ from sqlalchemy import Connection
 
 from backend.core.errors import InsufficientLots, InvalidLotSelection
 from backend.core.fx import base_currency, to_base
+from backend.core.trade_text import trade_memo
 from backend.core.user_time import user_today
 from backend.core.write_receipt import record_write
 from backend.db.engine import locked_unit_of_work
@@ -801,21 +802,40 @@ def _book_funding_debit(
     if payee_id:
         txn_data["payee_id"] = payee_id
     txn_data.update(
-        _traded(lot.get("instrument_id"), lot.get("original_qty") or change.get("quantity"))
+        _traded(
+            lot.get("instrument_id"),
+            lot.get("original_qty") or change.get("quantity"),
+            verb="Bought",
+            price=change.get("unit_cost"),
+            currency=cost_ccy,
+            fees=change.get("fees"),
+        )
     )
     txn = ledger_service.create_transaction(txn_data, conn=conn)
     return txn.get("id")
 
 
-def _traded(instrument_id: Optional[str], quantity) -> dict:
-    """The cash leg's own record of what it traded — ``ticker`` + ``quantity`` stored on the
-    row, so the register names the trade instead of a bare "Share purchase"/"Sale proceeds".
-    Quantity is unsigned: the leg's direction already says buy or sell."""
+def _traded(
+    instrument_id: Optional[str],
+    quantity,
+    *,
+    verb: str,
+    price,
+    currency: str,
+    fees=None,
+) -> dict:
+    """The cash leg's own record of what it traded: ``ticker`` + ``quantity`` (unsigned — the
+    leg's direction says buy or sell) and a readable ``memo`` ("Sold 60 KSTL @ 150.00 USD"),
+    so the register names the trade instead of a bare "Share purchase"/"Sale proceeds"."""
     symbol = (InstrumentStore().find_by_id(instrument_id or "") or {}).get("symbol")
     if not symbol:
         return {}
     qty = abs(float(quantity or 0))
-    return {"ticker": symbol, "quantity": qty} if qty else {"ticker": symbol}
+    if not qty:
+        return {"ticker": symbol}
+    price_f = float(price) if price not in (None, "") else None
+    memo = trade_memo(verb, symbol, qty, price_f, currency, float(fees or 0))
+    return {"ticker": symbol, "quantity": qty, "memo": memo}
 
 
 def _future_acquisition(acquired_at) -> Optional[str]:
@@ -1184,7 +1204,16 @@ def _book_deposit_proceeds(
     }
     if payee_id:
         txn_data["payee_id"] = payee_id
-    txn_data.update(_traded(draft.get("instrument_id"), draft.get("quantity")))
+    txn_data.update(
+        _traded(
+            draft.get("instrument_id"),
+            draft.get("quantity"),
+            verb="Sold",
+            price=draft.get("proceeds_per_unit"),
+            currency=proceeds_ccy,
+            fees=draft.get("disposal_fees"),
+        )
+    )
 
     txn = ledger_service.create_transaction(txn_data, conn=conn)
     return txn.get("id")

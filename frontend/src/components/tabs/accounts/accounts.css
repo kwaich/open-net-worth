@@ -4690,17 +4690,6 @@ select.acct-addin {
   color: var(--faint);
   overflow-wrap: anywhere;
 }
-/* A trade's cash leg names the trade ("Sold 100 KSTL @ €37.45") ahead of its description. */
-.acct-trade {
-  color: var(--ink);
-}
-.acct-trade-desc {
-  color: var(--faint);
-}
-.acct-card-trade {
-  font-size: 11.5px;
-  color: var(--muted);
-}
 .acct-card-split-detail {
   display: flex;
   flex-direction: column;

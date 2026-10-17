@@ -55,7 +55,9 @@ Book it now. Nobody is watching this turn, so do not ask clarifying questions:
 - Book it in the direction it happened: a purchase or payment out, a refund or
   money received in, a move between the owner's own accounts as a transfer.
 - A trade at a broker or exchange (shares or coins bought or sold) is a trade,
-  not a spend: record it the way you would if the owner had told you.
+  not a spend: a buy is acquire_lots with funding_account_id, a sale is
+  dispose_lots with proceeds_account_id — the broker's cash account. The trade
+  books its own cash row; never add_transactions for it.
 - Resolve the account from the card, wallet or app name if one is mentioned;
   look up the accounts if you need to.
 - If the text names a date or time, use it — it is when it actually happened.

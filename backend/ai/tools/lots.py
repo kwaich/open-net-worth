@@ -653,7 +653,7 @@ _ACQ_KIND_DESC = "buy (default) | drp (dividend reinvestment) | transfer_in | gr
 # Shared by the root field and each acquisitions[] item — the refusal is enforced at the
 # choke point (services.lots._find_identical_open_lot), not just previewed.
 _ALLOW_DUPLICATE_ACQUIRE_DESC = "true ONLY for genuinely separate identical fills — otherwise a FULLY-OPEN lot on this position with the same kind, acquired_at, quantity and unit_cost is REFUSED as a double-book (returns existing_lot_id). A partially-sold match counts as a real earlier fill, not a duplicate."
-_ACQ_FUNDING_DESC = "Cash account to debit for qty × unit_cost + fees. Omit to book the lot only. Unknown unit_cost skips the debit."
+_ACQ_FUNDING_DESC = "Cash account to debit for qty × unit_cost + fees, booked WITH the lot (ticker, quantity, memo). Omit only when that debit is already in the ledger. Unknown unit_cost skips the debit."
 
 
 class ApplyLotAcquireItem(ToolInput):
@@ -712,7 +712,7 @@ class ApplyLotAcquireInput(ToolInput):
 @tool(
     "acquire_lots",
     description=(
-        "Record a buy / transfer-in / grant as a tax lot on an existing position (so cost basis is exact, not averaged-away). Use this — NOT add_positions — when the instrument is already held in the account. Identify the position by position_id (from get_portfolio). ALWAYS capture the commission: extract the fee/commission line from a broker confirmation into `fees`; omit if the source shows none, never guess. On an interactive turn this raises a confirm card (no write yet); the user's approval then runs it server-side with exactly the values the card showed. Never call it again to confirm and never restate the values — there is nothing for you to pass back. An unattended/automated caller records immediately, no card — pass idempotency_key so a reprocessed email/retry can never double-book. For kind=buy, pass funding_account_id to debit cash in the same write; omitting it books the lot only — then call add_transactions (kind=investment) for qty × unit_cost + fees. Recording a whole statement's worth of trades? Pass `acquisitions` (a list) instead — one call, and ONE confirm card for the whole batch."
+        "Record a buy / transfer-in / grant as a tax lot on an existing position (so cost basis is exact, not averaged-away). Use this — NOT add_positions — when the instrument is already held in the account. Identify the position by position_id (from get_portfolio). ALWAYS capture the commission: extract the fee/commission line from a broker confirmation into `fees`; omit if the source shows none, never guess. On an interactive turn this raises a confirm card (no write yet); the user's approval then runs it server-side with exactly the values the card showed. Never call it again to confirm and never restate the values — there is nothing for you to pass back. An unattended/automated caller records immediately, no card — pass idempotency_key so a reprocessed email/retry can never double-book. For kind=buy, pass funding_account_id to debit cash in the same write; omit it only when that cash debit is already in the ledger — never add_transactions for a buy's cash (that row is unlinked from the lot). Recording a whole statement's worth of trades? Pass `acquisitions` (a list) instead — one call, and ONE confirm card for the whole batch."
     ),
     # Batch array only — the bare single-item fields are still ACCEPTED by the handler,
     # just not advertised (see schema_from_model.schema_of_batch_only).

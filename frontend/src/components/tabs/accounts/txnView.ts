@@ -9,7 +9,7 @@
 
 import { getBaseCurrency, txnMentionSublabel } from '../../../utils/format'
 import type { Txn, Account, FxRates } from './types'
-import { fCur, fxInfo, sym, toBase } from './format'
+import { fCur, fxInfo, toBase } from './format'
 
 export interface TxnView {
   amount: number
@@ -34,8 +34,6 @@ export interface TxnView {
   payeeFromName: string | null
   payeeToName: string | null
   mentionSub: string
-  /** An investment cash leg's trade ("Sold 100 KSTL @ €37.45"), null for any other row. */
-  trade: string | null
 }
 
 /** Everything TxnRow/TxnCard need to render a transaction, derived once. */
@@ -144,22 +142,5 @@ export function buildTxnView(
     payeeFromName,
     payeeToName,
     mentionSub,
-    trade: tradeLabel(t, pos),
   }
-}
-
-const qtyFmt = (q: number) => q.toLocaleString(undefined, { maximumFractionDigits: 4 })
-const priceFmt = (p: number) =>
-  p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })
-
-/** The trade a buy/sell cash leg settled, from the row's stored ticker + quantity and the
- * price read from its lot/disposal — "Sold 100 KSTL @ €37.45". */
-export function tradeLabel(t: Txn, inflow: boolean): string | null {
-  if (t.kind !== 'investment' || !t.ticker) return null
-  const qty = t.quantity ? qtyFmt(Math.abs(t.quantity)) : ''
-  const price =
-    t.unitPrice && t.unitPriceCurrency
-      ? `@ ${sym(t.unitPriceCurrency)}${priceFmt(t.unitPrice)}`
-      : ''
-  return [inflow ? 'Sold' : 'Bought', qty, t.ticker, price].filter(Boolean).join(' ')
 }

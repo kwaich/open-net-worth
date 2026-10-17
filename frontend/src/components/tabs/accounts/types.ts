@@ -87,9 +87,6 @@ export interface ApiTxn {
   /** Investment annotation on the cash leg of a buy/sell. */
   ticker?: string | null
   quantity?: number | null
-  /** Per-unit trade price, read from the linked lot/disposal (never stored on the row). */
-  unit_price?: number | null
-  unit_price_currency?: string | null
   original_amount?: number | null
   original_currency?: string | null
   base_amount: number
@@ -162,11 +159,9 @@ export interface Txn {
   /** The legs' account names, as the server sent them with the row. */
   fromAccountName?: string | null
   toAccountName?: string | null
-  /** Investment annotation (cash leg of a buy/sell): what was traded, how much, at what price. */
+  /** Investment annotation (cash leg of a buy/sell): what was traded, and how much. */
   ticker?: string | null
   quantity?: number | null
-  unitPrice?: number | null
-  unitPriceCurrency?: string | null
   origAmount: number | null
   origCurrency: string | null
   baseAmount: number

@@ -145,8 +145,6 @@ export function fromApiTxn(api: ApiTxn): Txn {
     toAccountName: api.to_account_name ?? null,
     ticker: api.ticker ?? null,
     quantity: api.quantity ?? null,
-    unitPrice: api.unit_price ?? null,
-    unitPriceCurrency: api.unit_price_currency ?? null,
     origAmount: api.original_amount ?? null,
     origCurrency: api.original_currency ?? null,
     baseAmount: api.base_amount,

@@ -4496,7 +4496,7 @@
             },
             "funding_account_id": {
               "type": "string",
-              "description": "Cash account to debit for qty × unit_cost + fees. Omit to book the lot only. Unknown unit_cost skips the debit."
+              "description": "Cash account to debit for qty × unit_cost + fees, booked WITH the lot (ticker, quantity, memo). Omit only when that debit is already in the ledger. Unknown unit_cost skips the debit."
             },
             "acquired_at": {
               "type": "string",

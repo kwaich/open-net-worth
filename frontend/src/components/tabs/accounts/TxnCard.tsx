@@ -76,7 +76,6 @@ export function TxnCard({
     payeeFromName,
     payeeToName,
     mentionSub,
-    trade,
   } = buildTxnView(t, accounts, selectedId, payeeName, rates, showAccount)
 
   const payeeMain: React.ReactNode = isTransfer ? (
@@ -196,7 +195,6 @@ export function TxnCard({
             </span>
             {!t.needsReview && <SourceIcon source={t.source} />}
           </span>
-          {trade && <span className="acct-card-trade">{trade}</span>}
           {t.memo && (
             <span
               className="acct-card-memo"

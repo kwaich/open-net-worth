@@ -266,3 +266,13 @@ async def test_a_blank_reply_after_a_write_still_says_something(monkeypatch):
 
     assert out["ok"] is True
     assert out["reply"].strip()
+
+
+def test_a_captured_trade_books_its_cash_through_the_trade():
+    """Found 2026-10-17: captured buys booked the lot, then a separate add_transactions row —
+    unlinked, so it carried no ticker, quantity or trade memo. The trade must book its cash."""
+    from backend.ai.capture import _PROMPT
+
+    assert "acquire_lots with funding_account_id" in _PROMPT
+    assert "dispose_lots with proceeds_account_id" in _PROMPT
+    assert "never add_transactions for it" in _PROMPT

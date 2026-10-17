@@ -66,6 +66,7 @@ def test_purchase_cash_leg_stores_ticker_and_quantity(book):
     out = _buy(pos, cash)
     leg = _live(out["cash_leg_id"])
     assert (leg["ticker"], float(leg["quantity"])) == ("KSTL", 10.0)
+    assert leg["memo"] == "Bought 10 KSTL @ 30.00 USD"
 
 
 def test_sale_cash_leg_stores_ticker_and_quantity(book):
@@ -77,6 +78,7 @@ def test_sale_cash_leg_stores_ticker_and_quantity(book):
             "position_id": pos["id"],
             "quantity": 4,
             "proceeds_per_unit": 37.45,
+            "disposal_fees": 1.5,
             "proceeds_currency": "USD",
             "method": "fifo",
             "disposed_at": "2026-06-01",
@@ -85,6 +87,7 @@ def test_sale_cash_leg_stores_ticker_and_quantity(book):
     )
     leg = _live(out["cash_leg_id"])
     assert (leg["ticker"], float(leg["quantity"])) == ("KSTL", 4.0)
+    assert leg["memo"] == "Sold 4 KSTL @ 37.45 USD · fees 1.50 USD"
     assert leg["description"] == "Sale proceeds", "the description is left as it was"
 
 
@@ -95,3 +98,20 @@ def test_a_corrected_lot_rebooks_its_leg_with_the_new_quantity(book):
     assert out.get("ok") is True
     leg = _live(out["cash_leg_id"])
     assert (leg["ticker"], float(leg["quantity"])) == ("KSTL", 12.0)
+    assert leg["memo"] == "Bought 12 KSTL @ 30.00 USD"
+
+
+def test_a_fractional_crypto_style_trade_keeps_its_precision(book):
+    pos, cash = book
+    out = svc.apply_lot_change(
+        {
+            "type": "acquire",
+            "position_id": pos["id"],
+            "quantity": 0.0125,
+            "unit_cost": 61234.5678,
+            "cost_currency": "USD",
+            "acquired_at": "2026-01-05",
+            "funding_account_id": cash["id"],
+        }
+    )
+    assert _live(out["cash_leg_id"])["memo"] == "Bought 0.0125 KSTL @ 61,234.5678 USD"
