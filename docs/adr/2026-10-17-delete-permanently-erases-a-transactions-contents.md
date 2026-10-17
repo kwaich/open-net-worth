@@ -36,8 +36,9 @@ account force-delete erasing the same way. Nothing disappears unless someone ask
   1. The ordinary delete choke runs first on the same conn for live rows, so its refusals still
      apply (a Starting Balance is refused) and the re-import guard is written as a plain delete
      writes it.
-  2. Refused outright while an investment or commitment fact names the row (`_BLOCKING_TABLES`:
-     lots, realized/income/vest events, grants, owned assets, options, positions, commitments).
+  2. Refused outright while an investment or commitment fact names the row or one of its merge
+     tombstones (`_BLOCKING_TABLES`: lots, realized/income/vest events, grants, owned assets,
+     options, positions, commitments).
      A soft delete leaves the row for them to read; a purge would not.
   3. Merge tombstones folded into the row go with it, transitively: they are the same payment
      from another source.
@@ -47,12 +48,16 @@ account force-delete erasing the same way. Nothing disappears unless someone ask
      says that something happened, when, and by whom, never what.
   6. `rejected_identities` drops `date/description/amount/currency`. The `(source, ref,
      movement)` key and `txn_id` stay, so a re-delivery is still refused as `previously_deleted`.
-  7. Every `write_log` image of the row and its children becomes `None` ("did not exist"), so
-     `_replay_write_log` deletes the pk and never re-inserts it. A rejected-identity image is
-     scrubbed instead, so a restore still restores the guard.
+  7. Every `write_log` image of the row, its children and every other row this erase removes
+     (step 8) becomes `None` ("did not exist"), so `_replay_write_log` deletes the pk and never
+     re-inserts it: an Undo of the turn that booked it must not bring back the email snapshot
+     it promoted or the payee it created. A rejected-identity image is scrubbed instead, so a
+     restore still restores the guard.
   8. Rows that exist only about it go: `match_reviews`, `match_decisions`, `corrections`, and
-     both sides of `merge_journal` (the un-merge before-image). The email snapshot goes when no
-     remaining transaction holds that message. The payee goes when nothing else names it and
+     both sides of `merge_journal` (the un-merge before-image). The email snapshot (under its
+     internal id, or a pre-internal-id one under its raw Message-ID) and the bank or broker
+     snapshot (`connector_snapshots`, `source:ref`) go when no remaining transaction holds that
+     reference. A later fetch may stash the provider's copy again, unbooked. The payee goes when nothing else names it and
      the owner never shaped it (rules, extra aliases, hidden, autocategorize off). A learned
      default category doesn't count, because booking one categorised row writes it.
 - **After commit:** receipts linked only to it are deleted through `apply_receipt_change`
@@ -60,7 +65,13 @@ account force-delete erasing the same way. Nothing disappears unless someone ask
   returned as `receipts_not_cleaned`, never hidden. SQLite runs the purge with `secure_delete`
   on and then `wal_checkpoint(TRUNCATE)`, so freed pages don't keep the bytes.
 - **The account force-delete erases its cascade** with the same `erase_traces` on its own conn,
-  holding the same locks, and runs `after_commit` too.
+  holding the same locks, and runs `after_commit` too. It reads the rows to erase under the lock,
+  and takes the merge tombstones folded into them (another account's copy of the same payment),
+  refused like a purge while a fact names one.
+- **Cost.** Each table is read once per erase, whatever the number of rows (`_naming` matches
+  every quoted value against the id set), so an account of thousands of transactions does not
+  hold the ledger lock for one scan per id. `secure_delete` is on before the first write and
+  back to its old value after, since the pooled connection outlives the purge.
 
 ## Consequences
 

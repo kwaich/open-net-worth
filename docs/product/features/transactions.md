@@ -134,8 +134,9 @@ The drawer has two buttons, and they do different things:
   brings it back, and the same bank email or statement line isn't booked again by accident
   (Lucius says *"you already deleted this"*). Use it for ordinary clean-up.
 - **Delete permanently** erases it. The transaction, the contents of its **Activity** history,
-  every copy kept for undo, and receipts attached only to it are deleted. Its payee goes too
-  when nothing else uses it and you never set it up by hand. Only one line remains in its
+  every copy kept for undo, the copy of the email or bank record it came from, and receipts
+  attached only to it are deleted. Its payee goes too when nothing else uses it and you never
+  set it up by hand. Only one line remains in its
   history: *"Deleted permanently. Its details were erased."* There's no undo. The re-import guard
   still works, so the same email or statement line isn't booked again; it keeps only that
   item's reference, not the amount, date or description.
@@ -145,6 +146,8 @@ conversations with Lucius that mention it (delete those separately), or backups 
 erased it — they keep it until they expire, after 30 days by default (see
 [Backup and restore](../operations/backup-and-restore.md)). It's refused for a transaction that a
 trade, vest, dividend, asset or commitment payment still uses; undo that first, or use **Delete**.
+If your bank connection fetches that transaction again, the app stores the bank's copy again, but
+doesn't book it.
 A Starting Balance can't be deleted either way.
 
 ## Related pages

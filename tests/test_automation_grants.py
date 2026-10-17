@@ -193,3 +193,22 @@ def test_lucius_cannot_write_fetch_hosts():
     from backend.ai.tools.automations import _AI_UPDATABLE_FIELDS
 
     assert "fetch_hosts" not in _AI_UPDATABLE_FIELDS
+
+
+def test_always_on_a_provider_fetch_card_also_allows_only_that_website(run_pair):
+    """``tavily_fetch_page`` and the other per-provider fetch tools pass the same gate, so their
+    Always means the same thing."""
+    from backend.db.pending_plan_store import PendingPlanStore
+
+    automation, run = run_pair
+    PendingPlanStore().stage_pending(
+        "tu_t",
+        "tavily_fetch_page",
+        {"url": "https://shop.example.com/r"},
+        session_id=run["session_id"],
+    )
+    assert grant_automation_tool(
+        run["session_id"], "tavily_fetch_page", "always", tool_use_id="tu_t"
+    )
+    assert _fetch_hosts(automation["id"]) == ["shop.example.com"]
+    assert "tavily_fetch_page" not in _granted_tools(automation["id"])

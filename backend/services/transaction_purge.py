@@ -20,8 +20,9 @@ is the explicit other verb, for a transaction the owner wants GONE (ADR
 * every checkpoint image of the row (``write_log``) becomes "did not exist", so no Undo can
   bring it back; review-queue, dedup-decision, correction and merge-journal rows naming it are
   dropped;
-* its email snapshot goes when no other transaction holds that message; its payee goes when
-  nothing else names it and the owner never configured it.
+* its email snapshot and its bank or broker snapshot go when no other transaction holds that
+  reference; its payee goes when nothing else names it and the owner never configured it; the
+  checkpoint images of every row this removes become "did not exist" too.
 
 After commit: receipts linked only to it are deleted (their files too), receipts shared with
 another transaction are unlinked — ``receipts`` owns that write and its file-after-commit
@@ -33,6 +34,9 @@ already made, Lucius conversations that mention it. On SQLite the purge runs wit
 from __future__ import annotations
 
 import logging
+import re
+from contextlib import contextmanager
+from typing import Iterator
 
 from sqlalchemy import Connection, Table, cast, delete, select, update
 from sqlalchemy import Text as SAText
@@ -81,24 +85,45 @@ def _table(name: str) -> Table:
     return tables.metadata.tables[name]
 
 
-def _mentioning(conn: Connection, name: str, token: str, column: str = "payload") -> list:
-    """Rows of ``name`` whose JSON ``column`` contains ``token`` as a quoted value. Ids are
-    opaque unique tokens (``txn_<hex>``), so the quoted form cannot match a substring."""
+_QUOTED = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+
+def _naming(
+    conn: Connection, name: str, tokens: set[str], column: str = "payload"
+) -> list[tuple[dict, set[str]]]:
+    """Rows of ``name`` whose JSON ``column`` holds one of ``tokens`` as a quoted value, each
+    with the tokens it holds. ONE pass over the table whatever the number of tokens — an
+    account force-delete erases thousands of rows under the ledger lock. Ids are opaque unique
+    tokens (``txn_<hex>``), so a whole quoted value cannot match by accident."""
     table = _table(name)
-    if column not in table.c:
+    if not tokens or column not in table.c:
         return []
-    pattern = '%"' + token.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + '"%'
-    query = select(table).where(cast(table.c[column], SAText).like(pattern, escape="\\"))
-    return [dict(r._mapping) for r in conn.execute(query)]
+    found: list[tuple[dict, set[str]]] = []
+    for row in conn.execute(select(table, cast(table.c[column], SAText).label("_text"))):
+        hits = tokens.intersection(_QUOTED.findall(row._text or ""))
+        if hits:
+            found.append(({k: v for k, v in row._mapping.items() if k != "_text"}, hits))
+    return found
 
 
 def _blockers(conn: Connection, ids: list[str]) -> dict[str, list[str]]:
     found: dict[str, list[str]] = {}
-    for txn_id in ids:
-        hits = [name for name in _BLOCKING_TABLES if _mentioning(conn, name, txn_id)]
-        if hits:
-            found[txn_id] = hits
+    for name in _BLOCKING_TABLES:
+        for _row, hits in _naming(conn, name, set(ids)):
+            for txn_id in hits:
+                if name not in found.setdefault(txn_id, []):
+                    found[txn_id].append(name)
     return found
+
+
+def _refuse_if_blocked(conn: Connection, ids: list[str]) -> None:
+    blocked = _blockers(conn, ids)
+    if blocked:
+        detail = "; ".join(f"{t} is used by {', '.join(names)}" for t, names in blocked.items())
+        raise ConflictError(
+            "can't delete permanently while other records still use it — undo the trade, "
+            f"vest, dividend or payment first, or use an ordinary delete ({detail})"
+        )
 
 
 def _with_tombstones(conn: Connection, ids: list[str]) -> list[str]:
@@ -112,89 +137,153 @@ def _with_tombstones(conn: Connection, ids: list[str]) -> list[str]:
     return out
 
 
-def _forget_checkpoint_images(conn: Connection, ids: list[str]) -> int:
-    """Every checkpoint image of these rows becomes "did not exist": a restore's replay then
-    deletes the pk and never re-inserts it (``ai.checkpoint._restore._replay_write_log``)."""
+def tombstones_of(conn: Connection, ids: list[str]) -> list[dict]:
+    """The merge tombstones folded into ``ids`` that are not among them (another account's
+    copy of the same payment), refused like a purge while a fact still names one. For the
+    account force-delete, which must erase them with the rows they were folded into."""
+    from backend.services.ledger import transactions
+
+    extra = [t for t in _with_tombstones(conn, ids) if t not in set(ids)]
+    _refuse_if_blocked(conn, extra)
+    return [r for r in (transactions.find_by_id(t, conn=conn) for t in extra) if r is not None]
+
+
+def _forget_checkpoint_images(conn: Connection, ids: list[str], gone: dict[str, set[str]]) -> int:
+    """Every checkpoint image of an erased row becomes "did not exist": a restore's replay then
+    deletes the pk and never re-inserts it (``ai.checkpoint._restore._replay_write_log``).
+    ``gone`` maps each other table to the pks this erase removed from it (snapshots, payees,
+    journal and review rows), whose images would otherwise bring their copies back."""
     wl = _table("write_log")
     id_set, changed = set(ids), 0
-    for txn_id in ids:
-        for row in _mentioning(conn, "write_log", txn_id, column="before_payload"):
-            image = row["before_payload"] or {}
-            mine = (row["table_name"] == "transactions" and row["pk"] in id_set) or (
-                row["table_name"] in ("transaction_splits", "transaction_external_refs")
-                and image.get("txn_id") in id_set
-            )
-            # A payload-table image is the stored ROW: ``txn_id`` lives inside its ``payload``.
-            payload = {**(image.get("payload") or {})}
-            if row["table_name"] == "rejected_identities" and payload.get("txn_id") in id_set:
-                for key in _DISPLAY_FIELDS:
-                    payload.pop(key, None)
-                new_image = {**image, "payload": payload}
-            elif mine:
-                new_image = None
-            else:
-                continue
-            conn.execute(
+    for row, _hits in _naming(conn, "write_log", id_set, column="before_payload"):
+        image = row["before_payload"] or {}
+        mine = (row["table_name"] == "transactions" and row["pk"] in id_set) or (
+            row["table_name"] in ("transaction_splits", "transaction_external_refs")
+            and image.get("txn_id") in id_set
+        )
+        # A payload-table image is the stored ROW: ``txn_id`` lives inside its ``payload``.
+        payload = {**(image.get("payload") or {})}
+        if row["table_name"] == "rejected_identities" and payload.get("txn_id") in id_set:
+            for key in _DISPLAY_FIELDS:
+                payload.pop(key, None)
+            new_image = {**image, "payload": payload}
+        elif mine or row["pk"] in gone.get(row["table_name"], ()):
+            new_image = None
+        else:
+            continue
+        conn.execute(
+            update(wl)
+            .where(wl.c.checkpoint_id == row["checkpoint_id"], wl.c.seq == row["seq"])
+            .values(before_payload=new_image)
+        )
+        changed += 1
+    for name, pks in gone.items():
+        if pks:
+            changed += conn.execute(
                 update(wl)
-                .where(wl.c.checkpoint_id == row["checkpoint_id"], wl.c.seq == row["seq"])
-                .values(before_payload=new_image)
-            )
-            changed += 1
+                .where(wl.c.table_name == name, wl.c.pk.in_(sorted(pks)))
+                .values(before_payload=None)
+            ).rowcount
     return changed
 
 
 def _strip_rejection_details(conn: Connection, ids: list[str]) -> None:
     t = _table("rejected_identities")
-    for txn_id in ids:
-        for row in _mentioning(conn, "rejected_identities", txn_id):
-            payload = row["payload"] or {}
-            if payload.get("txn_id") != txn_id:
-                continue
-            clean = {k: v for k, v in payload.items() if k not in _DISPLAY_FIELDS}
-            conn.execute(update(t).where(t.c.id == row["id"]).values(payload=clean))
+    for row, _hits in _naming(conn, "rejected_identities", set(ids)):
+        payload = row["payload"] or {}
+        if payload.get("txn_id") not in set(ids):
+            continue
+        clean = {k: v for k, v in payload.items() if k not in _DISPLAY_FIELDS}
+        conn.execute(update(t).where(t.c.id == row["id"]).values(payload=clean))
 
 
-def _drop_dependents(conn: Connection, ids: list[str]) -> int:
+def _drop_dependents(conn: Connection, ids: list[str], gone: dict[str, set[str]]) -> int:
     dropped = 0
     for name in _DEPENDENT_TABLES:
         table = _table(name)
-        for txn_id in ids:
-            rows = _mentioning(conn, name, txn_id)
-            if rows:
-                conn.execute(delete(table).where(table.c.id.in_([r["id"] for r in rows])))
-                dropped += len(rows)
+        doomed = [row["id"] for row, _hits in _naming(conn, name, set(ids))]
+        if doomed:
+            conn.execute(delete(table).where(table.c.id.in_(doomed)))
+            gone.setdefault(name, set()).update(doomed)
+            dropped += len(doomed)
     return dropped
 
 
-def _drop_merge_journal(conn: Connection, ids: list[str]) -> int:
+def _drop_merge_journal(conn: Connection, ids: list[str], gone: dict[str, set[str]]) -> int:
     """A purged row can never be un-merged, and the journal holds its before-image to allow
     exactly that — so either side's entry goes."""
     t = _table("merge_journal")
-    gone = delete(t).where(t.c.absorbed_id.in_(ids) | t.c.canonical_id.in_(ids))
-    return conn.execute(gone).rowcount
+    side = t.c.absorbed_id.in_(ids) | t.c.canonical_id.in_(ids)
+    doomed = [r.absorbed_id for r in conn.execute(select(t.c.absorbed_id).where(side))]
+    if doomed:
+        conn.execute(delete(t).where(t.c.absorbed_id.in_(doomed)))
+        gone.setdefault("merge_journal", set()).update(doomed)
+    return len(doomed)
 
 
-def _email_refs(rows: list[dict]) -> set[str]:
+def _refs(rows: list[dict]) -> set[tuple[str, str]]:
     return {
-        str(ref.get("ref"))
+        (str(ref.get("source")), str(ref.get("ref")))
         for row in rows
         for ref in row.get("external_refs") or []
-        if isinstance(ref, dict) and ref.get("source") == "email" and ref.get("ref")
+        if isinstance(ref, dict) and ref.get("source") and ref.get("ref")
     }
 
 
-def _drop_email_snapshots(conn: Connection, rows: list[dict]) -> int:
-    """A snapshot of an email no remaining transaction (live or deleted) was booked from."""
+def _still_held(conn: Connection, source: str, ref: str) -> bool:
     refs = _table("transaction_external_refs")
+    held = select(refs.c.ref_id).where(refs.c.source == source, refs.c.ref == ref)
+    return conn.execute(held).first() is not None
+
+
+def _unbracketed(raw: str) -> str:
+    s = (raw or "").strip()
+    return s[1:-1] if len(s) >= 2 and s[0] == "<" and s[-1] == ">" else s
+
+
+def _drop_email_snapshots(conn: Connection, rows: list[dict], gone: dict[str, set[str]]) -> int:
+    """A snapshot of an email no remaining transaction (live or deleted) was booked from —
+    keyed by the internal id, or, stored before that scheme, by the raw Message-ID
+    (``email_snapshots._find_snapshot``)."""
+    from backend.core.email_ids import internal_email_id
+
     snapshots = _table("email_snapshots")
-    dropped = 0
-    for message_id in _email_refs(rows):
-        still_held = conn.execute(
-            select(refs.c.ref_id).where(refs.c.source == "email", refs.c.ref == message_id)
-        ).first()
-        if still_held is None:
-            dropped += conn.execute(delete(snapshots).where(snapshots.c.id == message_id)).rowcount
-    return dropped
+    orphaned = {ref for source, ref in _refs(rows) if source == "email"}
+    orphaned = {ref for ref in orphaned if not _still_held(conn, "email", ref)}
+    if not orphaned:
+        return 0
+    doomed = set(orphaned) | {_unbracketed(ref) for ref in orphaned}
+    for row in conn.execute(select(snapshots.c.id, snapshots.c.payload)):
+        payload = row.payload or {}
+        raw = payload.get("raw_message_id") or payload.get("message_id") or ""
+        if raw and internal_email_id(raw) in orphaned:
+            doomed.add(row.id)
+    hit = [r.id for r in conn.execute(select(snapshots.c.id).where(snapshots.c.id.in_(doomed)))]
+    if hit:
+        conn.execute(delete(snapshots).where(snapshots.c.id.in_(hit)))
+        gone.setdefault("email_snapshots", set()).update(hit)
+    return len(hit)
+
+
+def _drop_connector_snapshots(conn: Connection, rows: list[dict], gone: dict[str, set[str]]) -> int:
+    """The bank or broker's raw record behind a booked row, keyed ``source:ref``
+    (``connector_snapshot_store.snapshot_key``), when no remaining transaction holds the ref.
+    A later fetch can stash it again, unbooked: that copy comes from the provider, not us."""
+    from backend.db.connector_snapshot_store import snapshot_key
+
+    snapshots = _table("connector_snapshots")
+    keys = [
+        snapshot_key(source, ref)
+        for source, ref in _refs(rows)
+        if source != "email" and not _still_held(conn, source, ref)
+    ]
+    if not keys:
+        return 0
+    hit = [r.id for r in conn.execute(select(snapshots.c.id).where(snapshots.c.id.in_(keys)))]
+    if hit:
+        conn.execute(delete(snapshots).where(snapshots.c.id.in_(hit)))
+        gone.setdefault("connector_snapshots", set()).update(hit)
+    return len(hit)
 
 
 def _configured(payee: dict) -> bool:
@@ -211,25 +300,39 @@ def _configured(payee: dict) -> bool:
     )
 
 
-def _drop_orphan_payees(conn: Connection, payee_ids: set[str]) -> int:
+def _drop_orphan_payees(conn: Connection, payee_ids: set[str], gone: dict[str, set[str]]) -> int:
     payees, txns = _table("payees"), _table("transactions")
-    dropped = 0
+    candidates: set[str] = set()
     for payee_id in payee_ids:
         row = conn.execute(select(payees).where(payees.c.id == payee_id)).first()
         if row is None or _configured(row.payload or {}):
             continue
         if conn.execute(select(txns.c.id).where(txns.c.payee_id == payee_id)).first():
             continue
-        if any(_mentioning(conn, name, payee_id) for name in _PAYEE_REFERRERS):
-            continue
-        conn.execute(delete(payees).where(payees.c.id == payee_id))
-        dropped += 1
-    return dropped
+        candidates.add(payee_id)
+    for name in _PAYEE_REFERRERS:
+        for _row, hits in _naming(conn, name, candidates):
+            candidates -= hits
+    if candidates:
+        conn.execute(delete(payees).where(payees.c.id.in_(sorted(candidates))))
+        gone.setdefault("payees", set()).update(candidates)
+    return len(candidates)
 
 
-def _secure_delete(conn: Connection) -> None:
-    if conn.dialect.name == "sqlite":
-        conn.exec_driver_sql("PRAGMA secure_delete = ON")
+@contextmanager
+def secure_delete(conn: Connection) -> Iterator[None]:
+    """SQLite zero-fills the cells the enclosed deletes free. On BEFORE the first write — the
+    soft delete and the audit rewrite free cells too — and back to what it was after, since the
+    pooled connection outlives this purge."""
+    if conn.dialect.name != "sqlite":
+        yield
+        return
+    before = conn.exec_driver_sql("PRAGMA secure_delete").scalar()
+    conn.exec_driver_sql("PRAGMA secure_delete = ON")
+    try:
+        yield
+    finally:
+        conn.exec_driver_sql(f"PRAGMA secure_delete = {int(before or 0)}")
 
 
 def _purge_rows(conn: Connection, ids: list[str]) -> dict:
@@ -240,19 +343,12 @@ def _purge_rows(conn: Connection, ids: list[str]) -> dict:
     missing = [txn_id for txn_id, row in rows.items() if row is None]
     if missing:
         raise ValidationError(f"Transaction not found: {', '.join(missing)}")
-    blocked = _blockers(conn, ids)
-    if blocked:
-        detail = "; ".join(f"{t} is used by {', '.join(names)}" for t, names in blocked.items())
-        raise ConflictError(
-            "can't delete permanently while other records still use it — undo the trade, "
-            f"vest, dividend or payment first, or use an ordinary delete ({detail})"
-        )
+    every = _with_tombstones(conn, ids)
+    _refuse_if_blocked(conn, every)
     live = [txn_id for txn_id, row in rows.items() if not row.get("deleted")]
     if live:
         ledger.bulk_delete_transactions(live, conn=conn)
-    every = _with_tombstones(conn, ids)
     doomed = [r for r in (transactions.find_by_id(t, conn=conn) for t in every) if r is not None]
-    _secure_delete(conn)
     for row in doomed:
         transactions.delete(row["id"], conn=conn)
     from backend.services import audit as audit_service
@@ -280,12 +376,18 @@ def erase_traces(
     if not audit_done:
         TransactionAuditStore().redact_for_txns(txn_ids, conn=conn)
     _strip_rejection_details(conn, txn_ids)
-    return {
-        "checkpoint_images": _forget_checkpoint_images(conn, txn_ids),
-        "dependents": _drop_dependents(conn, txn_ids) + _drop_merge_journal(conn, txn_ids),
-        "email_snapshots": _drop_email_snapshots(conn, rows),
-        "payees": _drop_orphan_payees(conn, {r["payee_id"] for r in rows if r.get("payee_id")}),
+    gone: dict[str, set[str]] = {}
+    result = {
+        "dependents": _drop_dependents(conn, txn_ids, gone)
+        + _drop_merge_journal(conn, txn_ids, gone),
+        "email_snapshots": _drop_email_snapshots(conn, rows, gone),
+        "connector_snapshots": _drop_connector_snapshots(conn, rows, gone),
+        "payees": _drop_orphan_payees(
+            conn, {r["payee_id"] for r in rows if r.get("payee_id")}, gone
+        ),
     }
+    result["checkpoint_images"] = _forget_checkpoint_images(conn, txn_ids, gone)
+    return result
 
 
 # The tables ``erase_traces`` writes, for a caller's ``locked_unit_of_work``.
@@ -295,6 +397,7 @@ TRACE_TABLE_NAMES = (
     "write_log",
     "payees",
     "email_snapshots",
+    "connector_snapshots",
     "merge_journal",
     *_DEPENDENT_TABLES,
 )
@@ -356,7 +459,7 @@ def purge_transactions(ids: list[str]) -> dict:
     ids = [str(i).strip() for i in ids or [] if str(i).strip()]
     if not ids:
         raise ValidationError("At least one transaction id is required")
-    with locked_unit_of_work(*_locked_tables()) as conn:
+    with locked_unit_of_work(*_locked_tables()) as conn, secure_delete(conn):
         result = _purge_rows(conn, list(dict.fromkeys(ids)))
     result["receipts_not_cleaned"] = after_commit(result["purged"])
     logger.info(

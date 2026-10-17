@@ -269,10 +269,10 @@ One line each — full reasoning and the scar behind each is in
   67× — ADR `2026-10-05-codex-turns-stay-open-across-tool-rounds`).
 - NEVER add a caller-chosen `fields` param to a money-bearing read (defeats the rate lock).
   `run_sql_query` is the one deliberately-scoped exception.
-- `fetch_page` runs unasked only for a URL the user typed or a web search returned
-  (`ai/tools/_fetch_gate`); anything else is a card, or a refusal where no card can show. An
-  Automation widens it only by its owner-set `fetch_hosts`, which Lucius can never write (ADR
-  `2026-10-17-a-fetch-runs-unasked-only-for-a-url-the-user-or-a-search-supplied`).
+- `fetch_page` (and every `<provider>_fetch_page`) runs unasked only for a URL the user typed
+  or a web search returned (`ai/tools/_fetch_gate`); anything else is a card, or a refusal
+  where no card can show. An Automation widens it only by its owner-set `fetch_hosts`, which
+  Lucius can never write (ADR `2026-10-17-a-fetch-runs-unasked-only-for-a-url-the-user-or-a-search-supplied`).
 - First run configures the machine; Lucius onboards the book (two separate predicates).
 - Lucius reads the DB directly, read-only, via `run_sql_query` — the boundary is the connection
   (an allowlist authorizer), never a SQL parser. Denied = `SECRET_TABLES ∪ {sessions}`.

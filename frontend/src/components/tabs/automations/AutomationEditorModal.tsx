@@ -55,7 +55,8 @@ function initialState(
     model: automation?.model ?? seed?.model ?? '',
     effort: automation?.effort ?? seed?.effort ?? 'medium',
     permission_mode: automation?.permission_mode ?? seed?.permission_mode ?? 'manual',
-    fetch_hosts: (automation?.fetch_hosts ?? seed?.fetch_hosts ?? []).join(', '),
+    // The owner's list only: never pre-filled from a draft Lucius proposed.
+    fetch_hosts: (automation?.fetch_hosts ?? []).join(', '),
   }
 }
 

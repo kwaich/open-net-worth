@@ -293,3 +293,128 @@ def test_a_checkpoint_copy_of_the_reimport_record_loses_its_details_too():
         ).scalar()
     assert kept["payload"]["ref"] == "msg-zz-3"
     assert not {"date", "description", "amount", "currency"} & set(kept["payload"])
+
+
+def _image(checkpoint_id: str):
+    wl = tables.write_log
+    with get_engine().connect() as conn:
+        return conn.execute(
+            select(wl.c.before_payload).where(wl.c.checkpoint_id == checkpoint_id)
+        ).scalar()
+
+
+def _plant_image(checkpoint_id: str, table_name: str, pk: str, image: dict) -> None:
+    with get_engine().begin() as conn:
+        conn.execute(
+            tables.write_log.insert().values(
+                checkpoint_id=checkpoint_id,
+                seq=0,
+                table_name=table_name,
+                pk=pk,
+                before_payload=image,
+            )
+        )
+
+
+def test_no_checkpoint_can_bring_back_the_email_or_the_payee_it_erased():
+    """An Undo of the turn that booked it replays every image that turn took — the email
+    snapshot it promoted and the payee it created included."""
+    from backend.db.email_snapshot_store import EmailSnapshotStore
+
+    EmailSnapshotStore().stash({"message_id": "msg-zz-4", "body_text": MARK, "referenced": True})
+    row = _txn(refs=[{"source": "email", "ref": "msg-zz-4"}])
+    _plant_image("cp_em", "email_snapshots", "msg-zz-4", {"id": "msg-zz-4", "body": MARK})
+    _plant_image("cp_py", "payees", row["payee_id"], {"id": row["payee_id"], "name": MARK})
+    P.purge_transactions([row["id"]])
+    assert _image("cp_em") is None and _image("cp_py") is None
+    assert _where_is(MARK) == []
+
+
+def test_its_bank_snapshot_goes_and_another_rows_stays():
+    from backend.db.connector_snapshot_store import ConnectorSnapshotStore
+
+    snapshots = ConnectorSnapshotStore()
+    snapshots.insert({"key": "simplefin:zz-1", "raw": {"memo": MARK}, "referenced": True})
+    snapshots.insert({"key": "simplefin:zz-2", "raw": {"memo": "kept"}, "referenced": True})
+    gone = _txn(refs=[{"source": "simplefin", "ref": "zz-1"}])
+    _txn(memo="other", payee="Other", refs=[{"source": "simplefin", "ref": "zz-2"}])
+    P.purge_transactions([gone["id"]])
+    assert snapshots.get("simplefin", "zz-1") is None
+    assert snapshots.get("simplefin", "zz-2") is not None
+    assert _where_is(MARK) == []
+
+
+def test_an_email_snapshot_stored_under_its_raw_message_id_goes_too():
+    """Before the internal-id scheme a snapshot was keyed by the raw Message-ID; the booked ref
+    is its internal id (``email_snapshots._find_snapshot``)."""
+    from backend.core.email_ids import internal_email_id
+
+    raw = "<legacy-zz@example.com>"
+    PayloadTableStore(tables.email_snapshots).insert(
+        {"id": "legacy-zz@example.com", "raw_message_id": raw, "body_text": MARK}
+    )
+    row = _txn(refs=[{"source": "email", "ref": internal_email_id(raw)}])
+    P.purge_transactions([row["id"]])
+    assert _where_is(MARK) == []
+
+
+def test_a_merge_tombstone_a_fact_names_refuses_the_purge():
+    keep = _txn(memo=f"{MARK} a", payee=f"{MARK} Clinic")
+    dup = _txn(memo=f"{MARK} b", payee=f"{MARK} Clinic")
+    L.merge_transactions(keep["id"], dup["id"], override=True)
+    BookPayloadTableStore(tables.lots).insert({"id": "lot_tomb", "txn_id": dup["id"]})
+    with pytest.raises(ConflictError, match="lots"):
+        P.purge_transactions([keep["id"]])
+    assert L.transactions.find_by_id(keep["id"]) is not None
+
+
+def test_force_deleting_an_account_erases_another_accounts_tombstone_folded_into_it():
+    L.accounts.insert({"id": "acc_old", "name": "Old", "kind": "asset", "currency": "SGD"})
+    keep = L.create_transaction(
+        {
+            "kind": "expense",
+            "date": "2026-10-01",
+            "description": f"{MARK} Clinic",
+            "memo": f"{MARK} a",
+            "from_account_id": "acc_old",
+            "from_amount": 42.42,
+            "source": "manual",
+        }
+    )
+    dup = _txn(memo=f"{MARK} b")
+    L.merge_transactions(keep["id"], dup["id"], override=True)
+    assert L.delete_account("acc_old", force=True)
+    assert L.transactions.find_by_id(dup["id"]) is None
+    assert _where_is(MARK) == []
+
+
+def test_secure_delete_is_on_for_the_purge_and_restored_after():
+    with get_engine().connect() as conn:
+        if conn.dialect.name != "sqlite":
+            pytest.skip("SQLite pragma")
+        before = conn.exec_driver_sql("PRAGMA secure_delete").scalar()
+        with P.secure_delete(conn):
+            assert conn.exec_driver_sql("PRAGMA secure_delete").scalar() == 1
+        assert conn.exec_driver_sql("PRAGMA secure_delete").scalar() == before
+
+
+def test_each_table_is_read_once_whatever_the_number_of_rows():
+    """An account force-delete erases thousands of rows under the ledger lock: the scans per
+    table stay the same however many transactions go, never one per transaction id."""
+    import unittest.mock as mock
+
+    real = P._naming
+
+    def scans(count: int) -> dict[str, int]:
+        rows = [_txn(memo=f"{MARK} {count} {i}", payee=f"{MARK} Clinic") for i in range(count)]
+        calls: dict[str, int] = {}
+
+        def counting(conn, name, tokens, column="payload"):
+            calls[name] = calls.get(name, 0) + 1
+            return real(conn, name, tokens, column)
+
+        with mock.patch.object(P, "_naming", counting):
+            P.purge_transactions([r["id"] for r in rows])
+        return calls
+
+    assert scans(1) == scans(12)

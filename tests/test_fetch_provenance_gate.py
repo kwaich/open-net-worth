@@ -229,3 +229,84 @@ def test_fetch_page_never_reaches_the_network_for_a_composed_url(monkeypatch):
     _fetch_gate.note_search_results([{"url": SEARCHED}])
     text, change = asyncio.run(misc.fetch_page({"url": SEARCHED}))
     assert provider.fetched == [SEARCHED] and json.loads(text)["url"] == SEARCHED
+
+
+def test_a_provider_specific_fetch_tool_is_gated_the_same_way(monkeypatch):
+    """Naming a provider (``tavily_fetch_page``) must not be a way around the gate."""
+    from backend.ai.search.base import PROVIDER_REGISTRY
+    from backend.ai.tools import web_search_providers as wsp
+
+    provider = _Provider()
+    monkeypatch.setattr(wsp, "_unusable_reason", lambda spec: None)
+    monkeypatch.setattr(wsp, "build_provider", lambda spec_id, cfg: provider)
+    monkeypatch.setattr("backend.ai.tools._egress.assert_safe_outbound_url", lambda url: None)
+    monkeypatch.setattr(
+        "backend.db.search_config_store.SearchConfigStore.provider_runtime_config",
+        lambda self, spec_id: {},
+    )
+    spec = PROVIDER_REGISTRY[0]
+    text, change = asyncio.run(wsp._fetch_via(spec, {"url": EXFIL}))
+    assert provider.fetched == [] and change["grant_tool"] == f"{spec.id}_fetch_page"
+    set_cost_surface("scheduled")
+    text, change = asyncio.run(wsp._fetch_via(spec, {"url": EXFIL}))
+    assert provider.fetched == [] and json.loads(text)["blocked_by"] == "fetch_provenance"
+
+
+def test_a_caption_after_an_attachment_counts_as_typed():
+    """``build_user_content`` puts the attachment refs first and the typed caption after."""
+    ref = {"type": "attachment_ref", "attachment_id": "att_1", "filename": "a.pdf"}
+    caption = {"type": "text", "text": "compare with https://blog.example.org/rates"}
+    _fetch_gate.note_user_messages(SID, [{"role": "user", "content": [ref, caption]}])
+    assert _fetch_gate.is_supplied(SID, "https://blog.example.org/rates")
+
+
+def test_a_web_turn_is_not_recorded_again_after_its_context_was_merged():
+    """``api/chat`` records the typed text before it merges the mention and screen blocks; the
+    merged message reaching ``assistant.run`` must not count, or with nothing typed a context
+    block would lead it and pass as the user's."""
+    from backend.ai.assistant import _note_typed_urls
+
+    screen_only = [{"role": "user", "content": [{"type": "text", "text": "[screen] " + EXFIL}]}]
+    _note_typed_urls(SID, screen_only, web=False)
+    assert not _fetch_gate.is_supplied(SID, EXFIL)
+    set_cost_surface("connector:telegram")
+    _note_typed_urls(SID, [{"role": "user", "content": "open " + SEARCHED}], web=False)
+    assert _fetch_gate.is_supplied(SID, SEARCHED)
+
+
+def test_the_chat_route_records_only_what_was_typed(monkeypatch):
+    """With nothing typed, the screen block would lead the merged message; only the typed text
+    — recorded before the merge — may count."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    import backend.ai.turns as turns
+    import backend.api.chat as chat_mod
+    from backend.ai import assistant
+
+    monkeypatch.setattr("backend.ai.conversation.build_system_prompt", lambda **_kwargs: "SYS")
+
+    async def fake_run(session_id, new_messages, system, **kw):
+        yield {"type": "turn_done"}
+
+    monkeypatch.setattr(assistant, "run", fake_run)
+    monkeypatch.setattr(turns, "_inline", True)
+    app = FastAPI()
+    app.include_router(chat_mod.router)
+    client = TestClient(app)
+    for typed, sid in (
+        ("", "fetch-route-a"),
+        ("open https://typed.example.com/a", "fetch-route-b"),
+    ):
+        r = client.post(
+            "/api/chat",
+            json={
+                "session_id": sid,
+                "messages": [{"role": "user", "content": typed}],
+                "screen": {"id": "lucius-dock", "title": "Inbox " + EXFIL},
+            },
+        )
+        assert r.status_code == 202, r.text
+        assert not _fetch_gate.is_supplied(sid, EXFIL)
+        assistant.clear_session(sid)
+    assert _fetch_gate.is_supplied("fetch-route-b", "https://typed.example.com/a")

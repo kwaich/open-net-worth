@@ -24,16 +24,19 @@ be the fix.
 
 ## Decision
 
-- **Provenance, not shape.** `fetch_page` runs unasked when the URL's `core.urls.fetch_key` (host
+- **Provenance, not shape.** `fetch_page`, and every per-provider `<id>_fetch_page`
+  (`ai/tools/web_search_providers`), runs unasked when the URL's `core.urls.fetch_key` (host
   and port lowercased, scheme and fragment dropped, path and query byte-for-byte) is one the user
   typed or a web-search tool returned, in this conversation and process lifetime
   (`ai/tools/_fetch_gate.py`). Those URLs existed before the model read anything, so they cannot
   carry what it read. Appending `&d=…` makes a new key. `canonical_url` is not used, because it
   drops tracking parameters, and `?utm_x=<data>` is data on the wire.
-- **What counts as typed.** `assistant.run` records the leading text of each user message: the
-  string body, or the first part when it is text. Screen context, mentions, cached briefs and
-  attachment text ride the same message as trailing parts (`api/chat._merge_mention_context`
-  appends), and they are third-party text. Automation runs and unattended turns record nothing:
+- **What counts as typed.** Web chat records the text the person typed, in `api/chat`, BEFORE
+  the mention, cached-brief and screen blocks are merged onto the message: those are
+  third-party text, and with nothing typed one would lead the merged message. `assistant.run`
+  records only a chat connector's message and queued messages, which carry no merged context.
+  Within a message, the first text part after any attachment refs counts (the caption follows
+  the refs). Automation runs and unattended turns record nothing:
   their "user" message carries a trigger payload such as an email body.
 - **What does not count.** A URL that was only *seen* in a fetched page, an email or a news item.
   A planted email with seventy fixed links ("open link N for digit N") leaks a number through the
@@ -69,8 +72,12 @@ be the fix.
 - The email-scan Automation needs its receipt senders' hosts in **Websites it may open without
   asking**, or one **Always allow** tap per sender. Until then, its runs wait on a card for each
   receipt link.
-- Per-provider fetch tools (`<id>_fetch_page`) are connector-owned and already default to
-  **Needs approval**, so they are unchanged.
+- Per-provider fetch tools (`<id>_fetch_page`) pass the same gate. They are connector-owned and
+  default to **Needs approval**, but an **Always allow** on one, or one in an Automation's grants,
+  would otherwise have been a way around it. **Always allow** on one of their cards in a run adds
+  the website too.
+- The Automation editor never pre-fills `fetch_hosts` from a draft Lucius proposes
+  (`automations.review_draft`): the list starts from the saved Automation only.
 - Related, same day: AI HTML artifacts render inside a shell whose `frame-src 'none'` stops the
   artifact navigating its own frame to a URL carrying data (`services/artifact_frame.frame_shell`).
   CSP cannot block self-navigation, and the app page's `frame-src` must allow `https:` for the

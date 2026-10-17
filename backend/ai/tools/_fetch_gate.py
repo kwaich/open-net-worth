@@ -80,23 +80,26 @@ def urls_in_text(text: str) -> list[str]:
 
 
 def _typed_text(message: object) -> str:
-    """What the person typed: a string body, or the FIRST part when it is text. Screen
-    context, mentions, cached briefs and attachment text ride the same message as TRAILING
-    parts (``api/chat._merge_mention_context`` appends, so typed words always lead) — that is
-    third-party text, and its links must not pass as the user's."""
+    """What the person typed: a string body, or the first text part after any attachment refs
+    (``ai/attachments.build_user_content`` puts the caption after them). Callers pass messages
+    BEFORE any context block is merged on (``api/chat`` records the typed text itself); a
+    later text part is never read, so a context block that does ride along cannot count."""
     content = message.get("content") if isinstance(message, dict) else None
     if isinstance(content, str):
         return content
-    if isinstance(content, list) and content:
-        first = content[0]
-        if isinstance(first, dict) and first.get("type") == "text":
-            return str(first.get("text") or "")
+    for part in content if isinstance(content, list) else []:
+        if isinstance(part, dict) and part.get("type") == "attachment_ref":
+            continue
+        if isinstance(part, dict) and part.get("type") == "text":
+            return str(part.get("text") or "")
+        return ""
     return ""
 
 
 def note_user_messages(session_id: Optional[str], messages: Iterable[dict]) -> None:
     """Remember the URLs in the user's own turn. The caller decides the turn IS the user's:
-    ``assistant._note_typed_urls`` records only web chat and chat-connector turns, never an
+    ``api/chat`` records web chat (from the typed text, before context is merged) and
+    ``assistant._note_typed_urls`` chat connectors and queued messages, never an
     Automation run, a capture or a scheduled turn, whose "user" message carries a prompt or a
     trigger payload (an email body) rather than anything a person typed."""
     urls: list[str] = []
@@ -123,7 +126,7 @@ def is_supplied(session_id: Optional[str], url: str) -> bool:
         return bool(bucket) and key in bucket
 
 
-def _standing_allow(url: str) -> bool:
+def _standing_allow(url: str, tool: str) -> bool:
     """A decision the owner already made that covers this call — see the module docstring."""
     from backend.ai.tools import _confirm_gate as gate
     from backend.core.automation_runner import get_automation_approval
@@ -132,11 +135,11 @@ def _standing_allow(url: str) -> bool:
     automation = get_automation_approval()
     if automation is not None:
         return (
-            TOOL in automation.always_allowed_tools
+            tool in automation.always_allowed_tools
             or automation.mode == "skip"
             or host_allowed(url, automation.fetch_hosts)
         )
-    stored = gate._stored_level(gate._permission_owner(TOOL), TOOL)
+    stored = gate._stored_level(gate._permission_owner(tool), tool)
     if stored == "always_allow":
         return True
     conversation = get_conversation_approval()
@@ -187,20 +190,20 @@ def refusal(url: str) -> tuple[str, None]:
     )
 
 
-def check(url: str) -> Optional[tuple[Optional[str], Optional[dict]]]:
-    """``None`` when the fetch may run; otherwise what ``fetch_page`` returns instead — a staged
-    approval card (the PAUSE sentinel) or a refusal."""
+def check(url: str, tool: str = TOOL) -> Optional[tuple[Optional[str], Optional[dict]]]:
+    """``None`` when the fetch may run; otherwise what the fetch tool ``tool`` returns instead —
+    a staged approval card (the PAUSE sentinel) or a refusal."""
     from backend.ai.tools import registry
     from backend.core.chat_session import get_session_id
 
     if registry.is_redeeming_approval():
         return None
-    if is_supplied(get_session_id(), url) or _standing_allow(url):
+    if is_supplied(get_session_id(), url) or _standing_allow(url, tool):
         return None
     if not _can_show_card():
-        logger.warning("fetch_page refused (no provenance, no card surface): %s", fetch_key(url))
+        logger.warning("%s refused (no provenance, no card surface): %s", tool, fetch_key(url))
         return refusal(url)
     from backend.ai.tools._confirm_gate import stage_generic
 
     args = registry.active_call_input() or {"url": url}
-    return stage_generic(TOOL, args, reason=_reason(url))
+    return stage_generic(tool, args, reason=_reason(url))

@@ -423,12 +423,16 @@ def _merge_steps(existing: list[dict], current: list[dict]) -> list[dict]:
     return result
 
 
-# ``ai.tools._fetch_gate.TOOL`` — named here because ``services`` cannot import ``ai``.
+# ``fetch_page`` and every ``<provider>_fetch_page`` (``ai/tools/_fetch_gate``) — named here because ``services`` cannot import ``ai``.
 _FETCH_TOOL = "fetch_page"
 
 
+def _is_fetch_tool(name: str) -> bool:
+    return name == _FETCH_TOOL or name.endswith("_" + _FETCH_TOOL)
+
+
 def _allow_pending_fetch_host(
-    automation: dict, session_id: str, tool_use_id: Optional[str]
+    automation: dict, session_id: str, tool: str, tool_use_id: Optional[str]
 ) -> bool:
     """*Always* on a fetch card means "always THIS website", never "every website": the card
     is still awaiting when the grant lands (the client saves the grant before it confirms), so
@@ -442,7 +446,7 @@ def _allow_pending_fetch_host(
         entry
         for entry in PendingPlanStore().list_awaiting()
         if entry.get("session_id") == session_id
-        and entry.get("tool") == _FETCH_TOOL
+        and entry.get("tool") == tool
         and (tool_use_id is None or entry.get("tool_use_id") == tool_use_id)
     ]
     if len(cards) != 1:
@@ -469,15 +473,15 @@ def grant_automation_tool(
     ``always`` appends to this Automation's standing ``always_allowed`` list, so the tool stops
     raising a card for it. Keeping the grant on the Automation rather than in the global
     table is what stops an Automation inheriting a permission granted in an unrelated chat.
-    ``fetch_page`` is the one exception to the whole-tool grant: see
+    A fetch tool (``fetch_page``, ``<provider>_fetch_page``) is the one exception to the whole-tool grant: see
     ``_allow_pending_fetch_host``.
     """
     owned = automation_run_for_session(session_id)
     if owned is None:
         return False
     automation, _run = owned
-    if scope == "always" and tool == _FETCH_TOOL:
-        if _allow_pending_fetch_host(automation, session_id, tool_use_id):
+    if scope == "always" and _is_fetch_tool(tool):
+        if _allow_pending_fetch_host(automation, session_id, tool, tool_use_id):
             return True
     if scope == "always":
         always_allowed = [

@@ -3604,17 +3604,18 @@ def _resolve_style(new_messages: list) -> str:
     return SMALLTALK_STYLE if is_smalltalk_turn(new_messages) else ""
 
 
-def _note_typed_urls(session_id: str, messages: list[dict]) -> None:
+def _note_typed_urls(session_id: str, messages: list[dict], *, web: bool = True) -> None:
     """Links a person typed may be fetched without a card (``ai/tools/_fetch_gate``). Only on a
     surface where a person types — web chat, a chat connector — never an Automation run, a
     capture or a scheduled headless turn, whose "user" message is a prompt or trigger payload.
-    The COST surface, not ``surface``: the headless runner leaves ``surface`` at its default."""
+    The COST surface, not ``surface``: the headless runner leaves ``surface`` at its default.
+    ``web=False`` for a web turn's opening messages: ``api/chat`` recorded their typed text
+    before it merged the mention and screen blocks onto them."""
     from backend.core.automation_runner import get_automation_approval
     from backend.core.cost_context import get_cost_surface
 
-    typed_here = (get_cost_surface() or "") == "web" or (get_cost_surface() or "").startswith(
-        "connector"
-    )
+    cost_surface = get_cost_surface() or ""
+    typed_here = (web and cost_surface == "web") or cost_surface.startswith("connector")
     if messages and typed_here and get_automation_approval() is None:
         from backend.ai.tools import _fetch_gate
 
@@ -3689,7 +3690,7 @@ async def run(
     reached.
     """
     turn_id = turn_id or f"turn_{uuid.uuid4().hex[:12]}"
-    _note_typed_urls(session_id, new_messages)
+    _note_typed_urls(session_id, new_messages, web=False)
     _note_typed_urls(session_id, [{"content": q.text} for q in recovered_injections])
     async with _get_session_lock(session_id):
         gen = _run_turn(
