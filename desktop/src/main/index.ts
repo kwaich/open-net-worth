@@ -9,7 +9,8 @@ import { chooseImportFiles, saveExport } from './dialogs';
 import { readSelectedFiles, supportedFile } from './files';
 import { FolderWatcher } from './folders';
 import { NativeNotifications } from './notifications';
-import { Preferences, settingsPatch } from './preferences';
+import { Preferences, settingsPatch, type SettingsPatch } from './preferences';
+import { setKeepAwake } from './keep-awake';
 import { bundledRuntime, type RuntimeConfig } from './runtime';
 import { externalUrl } from './security';
 import { DesktopWindow } from './window';
@@ -209,6 +210,7 @@ async function boot(): Promise<void> {
   preferences = new Preferences(join(profile, 'desktop-settings.json'));
   // Flat preferences belong to the old app-data book, including its folder grants.
   await preferences.load(explicitQaRoot ? await realpath(resolve(explicitQaRoot)) : previousDefault);
+  setKeepAwake(preferences.current.keepAwake);
   loginLaunch = preferences.current.launchAtLogin && (process.platform === 'darwin' ? app.getLoginItemSettings().wasOpenedAtLogin : process.argv.includes('--onw-login'));
   let root = initialBookRoot(explicitQaRoot, preferences.current.selectedBookFolder, fallback);
   suggestedRoot = fallback;
@@ -469,9 +471,9 @@ async function forwardFiles(): Promise<void> {
 
 async function currentSettings(): Promise<DesktopSettings> {
   if (!preferences || !folders) throw new Error('The desktop is unavailable.');
-  const { background, launchAtLogin, notifications } = preferences.current;
+  const { background, launchAtLogin, notifications, keepAwake } = preferences.current;
   const browserUrl = !starting && !quitting && backend?.origin ? `${backend.origin}/` : null;
-  return { bookFolder: backend!.bookRoot, browserUrl, background, launchAtLogin, notifications, watchedFolders: await folders.list() };
+  return { bookFolder: backend!.bookRoot, browserUrl, background, launchAtLogin, notifications, keepAwake, watchedFolders: await folders.list() };
 }
 
 async function openBrowser(): Promise<void> {
@@ -617,7 +619,7 @@ function registerIpc(): void {
 
 function showMain(): void { loginLaunch = false; main?.show(); void activity?.offer(); }
 
-async function saveDesktopSettings(patch: Partial<Pick<DesktopSettings, 'background' | 'launchAtLogin' | 'notifications'>>): Promise<void> {
+async function saveDesktopSettings(patch: SettingsPatch): Promise<void> {
   const updateLogin = patch.launchAtLogin !== undefined && patch.launchAtLogin !== preferences!.current.launchAtLogin;
   if (updateLogin && qaMode) throw new Error('Launch at login is unavailable in QA.');
   const options = loginItemOptions(process.platform, process.execPath, existsSync);
@@ -635,6 +637,7 @@ async function saveDesktopSettings(patch: Partial<Pick<DesktopSettings, 'backgro
     if (updateLogin) await setLogin(previousLogin);
     throw error;
   }
+  setKeepAwake(preferences!.current.keepAwake);
   installTray();
 }
 

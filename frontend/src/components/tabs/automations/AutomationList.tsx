@@ -4,6 +4,7 @@ import { AutomationCard } from './AutomationCard'
 import { AutomationFinishedSection } from './AutomationFinishedSection'
 import { AutomationMenu } from './AutomationMenu'
 import { automationTriggerLabel, type AutomationOptions } from './AutomationTriggerSummary'
+import { KeepAwakeBanner } from './KeepAwakeBanner'
 import { TemplateGallery } from './TemplateGallery'
 import { Cluster, EmptyState } from '../../ui'
 import { Workflow } from '../../../ui/icons'
@@ -193,6 +194,8 @@ export function AutomationList({
           ]}
         />
       </div>
+
+      <KeepAwakeBanner />
 
       {visible.length === 0 &&
         (automations.length === 0 ? (

@@ -4,8 +4,10 @@ import type { DesktopSettings } from '../../../../../../desktop/src/contracts'
 import { ErrorState, Loading } from '../../../ui'
 import { Badge, Btn, Empty, Panel, Toggle, row } from '../ds'
 import {
+  DESKTOP_SETTINGS_KEY as SETTINGS_KEY,
   desktopBridge,
   desktopClientBridge,
+  fetchDesktopSettings as fetchSettings,
   queueWatchedImport,
 } from '../../../../platform/desktop'
 import { DesktopConnectionPanel } from './DesktopConnectionPanel'
@@ -22,12 +24,7 @@ interface ImportJob {
 }
 
 const JOBS_KEY = '/api/desktop/imports'
-const SETTINGS_KEY = 'native:desktop-settings'
 const fetchJobs = () => fetchJson<{ jobs: ImportJob[] }>(JOBS_KEY)
-const fetchSettings = () => {
-  const bridge = desktopBridge()
-  return bridge ? bridge.getSettings() : Promise.reject(new Error('Desktop is unavailable'))
-}
 
 export function DesktopSection() {
   const local = desktopBridge()
@@ -194,6 +191,16 @@ function LocalDesktopSection() {
                 on={settings.launchAtLogin}
                 disabled={busy}
                 onChange={(on) => void mutate(() => bridge.updateSettings({ launchAtLogin: on }))}
+              />,
+            )}
+            {row(
+              'Keep computer awake',
+              'Stop idle sleep so automations run on time. The display can still turn off.',
+              <Toggle
+                label="Keep computer awake"
+                on={settings.keepAwake}
+                disabled={busy}
+                onChange={(on) => void mutate(() => bridge.updateSettings({ keepAwake: on }))}
               />,
             )}
           </Panel>

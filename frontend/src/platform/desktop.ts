@@ -2,6 +2,7 @@ import type {
   DesktopBridge,
   DesktopClientBridge,
   DesktopCommand,
+  DesktopSettings,
   NativeFile,
 } from '../../../desktop/src/contracts'
 import { authFetch } from '../api/client'
@@ -31,6 +32,13 @@ export function desktopBridge(): DesktopBridge | undefined {
  *  stamps `data-desktop-chrome="mac"` on <html> before the page scripts run. */
 export function macDesktopChrome(): boolean {
   return typeof document !== 'undefined' && document.documentElement.dataset.desktopChrome === 'mac'
+}
+
+export const DESKTOP_SETTINGS_KEY = 'native:desktop-settings'
+
+export function fetchDesktopSettings(): Promise<DesktopSettings> {
+  const bridge = desktopBridge()
+  return bridge ? bridge.getSettings() : Promise.reject(new Error('Desktop is unavailable'))
 }
 
 export function desktopClientBridge(): DesktopClientBridge | undefined {

@@ -25,6 +25,7 @@ const original: DesktopSettings = {
   background: false,
   notifications: false,
   launchAtLogin: false,
+  keepAwake: false,
   watchedFolders: [folder],
 }
 const getSettings = vi.fn<() => Promise<DesktopSettings>>()

@@ -87,6 +87,12 @@ turn them on. Change them later in **Settings → Desktop → Background activit
 - **Start at login** — starts quietly in the tray when you sign in to your computer. No window
   opens until you open the app. It doesn't wake a sleeping computer.
 
+### Keep computer awake
+
+**Keep computer awake** (Settings → Desktop → Background activity, or the **Keep awake** switch on
+Automations) stops idle sleep while the app runs, so Automations run on time. The display can
+still turn off; closing a laptop lid still sleeps. Off by default; local books only.
+
 With background mode off, closing the window quits the app on Windows and Linux. On macOS,
 closing the window only hides it; the app keeps running until you quit.
 

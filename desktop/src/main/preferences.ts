@@ -10,6 +10,7 @@ export interface DevicePreferences {
   background: boolean;
   launchAtLogin: boolean;
   notifications: boolean;
+  keepAwake: boolean;
   activitySetupComplete: boolean;
   folders: FolderLocator[];
   deliveredNotifications: string[];
@@ -26,7 +27,7 @@ interface StoredPreferences extends Omit<DevicePreferences, keyof BookPreference
 class InvalidPreferences extends Error { constructor() { super('Desktop preferences are invalid.'); } }
 
 export class Preferences {
-  private value: StoredPreferences = { background: false, launchAtLogin: false, notifications: true, activitySetupComplete: false, selectedBookFolder: null, selectedServerUrl: null, skippedUpdateVersion: null, lastRunVersion: null, selectedHostedUrl: null, books: {} };
+  private value: StoredPreferences = { background: false, launchAtLogin: false, notifications: true, keepAwake: false, activitySetupComplete: false, selectedBookFolder: null, selectedServerUrl: null, skippedUpdateVersion: null, lastRunVersion: null, selectedHostedUrl: null, books: {} };
   private activeBook = '';
   private writes = Promise.resolve();
   constructor(private readonly path: string) {}
@@ -40,15 +41,15 @@ export class Preferences {
       if (!('books' in saved)) {
         const old = saved as unknown as DevicePreferences;
         if (!Array.isArray(old.folders) || !Array.isArray(old.deliveredNotifications) || typeof old.background !== 'boolean' || typeof old.launchAtLogin !== 'boolean' || typeof old.notifications !== 'boolean') throw new InvalidPreferences();
-        saved = { background: old.background, launchAtLogin: old.launchAtLogin, notifications: old.notifications, activitySetupComplete: false, selectedBookFolder: null, selectedServerUrl: null, skippedUpdateVersion: null, lastRunVersion: null, selectedHostedUrl: null, books: { [defaultBook]: { folders: old.folders, deliveredNotifications: old.deliveredNotifications } } };
+        saved = { background: old.background, launchAtLogin: old.launchAtLogin, notifications: old.notifications, keepAwake: false, activitySetupComplete: false, selectedBookFolder: null, selectedServerUrl: null, skippedUpdateVersion: null, lastRunVersion: null, selectedHostedUrl: null, books: { [defaultBook]: { folders: old.folders, deliveredNotifications: old.deliveredNotifications } } };
         upgrade = true;
       }
       if (!Object.hasOwn(saved, 'selectedServerUrl')) { saved = { ...saved, selectedServerUrl: null }; upgrade = true; }
-      saved = { ...saved, activitySetupComplete: saved.activitySetupComplete ?? false, skippedUpdateVersion: saved.skippedUpdateVersion ?? null, lastRunVersion: saved.lastRunVersion ?? null, selectedHostedUrl: saved.selectedHostedUrl ?? null };
+      saved = { ...saved, keepAwake: saved.keepAwake ?? false, activitySetupComplete: saved.activitySetupComplete ?? false, skippedUpdateVersion: saved.skippedUpdateVersion ?? null, lastRunVersion: saved.lastRunVersion ?? null, selectedHostedUrl: saved.selectedHostedUrl ?? null };
       if (saved.skippedUpdateVersion !== null && typeof saved.skippedUpdateVersion !== 'string') throw new InvalidPreferences();
       if (saved.selectedHostedUrl !== null && typeof saved.selectedHostedUrl !== 'string') throw new InvalidPreferences();
       if (saved.lastRunVersion !== null && typeof saved.lastRunVersion !== 'string') throw new InvalidPreferences();
-      if (typeof saved.activitySetupComplete !== 'boolean') throw new InvalidPreferences();
+      if (typeof saved.activitySetupComplete !== 'boolean' || typeof saved.keepAwake !== 'boolean') throw new InvalidPreferences();
       if (saved.selectedServerUrl !== null && typeof saved.selectedServerUrl !== 'string') throw new InvalidPreferences();
       if (typeof saved.background !== 'boolean' || typeof saved.launchAtLogin !== 'boolean' || typeof saved.notifications !== 'boolean' || !saved.books || typeof saved.books !== 'object' || Array.isArray(saved.books) || saved.selectedBookFolder !== null && typeof saved.selectedBookFolder !== 'string' || Object.values(saved.books).some(book => !Array.isArray(book.folders) || !Array.isArray(book.deliveredNotifications))) throw new InvalidPreferences();
       this.value = saved;
@@ -95,11 +96,13 @@ export class Preferences {
   }
 }
 
-export function settingsPatch(value: unknown): Partial<Pick<DesktopSettings, 'background' | 'launchAtLogin' | 'notifications'>> {
+export type SettingsPatch = Partial<Pick<DesktopSettings, 'background' | 'launchAtLogin' | 'notifications' | 'keepAwake'>>;
+
+export function settingsPatch(value: unknown): SettingsPatch {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid desktop settings.');
   const patch: Record<string, boolean> = {};
   for (const [name, enabled] of Object.entries(value)) {
-    if (!['background', 'launchAtLogin', 'notifications'].includes(name) || typeof enabled !== 'boolean') throw new Error('Invalid desktop settings.');
+    if (!['background', 'launchAtLogin', 'notifications', 'keepAwake'].includes(name) || typeof enabled !== 'boolean') throw new Error('Invalid desktop settings.');
     patch[name] = enabled;
   }
   return patch;

@@ -152,3 +152,20 @@ test('a damaged settings file is set aside and the app starts from defaults', as
     }
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+test('keep awake defaults off for an older settings file and is a renderer-settable switch', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'onw-awake-prefs-'));
+  try {
+    const file = join(directory, 'settings.json');
+    await writeFile(file, JSON.stringify({ background: true, launchAtLogin: false, notifications: true, selectedBookFolder: null, selectedServerUrl: null, books: {} }));
+    const preferences = new Preferences(file);
+    await preferences.load();
+    assert.equal(preferences.current.keepAwake, false);
+    assert.equal(preferences.current.background, true);
+    await preferences.save(settingsPatch({ keepAwake: true }));
+    const reopened = new Preferences(file);
+    await reopened.load();
+    assert.equal(reopened.current.keepAwake, true);
+    assert.throws(() => settingsPatch({ keepAwake: 'yes' }));
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

@@ -23,8 +23,11 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 2px 0 10px;
-  border-bottom: 1px solid var(--line);
+  padding: 2px 0 0;
+}
+/* Under the list's header the content sits 16px below the subtitle, like Inbox, Skills and Intel. */
+.rd-masthead ~ .a3-wrap {
+  padding-top: 16px;
 }
 /* NO horizontal padding and NO max-width centring: .app-layout already owns the content band
    (16px phone / 24px desktop), the same band Intel, Plan and Overview sit in. This wrap used to
@@ -54,6 +57,37 @@
   gap: 10px;
   flex-wrap: wrap;
   min-width: 0;
+}
+.a3-awake {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 15px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.a3-awake-ic {
+  flex: none;
+  color: var(--muted);
+}
+.a3-awake-label {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.a3-awake-text {
+  flex: 1;
+  min-width: 0;
+}
+.a3-awake-switch {
+  flex: none;
 }
 .a3-toolbar > .grow,
 .a3-instr-foot .grow,
@@ -1717,9 +1751,6 @@
   }
 }
 @media (max-width: 600px) {
-  .rd-masthead {
-    border-bottom: none;
-  }
   .a3-wrap {
     padding: 10px 0 84px;
     gap: 16px;

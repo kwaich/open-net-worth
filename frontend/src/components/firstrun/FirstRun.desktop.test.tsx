@@ -14,6 +14,7 @@ beforeEach(() => {
     browserUrl: null,
     background: false,
     launchAtLogin: false,
+    keepAwake: false,
     notifications: false,
     watchedFolders: [],
   }

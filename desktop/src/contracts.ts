@@ -21,6 +21,7 @@ export interface DesktopSettings {
   background: boolean;
   launchAtLogin: boolean;
   notifications: boolean;
+  keepAwake: boolean;
   watchedFolders: WatchedFolder[];
 }
 // The main screens the Go menu jumps to, in menu order (Cmd/Ctrl+1 to +8).
@@ -35,7 +36,7 @@ export interface DesktopBridge {
   chooseImportFiles(): Promise<ImportSelection>;
   saveExport(): Promise<{ cancelled: boolean }>;
   getSettings(): Promise<DesktopSettings>;
-  updateSettings(changes: Partial<Pick<DesktopSettings, 'background' | 'launchAtLogin' | 'notifications'>>): Promise<DesktopSettings>;
+  updateSettings(changes: Partial<Pick<DesktopSettings, 'background' | 'launchAtLogin' | 'notifications' | 'keepAwake'>>): Promise<DesktopSettings>;
   chooseWatchedFolder(): Promise<DesktopSettings>;
   chooseBookFolder(restore?: boolean): Promise<{ cancelled: boolean; opened: boolean }>;
   revokeWatchedFolder(id: string): Promise<DesktopSettings>;
