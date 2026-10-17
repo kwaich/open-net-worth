@@ -5,7 +5,7 @@ export const RELEASES_PAGE = `https://github.com/${UPDATE_REPO}/releases/latest`
 export const UPDATE_FEED = 'https://opennetworth.ai/update';
 const FIRST_CHECK_MS = 30_000;
 const CHECK_EVERY_MS = 4 * 60 * 60 * 1000;
-// "Later" (and an unanswered notification) keeps that version quiet for a day, not for every 4-hour check.
+// "Later" (and an unanswered notification) keeps a version that cannot download quietly from asking again for a day.
 export const REMIND_AFTER_MS = 24 * 60 * 60 * 1000;
 
 export type UpdatePhase = 'idle' | 'checking' | 'downloading' | 'ready' | 'available';
@@ -67,8 +67,8 @@ export class UpdateController {
 
   constructor(private readonly updater: Updater | null, private readonly hooks: UpdateHooks, private readonly currentVersion: string, private readonly now: () => number = Date.now) {}
 
-  // Nothing is downloaded by a check: the newest version is detected through `hooks.newerVersion`,
-  // and the updater (which downloads the moment it checks) is only called once the user agrees.
+  // Detection is separate from the updater (which downloads the moment it checks): `hooks.newerVersion`
+  // finds the version, then a background find downloads it quietly and a manual one asks first.
   start(feedUrl: string): void {
     if (!this.updater) return;
     this.updater.setFeedURL({ url: feedUrl });
@@ -85,7 +85,7 @@ export class UpdateController {
   stop(): void { for (const timer of this.timers) clearTimeout(timer); this.timers = []; }
 
   get menuLabel(): string {
-    if (this.phase === 'ready') return 'Restart to Update…';
+    if (this.phase === 'ready') return this.readyVersion ? `Restart to Update to Open Net Worth ${this.readyVersion}` : 'Restart to Update';
     if (this.phase === 'available') return 'Update Available…';
     return this.phase === 'checking' || this.phase === 'downloading' ? 'Downloading Update…' : 'Check for Updates…';
   }
@@ -94,7 +94,7 @@ export class UpdateController {
 
   async checkNow(): Promise<void> {
     if (!this.updater) { this.hooks.openReleases(); return; }
-    if (this.phase === 'ready') { await this.offerRestart(); return; }
+    if (this.phase === 'ready') { this.hooks.install(); return; }
     if (this.phase === 'available') { await this.offerUpdate(); return; }
     if (this.phase === 'checking' || this.phase === 'downloading') { await this.hooks.ask('An update is downloading.', 'You will be told when it is ready to install.', ['OK']); return; }
     await this.detect(true);
@@ -150,10 +150,18 @@ export class UpdateController {
     const skipped = this.hooks.skippedVersion();
     if (skipped && !isNewer(version, skipped)) { this.availableVersion = null; this.set('idle'); return; }
     this.availableVersion = version;
+    if (await this.updater.canInstallInPlace?.() ?? true) { this.download(); return; }
     this.set('available');
-    if (this.remindVersion === version && this.now() < this.remindAt) return;
-    this.remind(version);
-    this.hooks.notify(`Open Net Worth ${version} is available.`, () => { void this.offerUpdate(); });
+    this.offerQuietly();
+  }
+
+  // A background find downloads without asking: nothing installs until a restart or the next quit,
+  // and the menu turns into Restart to Update once it lands.
+  private download(): void {
+    if (this.phase !== 'idle' && this.phase !== 'available') return;
+    this.requested = true;
+    this.set('downloading');
+    try { this.updater!.checkForUpdates(); } catch (error) { this.downloadFailed(error); }
   }
 
   private remind(version: string): void {
@@ -168,14 +176,24 @@ export class UpdateController {
     this.set('ready');
     this.stop();
     if (this.manual) { this.manual = false; void this.offerRestart(); return; }
-    this.hooks.notify(`Version ${this.readyVersion ?? 'update'} is ready. It installs the next time you quit.`, () => { void this.offerRestart(); });
+    this.hooks.notify(`Open Net Worth ${this.readyVersion ?? 'update'} is ready. Restart to update, or it installs the next time you quit.`, () => { void this.offerRestart(); });
   }
 
   private manualInstall(): void {
     if (!this.requested) return;
     this.requested = false;
-    this.hooks.openReleases();
     this.set('available');
+    if (this.manual) { this.hooks.openReleases(); return; }
+    this.offerQuietly();
+  }
+
+  // A quiet download that cannot finish falls back to the offer: the menu says Update Available…
+  // and the next check tries again, instead of a dialog or a browser tab nobody asked for.
+  private offerQuietly(): void {
+    const version = this.availableVersion;
+    if (!version || this.remindVersion === version && this.now() < this.remindAt) return;
+    this.remind(version);
+    this.hooks.notify(`Open Net Worth ${version} is available.`, () => { void this.offerUpdate(); });
   }
 
   // Squirrel.Mac rejects an update whose signature does not match the installed app (an unsigned
@@ -183,8 +201,9 @@ export class UpdateController {
   private downloadFailed(error?: unknown): void {
     if (!this.requested) return;
     this.requested = false;
-    this.manual = false;
     this.set(this.availableVersion ? 'available' : 'idle');
+    if (!this.manual) return;
+    this.manual = false;
     const version = this.availableVersion ? ` ${this.availableVersion}` : '';
     const unsigned = /signature|code requirement/i.test(error instanceof Error ? error.message : String(error ?? ''));
     const ask = unsigned

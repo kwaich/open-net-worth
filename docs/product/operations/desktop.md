@@ -139,24 +139,26 @@ You can also import one-off files with **File → Import statement or receipt…
 
 The app checks for a new version 30 seconds after it starts and every 4 hours after that.
 
-1. When one is out, you get a notification ("Open Net Worth X is available.") and the menu shows
-   **Update Available…**.
-2. Open it and choose **Download and Install**, **Skip This Version** or **Later**.
-3. While it downloads, the menu shows **Downloading Update…**. When it's ready, choose
-   **Restart Now** (or **Later** — the menu then shows **Restart to Update…**, and the update
-   installs the next time you quit). The app never restarts on its own, and it closes your book
-   safely before installing.
-4. After restarting, a notification confirms "Open Net Worth was updated to X."
+1. When one is out, it downloads in the background — nothing to answer — and the menu shows
+   **Downloading Update…**.
+2. When it's ready, you get a notification and the menu shows **Restart to Update to Open Net
+   Worth X**. Choose it to restart now, or keep working: the update installs the next time you
+   quit. The app never restarts on its own, and it closes your book safely before installing.
+3. After restarting, a notification confirms "Open Net Worth was updated to X."
 
 To check right away: **Open Net Worth → Check for Updates…** on macOS, **Help → Check for
-Updates…** on Windows and Linux. A manual check always offers the newest version, even one you
-skipped, and says "You're up to date." otherwise.
+Updates…** on Windows and Linux. A manual check asks first — **Download and Install**, **Skip This
+Version** or **Later** — always offers the newest version, even one you skipped, and says "You're
+up to date." otherwise.
 
-- **Skip This Version** is remembered until a newer version comes out. **Later** asks again after
-  a day or at the next launch.
+- **Skip This Version** is remembered until a newer version comes out; background checks don't
+  download it.
+- If a background download fails, the menu shows **Update Available…** and the next check tries
+  again.
 - **Linux AppImage** downloads the new AppImage, checks it against the release's signed
   `SHA256SUMS`, and swaps it in place. A `.deb` install, or an AppImage in a folder you can't
-  write to, offers **Open Download Page** instead.
+  write to, can't update itself: you get a notification and **Update Available…** offers **Open
+  Download Page**.
 - **A copy you built yourself** can't install updates; it says so and offers the download page.
   Install the released app once and later updates work normally.
 - To turn automatic checks off, start the app with `ONW_DESKTOP_UPDATES=0`.

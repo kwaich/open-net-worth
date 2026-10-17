@@ -342,21 +342,23 @@ skips it. See `docs/ai/CLI_REGRESSION.md`.
 A packaged macOS app looks for a new release 30 seconds after launch and every 4 hours
 (`src/main/updates.ts`). Detection never uses Squirrel (its `checkForUpdates()` downloads at
 once): `fetchLatestVersion` reads the releases repo's latest GitHub release (one path for macOS,
-Windows and Linux; the unauthenticated 60/h limit is ample at one request per 4 hours), and only
-after the user answers **Download and Install** does the controller call the updater, which then
-fetches the ZIP from `opennetworth.ai/update/<platform-arch>/<version>`
-(→ `update.electronjs.org/open-net-worth-ai/open-net-worth-releases`). A newer version posts a
-notification and relabels the menu **Update Available…**; the dialog offers **Download and
-Install** / **Skip This Version** / **Later**. Skip is stored as `skippedUpdateVersion` in the
-app-global desktop preferences and hides that version (not a newer one) from background checks;
-a manual **Check for Updates…** still offers it. Later, like a notification, silences that
-version for 24 hours in memory (a restart asks again). If the release exists but the platform
-feed has not caught up, the download reports a failure and the offer stays. When the download is
-ready, the restart dialog (the person accepted the download and is waiting on it) and
-**Restart to Update…** (Help menu and tray) offer to install; it never restarts on its own, and an
-update left pending installs at the next quit. Accepting confirms the download started and
-relabels the menu **Downloading Update…**. A failed download offers **Open Download Page**; a
-Squirrel.Mac signature rejection (an ad-hoc build) says the copy cannot update itself. The first
+Windows and Linux; the unauthenticated 60/h limit is ample at one request per 4 hours). A
+BACKGROUND find then calls the updater straight away, quietly — it fetches the ZIP from
+`opennetworth.ai/update/<platform-arch>/<version>`
+(→ `update.electronjs.org/open-net-worth-ai/open-net-worth-releases`) — and on
+`update-downloaded` the menu (and tray) reads **Restart to Update to Open Net Worth X.Y.Z**, which
+installs at once when chosen, plus one notification; nothing installs before a restart or the next
+quit, and it never restarts on its own (ADR `2026-10-17-desktop-updates-download-in-the-background`).
+A MANUAL **Check for Updates…** still asks (**Download and Install** / **Skip This Version** /
+**Later**), confirms the download started, relabels the menu **Downloading Update…** and ends in
+the Restart Now / Later dialog. Skip is stored as `skippedUpdateVersion` in the app-global desktop
+preferences and keeps that version (not a newer one) from background checks and downloads; a
+manual check still offers it. A quiet download that fails (or a feed that has not caught up)
+falls back to **Update Available…** with no dialog, and the next check retries; one that needs a
+manual install (`update-manual`) notifies instead of opening the browser. An install that cannot
+update in place (`canInstallInPlace` false) keeps the old notify-and-offer path, Later silencing it
+for 24 hours in memory. A failed MANUAL download offers **Open Download Page**; a Squirrel.Mac
+signature rejection (an ad-hoc build) says the copy cannot update itself. The first
 launch on a newer version notifies once, from `lastRunVersion` in the desktop preferences (an
 install from before that field counts if it had already chosen a book or server).
 Restart runs the normal quit shutdown first (workers drained, backend stopped) and only then
@@ -394,10 +396,10 @@ only. `node qa/packaged-smoke-linux.mjs /abs/Open-Net-Worth.AppImage` (or an ins
   from the applications menu to bring the hidden window back. Closing the window with background
   mode off quits, as on Windows.
 - **Updates.** The app checks the releases repo's latest release 30 seconds after launch and every
-  4 hours and asks (Download and Install / Skip This Version / Later) before downloading. An
-  AppImage in a writable location then verifies `SHA256SUMS` against its minisign signature
+  4 hours and, from a background check, downloads without asking (a manual check asks first). An
+  AppImage in a writable location verifies `SHA256SUMS` against its minisign signature
   (`SHA256SUMS.minisig`, key built into the app), downloads the new AppImage, verifies its SHA-256
-  against `SHA256SUMS`, swaps it in place and offers **Restart to Update…**. A `.deb` install (or an
+  against `SHA256SUMS`, swaps it in place and offers **Restart to Update to Open Net Worth X.Y.Z**. A `.deb` install (or an
   AppImage in a read-only folder, a release without a signature, or a build without an embedded key)
   offers **Open Download Page** instead of Download and Install; a signature that does not verify is
   an error and nothing is installed.
@@ -450,8 +452,8 @@ stages the installer for release when it is signed or the repository variable
   `$env:ONW_REQUIRE_SIGNED = '1'`) refuses one, and a present-but-invalid signature is always refused.
 - **Updates.** Squirrel.Windows through the same `opennetworth.ai/update/<platform-arch>/<version>`
   feed as macOS (`src/main/updates.ts`), only when the app was installed by Setup.exe (a portable
-  folder has no `Update.exe` and does not check). Behaviour matches macOS: ask first, then
-  background download, **Restart to Update…**, install at next quit.
+  folder has no `Update.exe` and does not check). Behaviour matches macOS: background
+  download, **Restart to Update to Open Net Worth X.Y.Z**, install at next quit.
 - **Start at login** registers a login item that starts through `Update.exe`, so it survives updates
   (`src/main/login-item.ts`). Background mode uses a system-tray icon; closing the window with
   background mode off quits the app.

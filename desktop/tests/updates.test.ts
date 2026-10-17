@@ -29,8 +29,8 @@ function harness({ answers = [2], found = '0.2.0', skipped = null, failDetect = 
   return { calls, hooks, state };
 }
 
-function started(options: Options = {}, now: () => number = Date.now) {
-  const updater = new FakeUpdater();
+function started(options: Options = {}, now: () => number = Date.now, inPlace = true) {
+  const updater = inPlace ? new FakeUpdater() : Object.assign(new FakeUpdater(), { canInstallInPlace: async () => false });
   const { calls, hooks, state } = harness(options);
   const updates = new UpdateController(updater, hooks, '0.1.0', now);
   updates.start('https://feed'); updates.stop();
@@ -70,39 +70,41 @@ test('the feed is handed to the updater, but a check never calls it: detection i
   assert.equal(updater.checks, 0);
 });
 
-test('a background find notifies, flips the menu, and downloads nothing until the dialog is answered', async () => {
+test('a background find downloads quietly, and the menu offers Restart to Update with the version', async () => {
   const { updater, calls, updates } = started();
   await background(updates);
-  assert.equal(updates.phase, 'available');
-  assert.equal(updates.menuLabel, 'Update Available…');
-  assert.equal(updates.pending, true);
-  assert.deepEqual(calls.notified, ['Open Net Worth 0.2.0 is available.']);
-  assert.deepEqual(calls.asked, []);
-  assert.equal(updater.checks, 0);
-  calls.click!();
+  assert.equal(updater.checks, 1);
+  assert.equal(updates.menuLabel, 'Downloading Update…');
+  updater.emit('update-available');
+  assert.equal(updates.phase, 'downloading');
+  updater.emit('update-downloaded', {}, '', 'v0.2.0');
   await tick();
-  assert.deepEqual(calls.asked, [{ message: 'Open Net Worth 0.2.0 is available.', buttons: ['Download and Install', 'Skip This Version', 'Later'] }]);
-  assert.equal(updater.checks, 0);
+  assert.equal(updates.phase, 'ready');
+  assert.equal(updates.menuLabel, 'Restart to Update to Open Net Worth 0.2.0');
+  assert.equal(updates.pending, true);
+  assert.deepEqual(calls.asked, []);
+  assert.deepEqual(calls.notified, ['Open Net Worth 0.2.0 is ready. Restart to update, or it installs the next time you quit.']);
+  assert.equal(calls.installed, 0);
+  await updates.checkNow();
+  assert.equal(calls.installed, 1);
+  assert.deepEqual(calls.asked, []);
 });
 
 test('Download and Install says the download started, labels the menu, and ends in the restart dialog', async () => {
-  const { updater, calls, updates } = started({ answers: [0, 0, 1] });
-  await background(updates);
-  calls.click!();
-  await tick();
+  const { updater, calls, updates } = started({ answers: [0, 1] });
+  await updates.checkNow();
   assert.equal(updater.checks, 1);
   assert.equal(updates.phase, 'checking');
   assert.equal(updates.menuLabel, 'Downloading Update…');
   assert.equal(calls.asked.at(-1)!.message, 'Downloading Open Net Worth 0.2.0…');
   updater.emit('update-available');
   assert.equal(updates.phase, 'downloading');
-  assert.equal(updates.menuLabel, 'Downloading Update…');
   updater.emit('update-downloaded', {}, '', 'v0.2.0');
   await tick();
   assert.equal(updates.phase, 'ready');
-  assert.equal(updates.menuLabel, 'Restart to Update…');
+  assert.equal(updates.menuLabel, 'Restart to Update to Open Net Worth 0.2.0');
   assert.equal(calls.asked.at(-1)!.message, 'Open Net Worth 0.2.0 is ready to install.');
-  assert.deepEqual(calls.notified, ['Open Net Worth 0.2.0 is available.']);
+  assert.deepEqual(calls.notified, []);
   assert.equal(calls.installed, 0);
 });
 
@@ -122,30 +124,27 @@ test('Restart Now installs; Later leaves the downloaded update for the next quit
   assert.equal(now.calls.installed, 1);
 });
 
-test('Skip This Version persists it, stays quiet for that version, and speaks up for a newer one', async () => {
+test('Skip This Version persists it, keeps background checks off that version, and a newer one downloads', async () => {
   const { updater, calls, state, updates } = started({ answers: [1] });
-  await background(updates);
-  calls.click!();
-  await tick();
+  await updates.checkNow();
   assert.deepEqual(calls.skipped, ['0.2.0']);
   assert.equal(updates.phase, 'idle');
   assert.equal(updates.menuLabel, 'Check for Updates…');
-  const notified = calls.notified.length;
   await background(updates);
-  assert.equal(calls.notified.length, notified);
   assert.equal(updates.phase, 'idle');
+  assert.equal(updater.checks, 0);
   state.found = '0.3.0';
   await background(updates);
-  assert.equal(calls.notified.at(-1), 'Open Net Worth 0.3.0 is available.');
-  assert.equal(updates.phase, 'available');
-  assert.equal(updater.checks, 0);
+  assert.equal(updater.checks, 1);
+  assert.deepEqual(calls.notified, []);
 });
 
-test('a version skipped in an earlier session is not announced', async () => {
-  const { calls, updates } = started({ skipped: '0.2.0' });
+test('a version skipped in an earlier session is neither announced nor downloaded', async () => {
+  const { updater, calls, updates } = started({ skipped: '0.2.0' });
   await background(updates);
   assert.deepEqual(calls.notified, []);
   assert.equal(updates.phase, 'idle');
+  assert.equal(updater.checks, 0);
 });
 
 test('a manual check still offers a skipped version', async () => {
@@ -156,11 +155,14 @@ test('a manual check still offers a skipped version', async () => {
   assert.equal(updater.checks, 1);
 });
 
-test('Later keeps that version quiet for a day, then reminds once; a newer version asks at once', async () => {
+test('an install that cannot download quietly notifies; Later keeps it quiet for a day, a newer version asks at once', async () => {
   let clock = 1_000;
-  const { calls, state, updates } = started({ answers: [2] }, () => clock);
+  const { updater, calls, state, updates } = started({ answers: [2] }, () => clock, false);
   await background(updates);
-  assert.equal(calls.notified.length, 1);
+  assert.equal(updates.phase, 'available');
+  assert.equal(updates.menuLabel, 'Update Available…');
+  assert.deepEqual(calls.notified, ['Open Net Worth 0.2.0 is available.']);
+  assert.equal(updater.checks, 0);
   clock += 4 * 60 * 60 * 1000;
   await background(updates);
   assert.equal(calls.notified.length, 1);
@@ -176,17 +178,37 @@ test('Later keeps that version quiet for a day, then reminds once; a newer versi
   assert.equal(calls.skipped.length, 0);
 });
 
-test('choosing Later in the dialog also holds the reminder for a day', async () => {
-  let clock = 1_000;
-  const { calls, updates } = started({ answers: [2] }, () => clock);
+test('after Later in the dialog, the next background check downloads quietly instead of asking again', async () => {
+  const { updater, calls, updates } = started({ answers: [2] });
   await updates.checkNow();
   assert.equal(updates.phase, 'available');
-  clock += 4 * 60 * 60 * 1000;
+  assert.equal(updater.checks, 0);
   await background(updates);
+  assert.equal(updater.checks, 1);
+  assert.equal(calls.asked.length, 1);
   assert.deepEqual(calls.notified, []);
-  clock += 21 * 60 * 60 * 1000;
+});
+
+test('a quiet download that fails falls back to Update Available… without a dialog, and the next check retries', async () => {
+  const { updater, calls, updates } = started();
   await background(updates);
-  assert.equal(calls.notified.length, 1);
+  updater.emit('error', new Error('net::ERR_INTERNET_DISCONNECTED'));
+  await tick();
+  assert.equal(updates.phase, 'available');
+  assert.equal(updates.menuLabel, 'Update Available…');
+  assert.deepEqual(calls.asked, []);
+  assert.deepEqual(calls.notified, []);
+  await background(updates);
+  assert.equal(updater.checks, 2);
+});
+
+test('a quiet download that needs a manual install notifies instead of opening the browser', async () => {
+  const { updater, calls, updates } = started();
+  await background(updates);
+  updater.emit('update-manual', {}, '', '0.2.0');
+  assert.equal(calls.releases, 0);
+  assert.equal(updates.phase, 'available');
+  assert.deepEqual(calls.notified, ['Open Net Worth 0.2.0 is available.']);
 });
 
 test('a manual check reports up to date or a failure, and a background one stays silent', async () => {

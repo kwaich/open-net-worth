@@ -18,9 +18,8 @@ and it always takes a backup first. How you update depends on how you installed 
 
 ### Desktop app
 
-It updates itself. When a new version is out, you get a notification and **Update Available…**
-appears in the menu; choose **Download and Install**, then **Restart Now** (or let it install the
-next time you quit). To check right away: **Open Net Worth → Check for Updates…** on a Mac,
+It updates itself. A new version downloads in the background; when it's ready, the menu shows
+**Restart to Update to Open Net Worth X** — choose it, or let it install the next time you quit. To check right away: **Open Net Worth → Check for Updates…** on a Mac,
 **Help → Check for Updates…** on Windows and Linux. Details in
 [Desktop app § Updates](desktop.md#updates).
 
