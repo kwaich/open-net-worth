@@ -932,6 +932,21 @@
     :is(button, a, input, select, textarea, label, summary, [role='button']) {
     -webkit-app-region: no-drag;
   }
+  /* The Lucius panel's header shares the window's top strip, so it drags the window too. The
+     conversation menu and the Documents sheet cover the panel but render BEFORE the header, and
+     Chromium resolves overlapping regions in DOM order — while either is open the header gives
+     way, or its drag would swallow their top controls. */
+  html[data-desktop-chrome='mac'] .lx-side-head {
+    -webkit-app-region: drag;
+  }
+  html[data-desktop-chrome='mac']
+    .lx-side-head
+    :is(button, a, input, select, textarea, label, summary, [role='button']) {
+    -webkit-app-region: no-drag;
+  }
+  html[data-desktop-chrome='mac'] .lx-side:has(.conv-menu, .modal-overlay) .lx-side-head {
+    -webkit-app-region: no-drag;
+  }
   /* The rail's own toggle and wordmark give way to .desktop-nav (sidebar / back / forward),
      which sits a gap right of the lights, over whichever of header or topbar is beneath it. */
   html[data-desktop-chrome='mac'] .sidebar-brandrow {

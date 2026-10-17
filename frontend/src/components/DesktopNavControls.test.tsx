@@ -152,6 +152,20 @@ describe('title-bar CSS contract', () => {
     )
   })
 
+  it('drags the window by the Lucius header, except its controls and while an overlay covers it', () => {
+    expect(rule("html[data-desktop-chrome='mac'] .lx-side-head {")).toContain(
+      '-webkit-app-region: drag',
+    )
+    expect(rule("html[data-desktop-chrome='mac'] .lx-side-head :is(button,")).toContain(
+      '-webkit-app-region: no-drag',
+    )
+    expect(
+      rule(
+        "html[data-desktop-chrome='mac'] .lx-side:has(.conv-menu, .modal-overlay) .lx-side-head {",
+      ),
+    ).toContain('-webkit-app-region: no-drag')
+  })
+
   it('gives the bar a native 48px height in desktop chrome only', () => {
     expect(rule("html[data-desktop-chrome='mac'] .topbar {")).toContain('height: 48px')
     expect(rule("html[data-desktop-chrome='mac'] .sidebar-header {")).toContain('height: 48px')
