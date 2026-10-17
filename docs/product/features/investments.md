@@ -53,8 +53,8 @@ never converted at today's rate. If you don't know the cost, leave it out rather
    enter how many to sell from each lot.
 4. **Deposit proceeds to** — pick the cash account the money landed in. If you leave it on
    **Don't add to an account**, the sale is recorded but no cash is added, so your net worth drops
-   by the sale value. The cash row it adds says what you sold in its memo — **Sold 4 MSFT @
-   550.00 USD**. A buy with **Deduct from** set does the same: **Bought 10 VOO @ 500.00 USD**.
+   by the sale value. The cash row it adds says what you sold in its description — **Sold 4
+   MSFT @ 550.00 USD**. A buy with **Deduct from** set does the same: **Bought 10 VOO @ 500.00 USD**.
 5. Click **Record sale**. The realised gain or loss is shown straight away.
 
 **Moving shares between your own accounts, gifting them, or writing them off?** In the same form,

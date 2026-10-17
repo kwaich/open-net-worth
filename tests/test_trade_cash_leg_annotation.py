@@ -1,6 +1,6 @@
 """A trade's cash leg STORES what it traded — `ticker` and `quantity` on the ledger row
-itself, written at the trade choke — so the register reads "100 KSTL", not a bare
-"Sale proceeds" (found live 2026-10-15: every IBKR sale landed as an anonymous inflow)."""
+itself, written at the trade choke — and says it in the description ("Sold 4 KSTL @ 37.45 USD"),
+not a bare "Sale proceeds" (found live 2026-10-15: every IBKR sale landed as an anonymous inflow)."""
 
 from __future__ import annotations
 
@@ -66,7 +66,7 @@ def test_purchase_cash_leg_stores_ticker_and_quantity(book):
     out = _buy(pos, cash)
     leg = _live(out["cash_leg_id"])
     assert (leg["ticker"], float(leg["quantity"])) == ("KSTL", 10.0)
-    assert leg["memo"] == "Bought 10 KSTL @ 30.00 USD"
+    assert leg["description"] == "Bought 10 KSTL @ 30.00 USD"
 
 
 def test_sale_cash_leg_stores_ticker_and_quantity(book):
@@ -87,8 +87,8 @@ def test_sale_cash_leg_stores_ticker_and_quantity(book):
     )
     leg = _live(out["cash_leg_id"])
     assert (leg["ticker"], float(leg["quantity"])) == ("KSTL", 4.0)
-    assert leg["memo"] == "Sold 4 KSTL @ 37.45 USD · fees 1.50 USD"
-    assert leg["description"] == "Sale proceeds", "the description is left as it was"
+    assert leg["description"] == "Sold 4 KSTL @ 37.45 USD · fees 1.50 USD"
+    assert leg["memo"] == "", "the memo stays free for the owner's own note"
 
 
 def test_a_corrected_lot_rebooks_its_leg_with_the_new_quantity(book):
@@ -98,7 +98,7 @@ def test_a_corrected_lot_rebooks_its_leg_with_the_new_quantity(book):
     assert out.get("ok") is True
     leg = _live(out["cash_leg_id"])
     assert (leg["ticker"], float(leg["quantity"])) == ("KSTL", 12.0)
-    assert leg["memo"] == "Bought 12 KSTL @ 30.00 USD"
+    assert leg["description"] == "Bought 12 KSTL @ 30.00 USD"
 
 
 def test_a_fractional_crypto_style_trade_keeps_its_precision(book):
@@ -114,4 +114,4 @@ def test_a_fractional_crypto_style_trade_keeps_its_precision(book):
             "funding_account_id": cash["id"],
         }
     )
-    assert _live(out["cash_leg_id"])["memo"] == "Bought 0.0125 KSTL @ 61,234.5678 USD"
+    assert _live(out["cash_leg_id"])["description"] == "Bought 0.0125 KSTL @ 61,234.5678 USD"

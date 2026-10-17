@@ -33,7 +33,7 @@ from sqlalchemy import Connection
 
 from backend.core.errors import InsufficientLots, InvalidLotSelection
 from backend.core.fx import base_currency, to_base
-from backend.core.trade_text import trade_memo
+from backend.core.trade_text import trade_text
 from backend.core.user_time import user_today
 from backend.core.write_receipt import record_write
 from backend.db.engine import locked_unit_of_work
@@ -825,8 +825,9 @@ def _traded(
     fees=None,
 ) -> dict:
     """The cash leg's own record of what it traded: ``ticker`` + ``quantity`` (unsigned — the
-    leg's direction says buy or sell) and a readable ``memo`` ("Sold 60 KSTL @ 150.00 USD"),
-    so the register names the trade instead of a bare "Share purchase"/"Sale proceeds"."""
+    leg's direction says buy or sell) and the trade as its ``description`` ("Sold 60 KSTL @
+    150.00 USD"), replacing the bare "Share purchase"/"Sale proceeds" placeholder. The memo
+    stays free for the owner's own note."""
     symbol = (InstrumentStore().find_by_id(instrument_id or "") or {}).get("symbol")
     if not symbol:
         return {}
@@ -834,8 +835,8 @@ def _traded(
     if not qty:
         return {"ticker": symbol}
     price_f = float(price) if price not in (None, "") else None
-    memo = trade_memo(verb, symbol, qty, price_f, currency, float(fees or 0))
-    return {"ticker": symbol, "quantity": qty, "memo": memo}
+    text = trade_text(verb, symbol, qty, price_f, currency, float(fees or 0))
+    return {"ticker": symbol, "quantity": qty, "description": text}
 
 
 def _future_acquisition(acquired_at) -> Optional[str]:

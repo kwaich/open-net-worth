@@ -245,7 +245,7 @@ export function typeLabel(draft: ReviewDraft): string {
 /** The card's heading: a transfer names its destination, anything else names its payee.
  *  Empty means no payee is linked yet — the card shows that as a placeholder, never the
  *  bank description standing in for one. An investment row with no payee is the exception:
- *  its description is the trade's own ("Share purchase", "Sale proceeds"), not a bank
+ *  its description is the trade's own ("Sold 60 KSTL @ 150.00 USD"), not a bank
  *  string, so it names the card. */
 export function summaryTitle(draft: ReviewDraft, accounts: Account[], description = ''): string {
   if (draft.kind === 'transfer') {

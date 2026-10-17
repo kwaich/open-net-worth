@@ -81,11 +81,7 @@ holding area.
 3. Click **Approve** to save it and clear the flag, **Skip** to leave it for later, or **Reject**
    to delete it (you confirm first). On a touch screen, swipe right to approve, left to skip.
 
-Already happy with them, say because Lucius categorized a whole import and you have looked it
-over? On **All accounts**, click **Mark all reviewed** beside the count and confirm. It clears the
-flag on everything waiting, in every account; nothing is deleted and no balance changes. A single
-account's page doesn't offer it, since its count is only that account's. The **ⓘ** beside the count says what Review
-means, and so does hovering the **Review** tag on a row.
+Hovering the **Review** tag on a row says what Review means.
 
 When transactions are waiting, a new Lucius conversation shows a **Needs attention** item such as
 *7 transactions to review*; its **Review** button opens the same cards. The Dashboard's **Needs
@@ -103,8 +99,8 @@ can add, edit or re-flag a transaction, but can never clear the flag.
   click the sign beside the amount to switch. Its payee is the broker or platform (for example
   IBKR) — set automatically when the trade is recorded against an account with an institution,
   and editable in the drawer like any other payee. A buy or sale recorded against a holding
-  writes what it traded into the memo — for example **Sold 60 KSTL @ 150.00 USD · fees 1.25
-  USD** — and keeps the description ("Sale proceeds" / "Share purchase") unchanged.
+  writes what it traded as the description — for example **Sold 60 KSTL @ 150.00 USD · fees
+  1.25 USD** — and leaves the memo free for your own note.
 - A **balance adjustment** (created when you reconcile) never has a category and is left out of
   spending reports.
 - The **Starting Balance** can't be deleted, uncleared, freely edited or merged — change the

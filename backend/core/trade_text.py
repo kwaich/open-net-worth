@@ -1,7 +1,7 @@
-"""The one-line text a trade's cash row carries in its memo — "Sold 60 KSTL @ 150.00 USD".
+"""The one-line text a trade's cash row carries as its description — "Sold 60 KSTL @ 150.00 USD".
 
-Written by the trade choke (``services.lots``) so the register's memo column says what the row
-settled; the memo is display-only, so dedup, payee matching and rules never read it.
+Written by the trade choke (``services.lots``) so the register says what the row settled, in
+place of the old "Sale proceeds" / "Share purchase" placeholder.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ def _price(value: float) -> str:
     return f"{whole}.{frac.ljust(2, '0')}"
 
 
-def trade_memo(
+def trade_text(
     verb: str,
     symbol: str,
     quantity: float,

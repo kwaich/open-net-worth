@@ -25,7 +25,7 @@ import logging
 import sqlalchemy as sa
 from alembic import op
 
-from backend.core.trade_text import trade_memo
+from backend.core.trade_text import trade_text as trade_memo
 
 revision = "202610171200_trade_cash_legs_carry_their_trade_memo"
 down_revision = "202610151200_trade_cash_legs_store_their_trade"
