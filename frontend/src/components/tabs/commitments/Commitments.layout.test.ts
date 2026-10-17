@@ -15,7 +15,8 @@ describe('Commitments page alignment', () => {
     const pageRule = css.match(/\.c2-page\s*\{([^}]*)\}/)?.[1] ?? ''
     const headerRule = css.match(/\.c2-page\s*>\s*\.ui-page-header\s*\{([^}]*)\}/)?.[1] ?? ''
     expect(pageRule).toContain('padding-bottom: 96px')
-    expect(headerRule).toContain('padding: 0 0 14px')
+    expect(headerRule).toContain('padding: 0;')
+    expect(headerRule).toContain('margin-bottom: -2px')
     expect(css).toMatch(
       /@media \(max-width: 560px\)\s*\{\s*\.c2-page\s*\{\s*padding-bottom:\s*110px;\s*\}/,
     )

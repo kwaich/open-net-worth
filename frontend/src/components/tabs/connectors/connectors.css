@@ -110,7 +110,8 @@
   z-index: 30;
 }
 .cn-page .rd-masthead-head {
-  padding-bottom: 14px;
+  /* + the masthead's 14px gap = 16px below the subtitle, like every other page. */
+  padding-bottom: 2px;
   min-width: 0;
 }
 .cn-page .rd-masthead-title {

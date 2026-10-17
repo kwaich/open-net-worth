@@ -30,7 +30,9 @@
   position: sticky;
   top: var(--c2-topbar-h, 0px);
   z-index: 40;
-  padding: 0 0 14px;
+  /* 16px to the first card, like every other page: .c2-page's 18px gap less 2px. */
+  padding: 0;
+  margin-bottom: -2px;
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
