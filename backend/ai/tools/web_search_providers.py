@@ -61,6 +61,7 @@ from backend.ai.search.base import (
     build_provider,
     fetch_result_payload,
 )
+from backend.ai.tools._fetch_gate import note_search_results
 from backend.ai.tools.misc import FetchPageInput, WebSearchInput, sanitize_search_results
 from backend.ai.tools.registry import tool
 from backend.ai.tools.schema_from_model import schema_of
@@ -106,7 +107,9 @@ async def _search_via(spec: ProviderSpec, input_data: dict) -> tuple[str, None]:
         logger.error("%s_search failed: %s", spec.id, exc)
         raise
     logger.info("%s_search returned %d results", spec.id, len(results))
-    return json.dumps(sanitize_search_results(results), ensure_ascii=False), None
+    clean = sanitize_search_results(results)
+    note_search_results(clean)  # their URLs may now be fetched without a card
+    return json.dumps(clean, ensure_ascii=False), None
 
 
 async def _fetch_via(spec: ProviderSpec, input_data: dict) -> tuple[str, None]:

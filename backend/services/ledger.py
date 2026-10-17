@@ -5632,15 +5632,22 @@ def delete_account(account_id: str, *, force: bool = False) -> bool:
             other_accounts=others,
         )
 
+    from backend.services import transaction_purge
+
     balance_before = _capture_automation_balance_snapshot()
+    # Every row the cascade will hard-delete, live or long since soft-deleted: deleting the
+    # account erases them the way "Delete permanently" erases one (ADR 2026-10-17-delete-
+    # permanently-erases-a-transactions-contents, superseding the full-row audit images
+    # 2026-09-06's MEDIUM-5 kept here).
+    erased = transactions.query_txns(account_id=account_id, include_deleted=True)
     with locked_unit_of_work(
         transactions_table,
         accounts_table,
-        txn_audit_table,
-        rejected_identities_table,
         commitments_table,
+        *transaction_purge.trace_tables(),
     ) as conn:
         deleted_rows = _cascade_delete_account_transactions(account_id, refs, conn=conn)
+        transaction_purge.erase_traces(conn, [r["id"] for r in erased], erased)
         _unlink_account_from_commitments(account_id, conn=conn)
         try:
             deleted = bool(accounts.delete(account_id, conn=conn))
@@ -5657,4 +5664,5 @@ def delete_account(account_id: str, *, force: bool = False) -> bool:
     _publish_transaction_events_after_commit(
         False, "delete", deleted_rows, balance_before=balance_before
     )
+    transaction_purge.after_commit([r["id"] for r in erased])
     return deleted
